@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FontStory — فونت استوری</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;800&family=Lalezar&family=Estedad:wght@400;700&family=Parastoo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Vazir (UI font + sticker font) — not on Google Fonts, served from jsDelivr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Top bar: export pill, brand, background + aspect controls -->
+    <header class="topbar">
+      <button type="button" id="doneBtn" class="done-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>تمام</button>
+      <div class="brand">
+        <span class="brand-title">فونت استوری</span>
+      </div>
+      <div class="top-actions">
+        <button type="button" id="settingsBtn" class="round-btn" aria-label="تنظیمات متن" title="تنظیمات متن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        <button type="button" id="bgBtn" class="round-btn" aria-label="تغییر پس‌زمینه" title="تغییر پس‌زمینه"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg></button>
+        <button type="button" id="aspectBtn" class="round-btn aspect-btn" aria-label="ابعاد" title="ابعاد">۹:۱۶</button>
+      </div>
+    </header>
+
+    <!-- Canvas stage: the text IS the preview (like Poufi) -->
+    <main class="stage" id="stage">
+      <div class="size-rail">
+        <span class="size-mark">A+</span>
+        <input type="range" id="sizeRange" min="48" max="200" value="110" orient="vertical" aria-label="اندازه متن">
+        <span id="sizeValue" class="size-value">۱۱۰</span>
+        <span class="size-mark">A−</span>
+      </div>
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="preview" width="1080" height="1920"></canvas>
+        <p class="hint-pill">برای نوشتن، روی متن بزن</p>
+        <!-- Real editor overlaid on the canvas: typing goes here (native
+             keyboard, backspace and selection all work), the styled text
+             renders on the canvas underneath. Transparent so the canvas
+             shows through; the canvas draws its own blinking caret. -->
+        <textarea id="textInput" class="hidden-input" rows="3" maxlength="500" aria-label="متن">سلام دنیا</textarea>
+      </div>
+    </main>
+
+    <!-- Bottom sheet: one panel per tab -->
+    <section class="sheet" id="sheet">
+      <div class="sheet-panel" id="panel-style" hidden>
+        <div class="sheet-head"><span>استایل</span><span class="fav-pill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>محبوب‌ها</span></div>
+        <div id="stylePicker" class="card-row"></div>
+      </div>
+      <div class="sheet-panel" id="panel-font">
+        <div class="sheet-head"><span>فونت</span></div>
+        <div id="fontPicker" class="card-row"></div>
+      </div>
+      <div class="sheet-panel" id="panel-color" hidden>
+        <div class="sheet-head"><span>رنگ متن</span></div>
+        <div class="colors">
+          <div id="swatches" class="swatches"></div>
+          <button type="button" id="customColorBtn" class="swatch rainbow" aria-label="رنگ‌های بیشتر" title="رنگ‌های بیشتر"></button>
+          <input type="color" id="colorPicker" value="#FFFFFF" aria-label="رنگ دلخواه" hidden>
+        </div>
+      </div>
+      <div class="sheet-panel" id="panel-template" hidden>
+        <div class="sheet-head"><span>قالب</span></div>
+        <button type="button" id="saveBtn" class="save-template"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>ذخیره این حالت</button>
+        <p class="sheet-note">فونت و استایل دلخواهت رو بچین، بعد «ذخیره این حالت» رو بزن تا هر وقت خواستی با یه لمس برگردی بهش.</p>
+        <ul id="recents" class="recents">
+          <li class="empty">هنوز طرحی ذخیره نکردی.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Bottom tab bar -->
+    <nav class="tabbar">
+      <button type="button" class="tab" data-tab="style"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2c.7 5.2 2.8 7.3 8 8-5.2.7-7.3 2.8-8 8-.7-5.2-2.8-7.3-8-8 5.2-.7 7.3-2.8 8-8z"/></svg><span>استایل</span></button>
+      <button type="button" class="tab active" data-tab="font">Aa<span>فونت</span></button>
+      <button type="button" class="tab" data-tab="color"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7s6.5 7 6.5 11.3a6.5 6.5 0 0 1-13 0C5.5 9.7 12 2.7 12 2.7z"/></svg><span>رنگ</span></button>
+      <button type="button" class="tab" data-tab="template"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><span>قالب</span></button>
+    </nav>
+  </div>
+
+  <!-- Export sheet -->
+  <div class="export-overlay" id="exportSheet" hidden>
+    <div class="export-sheet">
+      <button type="button" id="exportClose" class="export-close" aria-label="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <h2>استیکر آماده‌ست</h2>
+      <div class="export-preview"><img id="exportImg" alt="پیش‌نمایش استیکر"></div>
+      <div class="export-grid">
+        <button type="button" id="copyIg" class="export-btn ig"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>کپی برای اینستاگرام</button>
+        <button type="button" id="copyTg" class="export-btn tg"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>کپی برای تلگرام</button>
+        <button type="button" id="copyWa" class="export-btn wa"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>کپی برای واتساپ</button>
+        <button type="button" id="saveGallery" class="export-btn gallery"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>ذخیره در گالری</button>
+        <button type="button" id="copyAll" class="export-btn all"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>کپی در کلیپ‌بورد عمومی</button>
+      </div>
+      <p class="export-hint">با لمس هرکدوم از دکمه‌ها استیکر کپی می‌شه، بعد وارد برنامه شو و Paste کن.</p>
+    </div>
+  </div>
+
+  <!-- Text settings sheet -->
+  <div class="settings-overlay" id="settingsSheet" hidden>
+    <div class="settings-sheet">
+      <button type="button" id="settingsClose" class="export-close" aria-label="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <h2>تنظیمات متن</h2>
+      <div class="slider-row">
+        <div class="slider-head"><span>وزن فونت</span><span id="weightValue" class="slider-value">800</span></div>
+        <input type="range" id="weightRange" min="400" max="900" step="100" value="800" aria-label="وزن فونت">
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span>فاصله حروف</span><span id="letterValue" class="slider-value">0px</span></div>
+        <input type="range" id="letterRange" min="0" max="40" step="1" value="0" aria-label="فاصله حروف">
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span>فاصله کلمات</span><span id="wordValue" class="slider-value">0px</span></div>
+        <input type="range" id="wordRange" min="0" max="60" step="1" value="0" aria-label="فاصله کلمات">
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span>ارتفاع خط</span><span id="lineValue" class="slider-value">1.4</span></div>
+        <input type="range" id="lineRange" min="1" max="2" step="0.1" value="1.4" aria-label="ارتفاع خط">
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span>چرخش افقی (X)</span><span id="rotXValue" class="slider-value">0°</span></div>
+        <input type="range" id="rotXRange" min="-45" max="45" step="1" value="0" aria-label="چرخش افقی">
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span>چرخش عمودی (Y)</span><span id="rotYValue" class="slider-value">0°</span></div>
+        <input type="range" id="rotYRange" min="-45" max="45" step="1" value="0" aria-label="چرخش عمودی">
+      </div>
+    </div>
+  </div>
+
+  <p id="status" class="toast" role="status" hidden></p>
+
+  <script src="app.js"></script>
+</body>
+</html>
