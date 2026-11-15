@@ -45,7 +45,7 @@ body {
 }
 .fav-pill { display: inline-flex; align-items: center; gap: 4px; }
 .fav-pill .icon { width: 12px; height: 12px; }
-.tab .icon { width: 20px; height: 20px; }
+.tab .icon, .settings-tab .icon { width: 20px; height: 20px; }
 .round-btn { display: inline-flex; align-items: center; justify-content: center; }
 .round-btn .icon { width: 18px; height: 18px; }
 .export-close { display: inline-flex; align-items: center; justify-content: center; }
@@ -318,7 +318,10 @@ body {
   display: flex;
   padding: 6px 10px calc(10px + env(safe-area-inset-bottom));
 }
-.tab {
+/* The settings button lives in the bottom bar: same look as a tab, but
+   it opens the settings overlay instead of switching panels, so it
+   must NOT have the .tab class (the tab wiring would treat it as one). */
+.tab, .settings-tab {
   flex: 1;
   background: none;
   border: none;
@@ -333,8 +336,8 @@ body {
   gap: 2px;
   position: relative;
 }
-.tab span { font-size: 12px; }
-.tab:hover { color: #fff; }
+.tab span, .settings-tab span { font-size: 12px; }
+.tab:hover, .settings-tab:hover { color: #fff; }
 .tab.active { color: #fff; }
 .tab.active::after {
   content: '';
