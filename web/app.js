@@ -38,6 +38,7 @@ const STYLES = [
   { id: 'quotes', label: 'نقل‌قول' },
   { id: 'winter', label: 'زمستانی' },
   { id: 'rosseta', label: 'رُزتا' },
+  { id: 'sticker', label: 'استیکر' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1'];
@@ -93,6 +94,9 @@ const STYLE_CONTROLS = {
   ],
   pixel: [
     { key: 'pixelSize', label: 'اندازه پیکسل', type: 'range', min: 2, max: 12, step: 1, def: 6, unit: 'px' },
+  ],
+  sticker: [
+    { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 8, max: 30, step: 1, def: 16, unit: '٪' },
   ],
 };
 
@@ -386,6 +390,19 @@ const STYLE_PAINT = {
   rosseta: (line, cx, y, lw, fs) => {
     ctx.font = `300 ${fs}px ${fontFamily()}`;
     strokeWords(line, cx, y, '#a7f3d0', sp('rossetaStroke'));
+  },
+  sticker: (line, cx, y, lw, fs) => {
+    // Sticker look (keeps its own colours, like gradient/arcadia/retro):
+    // golden fill, thick red outline, white outer outline, and a solid
+    // maroon shadow offset down-left. The white stroke is twice the red
+    // one, so the two visible rings come out the same thickness.
+    const w = fs * (sp('stickerOutline') / 100);
+    ctx.fillStyle = '#5C1220';
+    drawWords(line, cx, y, -fs * 0.04, fs * 0.09);
+    strokeWords(line, cx, y, '#ffffff', w * 2);
+    strokeWords(line, cx, y, '#ED1C24', w);
+    ctx.fillStyle = '#FFC531';
+    drawWords(line, cx, y);
   },
 };
 
