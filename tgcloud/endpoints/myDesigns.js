@@ -34,6 +34,7 @@ export default async function (_input, ctx) {
       rotY: r.rotY,
       styleColor: r.styleColor,
       borderRadius: r.borderRadius,
+      styleParams: (() => { try { return JSON.parse(r.styleParams || '{}'); } catch { return {}; } })(),
       created_at: r.createdAt,
     })),
   };
