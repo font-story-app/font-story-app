@@ -28,23 +28,11 @@ const STYLES = [
   { id: 'shadow', label: 'سایه‌دار' },
   { id: 'glow', label: 'درخشان' },
   { id: 'gradient', label: 'گرادیان' },
-  { id: 'violet', label: 'ویولت' },
-  { id: 'goldText', label: 'متن طلایی' },
   { id: 'stroke', label: 'استروک' },
-  { id: 'chibold', label: 'چی‌بولد' },
   { id: 'brush', label: 'قلم‌مو' },
-  { id: 'bubble', label: 'حباب' },
   { id: 'pastille', label: 'پاستیل' },
   { id: 'round', label: 'راوند' },
   { id: 'arcadia', label: 'آرکادیا' },
-  { id: 'imessage', label: 'آی‌مسیج' },
-  { id: 'goldBg', label: 'پس‌زمینه طلایی' },
-  { id: 'colorBg', label: 'پس‌زمینه رنگی' },
-  { id: 'gradientBox', label: 'باکس گرادیان' },
-  { id: 'alphaBox', label: 'باکس شفاف' },
-  { id: 'borderBox', label: 'باکس حاشیه‌دار' },
-  { id: 'lightBox', label: 'باکس روشن' },
-  { id: 'redShadow', label: 'سایه قرمز' },
   { id: 'underline', label: 'خط زیر' },
   { id: 'pixel', label: 'پیکسلی' },
   { id: 'quotes', label: 'نقل‌قول' },
@@ -78,6 +66,10 @@ const state = {
   lineHeight: 1.4,
   rotX: 0,
   rotY: 0,
+  // Style settings (2026-11-15): background/border colour for the styles
+  // that have a box, and the box's corner radius.
+  styleColor: '#F4D93E',
+  borderRadius: 18,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -131,6 +123,27 @@ function lineWidth(line) {
   let total = words.reduce((sum, w) => sum + ctx.measureText(w).width, 0);
   total += (words.length - 1) * (spaceWidth() + state.wordSpacing);
   return total;
+}
+
+// Text colour that stays readable on a given background: dark text on
+// light backgrounds, white text on dark ones.
+function contrastText(hex) {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex || '');
+  if (!m) return '#FFFFFF';
+  const r = parseInt(m[1].slice(0, 2), 16);
+  const g = parseInt(m[1].slice(2, 4), 16);
+  const b = parseInt(m[1].slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#1F2421' : '#FFFFFF';
+}
+
+// '#RRGGBB' + opacity -> 'rgba(r,g,b,a)'.
+function hexAlpha(hex, alpha) {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex || '');
+  if (!m) return `rgba(255,255,255,${alpha})`;
+  const r = parseInt(m[1].slice(0, 2), 16);
+  const g = parseInt(m[1].slice(2, 4), 16);
+  const b = parseInt(m[1].slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function wrapLines(text, maxWidth) {
@@ -215,24 +228,18 @@ function strokeWords(line, cx, y, color, width) {
   ctx.restore();
 }
 
-function boxGradient(cx, lw, stops) {
-  const g = ctx.createLinearGradient(cx - lw / 2 - 28, 0, cx + lw / 2 + 28, 0);
-  stops.forEach(([at, color]) => g.addColorStop(at, color));
-  return g;
-}
-
 const STYLE_PAINT = {
   bold: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   highlight: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: '#F4D93E', radius: 18, padX: 24 });
-    ctx.fillStyle = '#1F2421'; drawWords(line, cx, y);
+    bgBox(cx, y, lw, fs, { fill: state.styleColor, radius: state.borderRadius, padX: 24 });
+    ctx.fillStyle = contrastText(state.styleColor); drawWords(line, cx, y);
   },
   neon: (line, cx, y) => {
     ctx.shadowColor = state.color; ctx.shadowBlur = 45; ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   glow: (line, cx, y) => {
-    ctx.shadowColor = '#fff'; ctx.shadowBlur = 35; ctx.fillStyle = '#fff';
+    ctx.shadowColor = state.color; ctx.shadowBlur = 35; ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   glass: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
@@ -249,79 +256,29 @@ const STYLE_PAINT = {
     ctx.fillStyle = textGradient(cx, lw, [[0, '#ff2e88'], [0.5, '#ff7a3d'], [1, '#f4d93e']]);
     drawWords(line, cx, y);
   },
-  violet: (line, cx, y, lw) => {
-    ctx.fillStyle = textGradient(cx, lw, [[0, '#8b5cf6'], [1, '#d946ef']]);
-    drawWords(line, cx, y);
-  },
-  goldText: (line, cx, y, lw, fs) => {
-    strokeWords(line, cx, y, '#3a2a00', fs * 0.06);
-    ctx.fillStyle = textGradient(cx, lw, [[0, '#f9d976'], [0.5, '#f39c12'], [1, '#b8860b']]);
-    drawWords(line, cx, y);
-  },
   stroke: (line, cx, y, lw, fs) => {
     strokeWords(line, cx, y, '#111111', fs * 0.14);
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
-  },
-  chibold: (line, cx, y, lw, fs) => {
-    ctx.font = `900 ${fs}px ${fontFamily()}`;
-    strokeWords(line, cx, y, '#111111', fs * 0.2);
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
+    ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   brush: (line, cx, y, lw, fs) => {
     ctx.save(); ctx.translate(cx, y); ctx.rotate(-0.03);
-    ctx.fillStyle = '#232347';
-    roundRect(-lw / 2 - 30, -fs * 0.62, lw + 60, fs * 1.24, fs * 0.5); ctx.fill(); ctx.restore();
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
-  },
-  bubble: (line, cx, y, lw, fs) => {
-    strokeWords(line, cx, y, '#ff5c8a', fs * 0.12);
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
+    ctx.fillStyle = state.styleColor;
+    roundRect(-lw / 2 - 30, -fs * 0.62, lw + 60, fs * 1.24, state.borderRadius); ctx.fill(); ctx.restore();
+    ctx.fillStyle = contrastText(state.styleColor); drawWords(line, cx, y);
   },
   pastille: (line, cx, y, lw, fs) => {
     strokeWords(line, cx, y, '#7c3aed', fs * 0.1);
-    ctx.fillStyle = '#ffe45e'; drawWords(line, cx, y);
+    ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   round: (line, cx, y, lw, fs) => {
     ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
     strokeWords(line, cx, y, '#ffffff', fs * 0.08);
-    ctx.fillStyle = '#a855f7'; drawWords(line, cx, y);
+    ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   arcadia: (line, cx, y, lw, fs) => {
     strokeWords(line, cx, y, '#ffffff', fs * 0.06);
     ctx.fillStyle = textGradient(cx, lw, [[0, '#ff7a18'], [1, '#ff2e63']]);
     drawWords(line, cx, y);
-  },
-  imessage: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: '#0a84ff', radius: fs * 0.45, padX: 28 });
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
-  },
-  goldBg: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: boxGradient(cx, lw, [[0, '#f6d365'], [1, '#d4a017']]), radius: 999, padX: 28 });
-    ctx.fillStyle = '#1a1a1a'; drawWords(line, cx, y);
-  },
-  colorBg: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: '#e5484d', radius: 16, padX: 28 });
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
-  },
-  gradientBox: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: boxGradient(cx, lw, [[0, '#ff9a3d'], [1, '#ff5e62']]), radius: 18, padX: 28 });
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
-  },
-  alphaBox: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: 'rgba(139,124,246,0.55)', radius: 18, padX: 28 });
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
-  },
-  borderBox: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: '#1e1b4b', stroke: '#ef4444', strokeWidth: 6, radius: 8, padX: 30 });
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
-  },
-  lightBox: (line, cx, y, lw, fs) => {
-    bgBox(cx, y, lw, fs, { fill: '#f1f1f1', radius: 14, padX: 28 });
-    ctx.fillStyle = '#111111'; drawWords(line, cx, y);
-  },
-  redShadow: (line, cx, y) => {
-    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 8;
-    ctx.fillStyle = '#fff'; drawWords(line, cx, y);
   },
   underline: (line, cx, y, lw, fs) => {
     ctx.fillStyle = state.color; drawWords(line, cx, y);
@@ -331,7 +288,7 @@ const STYLE_PAINT = {
   pixel: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   quotes: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   winter: (line, cx, y) => {
-    ctx.shadowColor = '#22ff88'; ctx.shadowBlur = 30; ctx.fillStyle = '#4ade80';
+    ctx.shadowColor = state.color; ctx.shadowBlur = 30; ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   rosseta: (line, cx, y, lw, fs) => {
@@ -371,10 +328,10 @@ function draw() {
     const pad = 48;
     const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
     ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.16)';
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillStyle = hexAlpha(state.styleColor, 0.16);
+    ctx.strokeStyle = hexAlpha(state.styleColor, 0.55);
     ctx.lineWidth = 3;
-    roundRect(cx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, 40);
+    roundRect(cx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, state.borderRadius);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -387,11 +344,11 @@ function draw() {
     const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
     const top = y - lineHeight / 2 - pad / 2;
     ctx.save();
-    ctx.strokeStyle = '#2dd4bf';
+    ctx.strokeStyle = state.styleColor;
     ctx.lineWidth = 4;
-    roundRect(cx - bw / 2, top, bw, blockH + pad, 16);
+    roundRect(cx - bw / 2, top, bw, blockH + pad, state.borderRadius);
     ctx.stroke();
-    ctx.fillStyle = '#2dd4bf';
+    ctx.fillStyle = state.styleColor;
     ctx.font = `${fontSize}px ${fontFamily()}`;
     ctx.textAlign = 'center';
     ctx.fillText('“', cx + bw / 2 - 24, top + fontSize * 0.75);
@@ -522,7 +479,8 @@ document.querySelectorAll('.tab').forEach((b) => {
 function applyDesign(d) {
   state.text = d.text || '';
   state.font = d.font || 'Vazir';
-  state.style = d.style || 'bold';
+  // Old saved designs may carry a style that was later deleted.
+  state.style = STYLES.some((s) => s.id === d.style) ? d.style : 'bold';
   state.color = d.color || '#FFFFFF';
   state.aspect = d.aspect || '9:16';
   state.weight = [400, 500, 600, 700, 800, 900].includes(Number(d.weight)) ? Number(d.weight) : 800;
@@ -531,6 +489,8 @@ function applyDesign(d) {
   state.lineHeight = clampNum(d.lineHeight, 1, 2, 1.4);
   state.rotX = clampNum(d.rotX, -45, 45, 0);
   state.rotY = clampNum(d.rotY, -45, 45, 0);
+  state.styleColor = typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor) ? d.styleColor : '#F4D93E';
+  state.borderRadius = clampNum(d.borderRadius, 0, 40, 18);
   textInput.value = state.text;
   $('colorPicker').value = state.color;
   $('aspectBtn').textContent = state.aspect === '9:16' ? '۹:۱۶' : '۱:۱';
@@ -564,6 +524,11 @@ function syncSettingsUI() {
   $('rotXValue').textContent = state.rotX + '°';
   $('rotYRange').value = state.rotY;
   $('rotYValue').textContent = state.rotY + '°';
+  $('styleColorInput').value = state.styleColor;
+  $('styleColorInput').style.background = state.styleColor;
+  $('styleColorValue').textContent = state.styleColor.toUpperCase();
+  $('radiusRange').value = state.borderRadius;
+  $('radiusValue').textContent = state.borderRadius + 'px';
 }
 
 // --- Recents (in the قالب panel) ---
@@ -672,6 +637,8 @@ async function saveDesign() {
       lineHeight: state.lineHeight,
       rotX: state.rotX,
       rotY: state.rotY,
+      styleColor: state.styleColor,
+      borderRadius: state.borderRadius,
     });
     setStatus(`ذخیره شد (شماره ${res?.id ?? '؟'})`);
     await loadRecents();
@@ -740,6 +707,15 @@ bindSetting('wordRange', 'wordValue', (v) => v + 'px', (v) => { state.wordSpacin
 bindSetting('lineRange', 'lineValue', (v) => v.toFixed(1), (v) => { state.lineHeight = v; });
 bindSetting('rotXRange', 'rotXValue', (v) => v + '°', (v) => { state.rotX = v; });
 bindSetting('rotYRange', 'rotYValue', (v) => v + '°', (v) => { state.rotY = v; });
+bindSetting('radiusRange', 'radiusValue', (v) => v + 'px', (v) => { state.borderRadius = v; });
+// Style colour: a real, visible <input type="color"> the user taps
+// directly (never a hidden input + .click() — WebKit ignores that).
+$('styleColorInput').addEventListener('input', (e) => {
+  state.styleColor = e.target.value;
+  $('styleColorInput').style.background = state.styleColor;
+  $('styleColorValue').textContent = state.styleColor.toUpperCase();
+  redraw();
+});
 
 buildFontPicker();
 buildStylePicker();
