@@ -60,8 +60,10 @@
         <div class="sheet-head"><span>رنگ متن</span></div>
         <div class="colors">
           <div id="swatches" class="swatches"></div>
-          <button type="button" id="customColorBtn" class="swatch rainbow" aria-label="رنگ‌های بیشتر" title="رنگ‌های بیشتر"></button>
-          <input type="color" id="colorPicker" value="#FFFFFF" aria-label="رنگ دلخواه" hidden>
+          <div class="swatch-wrap">
+            <button type="button" class="swatch rainbow" aria-label="رنگ‌های بیشتر" title="رنگ‌های بیشتر" tabindex="-1"></button>
+            <input type="color" id="colorPicker" value="#FFFFFF" aria-label="رنگ دلخواه">
+          </div>
         </div>
       </div>
       <div class="sheet-panel" id="panel-template" hidden>
