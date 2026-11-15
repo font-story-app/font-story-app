@@ -31,6 +31,10 @@ export const designs = table('designs', {
   lineHeight: real('line_height').notNull().default(1.4),
   rotX: real('rot_x').notNull().default(0),
   rotY: real('rot_y').notNull().default(0),
+  // Style settings (added 2026-11-15): background/border colour of the
+  // box styles, and the box's corner radius (px).
+  styleColor: text('style_color').notNull().default('#F4D93E'),
+  borderRadius: real('border_radius').notNull().default(18),
   createdAt: integer('created_at').default(sql`(unixepoch())`),
 }, (t) => ({
   userIdx: index('idx_designs_user').on(t.userId),
