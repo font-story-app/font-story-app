@@ -1,6 +1,6 @@
 // FontStory Mini App front-end — Poufi-style UI, plain JS, no framework.
 // Talks to the bot only through tgcloud endpoints:
-//   register, saveDesign, myDesigns
+//   register, saveDesign, myDesigns, deleteDesign
 // (Telegram.WebApp.Serverless.call sends verified init data for us.)
 
 const FONTS = [
@@ -684,6 +684,9 @@ function syncSettingsUI() {
   $('radiusValue').textContent = state.borderRadius + 'px';
 }
 
+// Trash icon for the per-item delete button (standard Feather trash-2).
+const TRASH_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
 // --- Recents (in the قالب panel) ---
 async function loadRecents() {
   const list = $('recents');
@@ -698,9 +701,46 @@ async function loadRecents() {
     for (const d of rows) {
       const li = document.createElement('li');
       const date = d.created_at ? new Date(d.created_at * 1000).toLocaleDateString('fa-IR') : '';
-      li.innerHTML = `<div></div><div class="meta">${d.font} · ${d.style} · ${d.aspect} · ${date}</div>`;
-      li.firstChild.textContent = d.text;
+      li.innerHTML = `<div class="recent-text"></div><div class="meta">${d.font} · ${d.style} · ${d.aspect} · ${date}</div>`;
+      li.querySelector('.recent-text').textContent = d.text;
       li.addEventListener('click', () => applyDesign(d));
+      // Delete button: first tap arms it («حذف؟»), second tap within
+      // 4s deletes for real — so a stray tap can't wipe a design.
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'recent-del';
+      del.setAttribute('aria-label', 'حذف این حالت');
+      del.innerHTML = TRASH_ICON;
+      let armed = null;
+      const disarm = () => {
+        if (armed) { clearTimeout(armed); armed = null; }
+        del.classList.remove('armed');
+        del.innerHTML = TRASH_ICON;
+      };
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!armed) {
+          armed = setTimeout(disarm, 4000);
+          del.classList.add('armed');
+          del.textContent = 'حذف؟';
+          return;
+        }
+        clearTimeout(armed); armed = null;
+        del.disabled = true;
+        try {
+          await callEndpoint('deleteDesign', { id: d.id });
+          li.remove();
+          if (!list.querySelector('li:not(.empty)')) {
+            list.innerHTML = '<li class="empty">هنوز طرحی ذخیره نکردی.</li>';
+          }
+          setStatus('حذف شد.');
+        } catch (err) {
+          del.disabled = false;
+          disarm();
+          setStatus('حذف نشد: ' + (err.message || err));
+        }
+      });
+      li.appendChild(del);
       list.appendChild(li);
     }
   } catch (e) {
