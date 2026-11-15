@@ -5,11 +5,8 @@ import { ensureUser } from '../lib/users.js';
 const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmatn', 'Lalezar', 'Estedad', 'Parastoo', 'Amiri'];
 const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
-  'glow', 'gradient', 'violet', 'goldText', 'stroke', 'chibold',
-  'brush', 'bubble', 'pastille', 'round', 'arcadia', 'imessage',
-  'goldBg', 'colorBg', 'gradientBox', 'alphaBox', 'borderBox',
-  'lightBox', 'redShadow', 'underline', 'pixel', 'quotes',
-  'winter', 'rosseta',
+  'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
+  'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
 const ALLOWED_WEIGHTS = [400, 500, 600, 700, 800, 900];
@@ -21,7 +18,8 @@ function clampNum(v, min, max, def) {
 
 // Save one design for the caller. Input:
 // { text, font, style, color, aspect,
-//   weight, letterSpacing, wordSpacing, lineHeight, rotX, rotY }
+//   weight, letterSpacing, wordSpacing, lineHeight, rotX, rotY,
+//   styleColor, borderRadius }
 export default async function (input, ctx) {
   const user = ctx.initData?.user;
   if (!user?.id) {
@@ -41,17 +39,21 @@ export default async function (input, ctx) {
     : '#FFFFFF';
   const aspect = ALLOWED_ASPECTS.includes(input?.aspect) ? input.aspect : '9:16';
   const weight = ALLOWED_WEIGHTS.includes(Number(input?.weight)) ? Number(input.weight) : 800;
+  const styleColor = typeof input?.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.styleColor)
+    ? input.styleColor
+    : '#F4D93E';
 
   await ensureUser(user);
   const [row] = await db
     .insert(designs)
     .values({
-      userId: user.id, text, font, style, color, aspect, weight,
+      userId: user.id, text, font, style, color, aspect, weight, styleColor,
       letterSpacing: clampNum(input?.letterSpacing, 0, 40, 0),
       wordSpacing: clampNum(input?.wordSpacing, 0, 60, 0),
       lineHeight: clampNum(input?.lineHeight, 1, 2, 1.4),
       rotX: clampNum(input?.rotX, -45, 45, 0),
       rotY: clampNum(input?.rotY, -45, 45, 0),
+      borderRadius: clampNum(input?.borderRadius, 0, 40, 18),
     })
     .returning({ id: designs.id })
     .run();
