@@ -1,0 +1,59 @@
+import { db, EndpointError } from 'sdk';
+import { designs } from '../schema.js';
+import { ensureUser } from '../lib/users.js';
+
+const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmatn', 'Lalezar', 'Estedad', 'Parastoo', 'Amiri'];
+const ALLOWED_STYLES = [
+  'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
+  'glow', 'gradient', 'violet', 'goldText', 'stroke', 'chibold',
+  'brush', 'bubble', 'pastille', 'round', 'arcadia', 'imessage',
+  'goldBg', 'colorBg', 'gradientBox', 'alphaBox', 'borderBox',
+  'lightBox', 'redShadow', 'underline', 'pixel', 'quotes',
+  'winter', 'rosseta',
+];
+const ALLOWED_ASPECTS = ['9:16', '1:1'];
+const ALLOWED_WEIGHTS = [400, 500, 600, 700, 800, 900];
+
+function clampNum(v, min, max, def) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
+}
+
+// Save one design for the caller. Input:
+// { text, font, style, color, aspect,
+//   weight, letterSpacing, wordSpacing, lineHeight, rotX, rotY }
+export default async function (input, ctx) {
+  const user = ctx.initData?.user;
+  if (!user?.id) {
+    throw new EndpointError('No Telegram user in init data', { code: 'NO_USER' });
+  }
+  const text = typeof input?.text === 'string' ? input.text.trim() : '';
+  if (!text) {
+    throw new EndpointError('Text is required', { code: 'EMPTY_TEXT' });
+  }
+  if (text.length > 500) {
+    throw new EndpointError('Text must be under 500 characters', { code: 'TEXT_TOO_LONG' });
+  }
+  const font = ALLOWED_FONTS.includes(input?.font) ? input.font : 'Vazir';
+  const style = ALLOWED_STYLES.includes(input?.style) ? input.style : 'bold';
+  const color = typeof input?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.color)
+    ? input.color
+    : '#FFFFFF';
+  const aspect = ALLOWED_ASPECTS.includes(input?.aspect) ? input.aspect : '9:16';
+  const weight = ALLOWED_WEIGHTS.includes(Number(input?.weight)) ? Number(input.weight) : 800;
+
+  await ensureUser(user);
+  const [row] = await db
+    .insert(designs)
+    .values({
+      userId: user.id, text, font, style, color, aspect, weight,
+      letterSpacing: clampNum(input?.letterSpacing, 0, 40, 0),
+      wordSpacing: clampNum(input?.wordSpacing, 0, 60, 0),
+      lineHeight: clampNum(input?.lineHeight, 1, 2, 1.4),
+      rotX: clampNum(input?.rotX, -45, 45, 0),
+      rotY: clampNum(input?.rotY, -45, 45, 0),
+    })
+    .returning({ id: designs.id })
+    .run();
+  return { ok: true, id: row?.id ?? null };
+}
