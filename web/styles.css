@@ -268,6 +268,19 @@ body {
 .swatch.rainbow {
   background: conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
 }
+/* Custom colour: the real <input type="color"> sits transparently ON TOP
+   of the rainbow swatch, so the tap lands on the input itself and iOS /
+   Telegram WebView opens its native picker with a real user gesture.
+   (A programmatic .click() on a `hidden` input does nothing in WebKit —
+   that was the bug: the rainbow button never opened anything.) */
+.swatch-wrap { position: relative; width: 34px; height: 34px; flex: none; }
+.swatch-wrap .swatch { pointer-events: none; }
+.swatch-wrap input[type="color"] {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+  border: 0; padding: 0; margin: 0;
+}
 
 .save-template {
   width: 100%;
