@@ -7,6 +7,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
   'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
+  'sticker',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
 const ALLOWED_WEIGHTS = [400, 500, 600, 700, 800, 900];
@@ -33,6 +34,7 @@ const STYLE_PARAMS = {
   brushTilt: { min: -10, max: 10 },
   underlineWidth: { min: 2, max: 20 },
   pixelSize: { min: 2, max: 12 },
+  stickerOutline: { min: 8, max: 30 },
 };
 
 function sanitizeStyleParams(input) {
