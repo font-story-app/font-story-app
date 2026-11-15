@@ -686,9 +686,9 @@ $('sizeRange').addEventListener('input', (e) => {
 $('colorPicker').addEventListener('input', (e) => {
   state.color = e.target.value;
   document.querySelectorAll('.swatch').forEach((x) => x.classList.remove('active'));
+  document.querySelector('.swatch.rainbow')?.classList.add('active');
   redraw();
 });
-$('customColorBtn').addEventListener('click', () => $('colorPicker').click());
 $('aspectBtn').addEventListener('click', () => {
   state.aspect = state.aspect === '9:16' ? '1:1' : '9:16';
   $('aspectBtn').textContent = state.aspect === '9:16' ? '۹:۱۶' : '۱:۱';
