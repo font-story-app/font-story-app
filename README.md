@@ -28,6 +28,24 @@ Open [@FontStory_bot](https://t.me/FontStory_bot) and send `/start`.
 - Transparent PNG export — copy to clipboard (Instagram / Telegram / WhatsApp) or save to gallery (inside Telegram the file goes through the bot chat, because the in-app WebView ignores `<a download>`)
 - Save designs as templates, reopen them from recents
 
+## Admin panel (bot owner only)
+
+The bot chat has an owner-only admin panel:
+
+- `/admin` — panel with stats and broadcast buttons
+- `/stats` — users, designs and top fonts/styles
+- `/broadcast <text>` — send a message to all users
+
+Only the Telegram user ID in `tgcloud/lib/owner.js` can use these
+commands. That file is gitignored — create it locally with one line:
+
+```
+export const OWNER_ID = 123456789;
+```
+
+Put your numeric Telegram ID there (get it from @userinfobot).
+Everyone else just gets the usual Mini App reply.
+
 ## Fonts
 
 Three fonts in the live app are commercial, licensed fonts (IRANYekanXNoEn, IRAN, Yekan Bakh). Their files are **not in this repo** and never committed (see `.gitignore`) — the app loads them from its deployed static hosting. Cloning this repo gives you the code without them.
