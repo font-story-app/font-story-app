@@ -41,6 +41,93 @@ const STYLES = [
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1'];
+
+// Per-style extra controls, shown in the settings sheet under
+// «تنظیمات این استایل» for the currently selected style.
+// type 'range': { min, max, step, def, unit } — type 'color': { def }.
+const STYLE_CONTROLS = {
+  neon: [
+    { key: 'neonGlow', label: 'شدت درخشش', type: 'range', min: 0, max: 80, step: 1, def: 45, unit: '' },
+  ],
+  glow: [
+    { key: 'glowGlow', label: 'شدت درخشش', type: 'range', min: 0, max: 80, step: 1, def: 35, unit: '' },
+  ],
+  winter: [
+    { key: 'winterGlow', label: 'شدت درخشش', type: 'range', min: 0, max: 60, step: 1, def: 30, unit: '' },
+  ],
+  glass: [
+    { key: 'glassOpacity', label: 'غلظت شیشه', type: 'range', min: 5, max: 50, step: 1, def: 16, unit: '٪' },
+  ],
+  retro: [
+    { key: 'retroOffset', label: 'فاصله لایه‌ها', type: 'range', min: 0, max: 30, step: 1, def: 10, unit: 'px' },
+  ],
+  shadow: [
+    { key: 'shadowBlur', label: 'میزان سایه', type: 'range', min: 0, max: 40, step: 1, def: 22, unit: 'px' },
+    { key: 'shadowOffset', label: 'فاصله سایه', type: 'range', min: 0, max: 30, step: 1, def: 12, unit: 'px' },
+  ],
+  gradient: [
+    { key: 'gradientC1', label: 'رنگ اول گرادیان', type: 'color', def: '#FF2E88' },
+    { key: 'gradientC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#F4D93E' },
+  ],
+  arcadia: [
+    { key: 'arcadiaC1', label: 'رنگ اول گرادیان', type: 'color', def: '#FF7A18' },
+    { key: 'arcadiaC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#FF2E63' },
+  ],
+  stroke: [
+    { key: 'strokeWidth', label: 'ضخامت خط دور', type: 'range', min: 5, max: 25, step: 1, def: 14, unit: '٪' },
+  ],
+  pastille: [
+    { key: 'pastilleStroke', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 10, unit: '٪' },
+  ],
+  round: [
+    { key: 'roundStroke', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 8, unit: '٪' },
+  ],
+  rosseta: [
+    { key: 'rossetaStroke', label: 'ضخامت خط دور', type: 'range', min: 1, max: 8, step: 0.5, def: 2.5, unit: 'px' },
+  ],
+  brush: [
+    { key: 'brushTilt', label: 'کجی قلم‌مو', type: 'range', min: -10, max: 10, step: 1, def: -2, unit: '°' },
+  ],
+  underline: [
+    { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 2, max: 20, step: 1, def: 8, unit: 'px' },
+  ],
+  pixel: [
+    { key: 'pixelSize', label: 'اندازه پیکسل', type: 'range', min: 2, max: 12, step: 1, def: 6, unit: 'px' },
+  ],
+};
+
+// Flat key -> control map, for defaults and sanitising.
+const STYLE_PARAM_DEFS = {};
+for (const list of Object.values(STYLE_CONTROLS)) {
+  for (const c of list) STYLE_PARAM_DEFS[c.key] = c;
+}
+
+// Read one per-style parameter, falling back to its default.
+function sp(key) {
+  const v = state.styleParams[key];
+  return v === undefined ? STYLE_PARAM_DEFS[key]?.def : v;
+}
+
+// Keep only known keys, clamped/validated (input may be an object or a
+// JSON string, e.g. a saved design from the server).
+function sanitizeStyleParams(input) {
+  let raw = input;
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch { raw = {}; }
+  }
+  if (!raw || typeof raw !== 'object') return {};
+  const out = {};
+  for (const [key, c] of Object.entries(STYLE_PARAM_DEFS)) {
+    const v = raw[key];
+    if (c.type === 'color') {
+      if (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) out[key] = v;
+    } else {
+      const n = Number(v);
+      if (Number.isFinite(n)) out[key] = Math.min(c.max, Math.max(c.min, n));
+    }
+  }
+  return out;
+}
 const ASPECTS = { '9:16': [1080, 1920], '1:1': [1080, 1080] };
 
 // Poufi-style background gradients (pink-orange default, cycles on tap).
@@ -70,6 +157,9 @@ const state = {
   // that have a box, and the box's corner radius.
   styleColor: '#F4D93E',
   borderRadius: 18,
+  // Per-style extras (2026-11-15): only the keys the user touched are
+  // stored; sp() falls back to each control's default.
+  styleParams: {},
 };
 
 const $ = (id) => document.getElementById(id);
@@ -235,65 +325,67 @@ const STYLE_PAINT = {
     ctx.fillStyle = contrastText(state.styleColor); drawWords(line, cx, y);
   },
   neon: (line, cx, y) => {
-    ctx.shadowColor = state.color; ctx.shadowBlur = 45; ctx.fillStyle = state.color;
+    ctx.shadowColor = state.color; ctx.shadowBlur = sp('neonGlow'); ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   glow: (line, cx, y) => {
-    ctx.shadowColor = state.color; ctx.shadowBlur = 35; ctx.fillStyle = state.color;
+    ctx.shadowColor = state.color; ctx.shadowBlur = sp('glowGlow'); ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   glass: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   retro: (line, cx, y) => {
-    ctx.fillStyle = '#FF2E88'; drawWords(line, cx, y, 10, 10);
-    ctx.fillStyle = '#22D3EE'; drawWords(line, cx, y, -6, -6);
+    const v = sp('retroOffset');
+    ctx.fillStyle = '#FF2E88'; drawWords(line, cx, y, v, v);
+    ctx.fillStyle = '#22D3EE'; drawWords(line, cx, y, -0.6 * v, -0.6 * v);
     ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   shadow: (line, cx, y) => {
-    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 12;
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = sp('shadowBlur'); ctx.shadowOffsetY = sp('shadowOffset');
     ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   gradient: (line, cx, y, lw) => {
-    ctx.fillStyle = textGradient(cx, lw, [[0, '#ff2e88'], [0.5, '#ff7a3d'], [1, '#f4d93e']]);
+    ctx.fillStyle = textGradient(cx, lw, [[0, sp('gradientC1')], [1, sp('gradientC2')]]);
     drawWords(line, cx, y);
   },
   stroke: (line, cx, y, lw, fs) => {
-    strokeWords(line, cx, y, '#111111', fs * 0.14);
+    strokeWords(line, cx, y, '#111111', fs * (sp('strokeWidth') / 100));
     ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   brush: (line, cx, y, lw, fs) => {
-    ctx.save(); ctx.translate(cx, y); ctx.rotate(-0.03);
+    ctx.save(); ctx.translate(cx, y); ctx.rotate((sp('brushTilt') * Math.PI) / 180);
     ctx.fillStyle = state.styleColor;
     roundRect(-lw / 2 - 30, -fs * 0.62, lw + 60, fs * 1.24, state.borderRadius); ctx.fill(); ctx.restore();
     ctx.fillStyle = contrastText(state.styleColor); drawWords(line, cx, y);
   },
   pastille: (line, cx, y, lw, fs) => {
-    strokeWords(line, cx, y, '#7c3aed', fs * 0.1);
+    strokeWords(line, cx, y, '#7c3aed', fs * (sp('pastilleStroke') / 100));
     ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   round: (line, cx, y, lw, fs) => {
     ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
-    strokeWords(line, cx, y, '#ffffff', fs * 0.08);
+    strokeWords(line, cx, y, '#ffffff', fs * (sp('roundStroke') / 100));
     ctx.fillStyle = state.color; drawWords(line, cx, y);
   },
   arcadia: (line, cx, y, lw, fs) => {
     strokeWords(line, cx, y, '#ffffff', fs * 0.06);
-    ctx.fillStyle = textGradient(cx, lw, [[0, '#ff7a18'], [1, '#ff2e63']]);
+    ctx.fillStyle = textGradient(cx, lw, [[0, sp('arcadiaC1')], [1, sp('arcadiaC2')]]);
     drawWords(line, cx, y);
   },
   underline: (line, cx, y, lw, fs) => {
     ctx.fillStyle = state.color; drawWords(line, cx, y);
+    const uw = sp('underlineWidth');
     ctx.save(); ctx.fillStyle = textGradient(cx, lw, [[0, '#7c3aed'], [1, '#2563eb']]);
-    roundRect(cx - lw / 2, y + fs * 0.58, lw, 8, 4); ctx.fill(); ctx.restore();
+    roundRect(cx - lw / 2, y + fs * 0.58, lw, uw, Math.min(4, uw / 2)); ctx.fill(); ctx.restore();
   },
   pixel: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   quotes: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   winter: (line, cx, y) => {
-    ctx.shadowColor = state.color; ctx.shadowBlur = 30; ctx.fillStyle = state.color;
+    ctx.shadowColor = state.color; ctx.shadowBlur = sp('winterGlow'); ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   rosseta: (line, cx, y, lw, fs) => {
     ctx.font = `300 ${fs}px ${fontFamily()}`;
-    strokeWords(line, cx, y, '#a7f3d0', 2.5);
+    strokeWords(line, cx, y, '#a7f3d0', sp('rossetaStroke'));
   },
 };
 
@@ -328,7 +420,7 @@ function draw() {
     const pad = 48;
     const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
     ctx.save();
-    ctx.fillStyle = hexAlpha(state.styleColor, 0.16);
+    ctx.fillStyle = hexAlpha(state.styleColor, sp('glassOpacity') / 100);
     ctx.strokeStyle = hexAlpha(state.styleColor, 0.55);
     ctx.lineWidth = 3;
     roundRect(cx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, state.borderRadius);
@@ -385,7 +477,7 @@ function draw() {
   // device space, after the rotation transform is restored.
   if (state.style === 'pixel') {
     const maxLw = Math.max(...lines.map((l) => lineWidth(l)));
-    const cell = 6;
+    const cell = sp('pixelSize');
     const px = Math.max(0, cx - maxLw / 2 - 40);
     const py = Math.max(0, h / 2 - blockH / 2 - 40);
     const pw = Math.min(w - px, maxLw + 80);
@@ -442,8 +534,67 @@ function buildFontPicker() {
 }
 
 function buildStylePicker() {
-  buildCardPicker($('stylePicker'), STYLES, state.style, (id) => { state.style = id; redraw(); },
+  buildCardPicker($('stylePicker'), STYLES, state.style, (id) => { state.style = id; renderStyleControls(); redraw(); },
     (item) => `<span class="sample-${item.id}">متن شما</span>`);
+}
+
+// Build the «تنظیمات این استایل» controls for the current style.
+// Rebuilt on style change, on opening the sheet, and on applying a
+// saved design — so the sheet always shows the current style's knobs.
+function renderStyleControls() {
+  const wrap = $('styleControls');
+  wrap.innerHTML = '';
+  const controls = STYLE_CONTROLS[state.style] || [];
+  if (!controls.length) {
+    const p = document.createElement('p');
+    p.className = 'sheet-note';
+    p.textContent = 'برای این استایل تنظیم جداگانه‌ای نیست.';
+    wrap.appendChild(p);
+    return;
+  }
+  for (const c of controls) {
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    const head = document.createElement('div');
+    head.className = 'slider-head';
+    const label = document.createElement('span');
+    label.textContent = c.label;
+    const value = document.createElement('span');
+    value.className = 'slider-value';
+    head.append(label, value);
+    row.appendChild(head);
+    const val = sp(c.key);
+    if (c.type === 'range') {
+      value.textContent = val + (c.unit || '');
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = c.min; input.max = c.max; input.step = c.step; input.value = val;
+      input.setAttribute('aria-label', c.label);
+      input.addEventListener('input', (e) => {
+        const v = Number(e.target.value);
+        state.styleParams[c.key] = v;
+        value.textContent = v + (c.unit || '');
+        redraw();
+      });
+      row.appendChild(input);
+    } else {
+      value.textContent = String(val).toUpperCase();
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.className = 'style-color-input';
+      input.value = val;
+      input.style.background = val;
+      input.setAttribute('aria-label', c.label);
+      input.addEventListener('input', (e) => {
+        state.styleParams[c.key] = e.target.value;
+        input.style.background = e.target.value;
+        value.textContent = e.target.value.toUpperCase();
+        redraw();
+      });
+      row.appendChild(input);
+    }
+    wrap.appendChild(row);
+  }
 }
 
 function buildSwatches() {
@@ -491,6 +642,7 @@ function applyDesign(d) {
   state.rotY = clampNum(d.rotY, -45, 45, 0);
   state.styleColor = typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor) ? d.styleColor : '#F4D93E';
   state.borderRadius = clampNum(d.borderRadius, 0, 40, 18);
+  state.styleParams = sanitizeStyleParams(d.styleParams);
   textInput.value = state.text;
   $('colorPicker').value = state.color;
   $('aspectBtn').textContent = state.aspect === '9:16' ? '۹:۱۶' : '۱:۱';
@@ -499,6 +651,7 @@ function applyDesign(d) {
   buildFontPicker();
   buildStylePicker();
   buildSwatches();
+  renderStyleControls();
   updateDoneBtn();
   redraw();
   switchTab('font');
@@ -639,6 +792,7 @@ async function saveDesign() {
       rotY: state.rotY,
       styleColor: state.styleColor,
       borderRadius: state.borderRadius,
+      styleParams: state.styleParams,
     });
     setStatus(`ذخیره شد (شماره ${res?.id ?? '؟'})`);
     await loadRecents();
@@ -688,7 +842,7 @@ $('saveGallery').addEventListener('click', () => {
 $('saveBtn').addEventListener('click', saveDesign);
 
 // --- Text settings sheet ---
-function openSettings() { $('settingsSheet').hidden = false; }
+function openSettings() { renderStyleControls(); $('settingsSheet').hidden = false; }
 function closeSettings() { $('settingsSheet').hidden = true; }
 $('settingsBtn').addEventListener('click', openSettings);
 $('settingsClose').addEventListener('click', closeSettings);
