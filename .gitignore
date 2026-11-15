@@ -1,6 +1,9 @@
 # Licensed fonts — never commit (see README "Fonts")
 web/fonts/
 
+# Bot owner ID — local only, never commit (see README "Admin panel")
+tgcloud/lib/owner.js
+
 # Telegram Serverless deploy credentials (per-machine, never shared)
 .tgcloud/
 
