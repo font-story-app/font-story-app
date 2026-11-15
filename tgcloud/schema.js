@@ -35,6 +35,10 @@ export const designs = table('designs', {
   // box styles, and the box's corner radius (px).
   styleColor: text('style_color').notNull().default('#F4D93E'),
   borderRadius: real('border_radius').notNull().default(18),
+  // Per-style extras (added 2026-11-15): JSON object, e.g.
+  // {"neonGlow": 60, "gradientC1": "#ff2e88"} — only keys the user
+  // touched are stored; the front-end falls back to each default.
+  styleParams: text('style_params').notNull().default('{}'),
   createdAt: integer('created_at').default(sql`(unixepoch())`),
 }, (t) => ({
   userIdx: index('idx_designs_user').on(t.userId),
