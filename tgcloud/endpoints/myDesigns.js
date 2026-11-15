@@ -32,6 +32,8 @@ export default async function (_input, ctx) {
       lineHeight: r.lineHeight,
       rotX: r.rotX,
       rotY: r.rotY,
+      styleColor: r.styleColor,
+      borderRadius: r.borderRadius,
       created_at: r.createdAt,
     })),
   };
