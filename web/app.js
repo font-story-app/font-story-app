@@ -134,19 +134,26 @@ function lineWidth(line) {
 }
 
 function wrapLines(text, maxWidth) {
-  const words = text.split(/\s+/);
+  // \n is a hard break: wrap each paragraph on its own and keep empty
+  // lines, so Enter in the editor really moves to the next line.
+  // (The old version split on /\s+/, which treats \n like a space and
+  // re-flowed everything onto one line — that was the bug.)
   const lines = [];
-  let line = '';
-  for (const w of words) {
-    const test = line ? line + ' ' + w : w;
-    if (lineWidth(test) > maxWidth && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
+  for (const para of text.split('\n')) {
+    const words = para.split(/\s+/).filter((w) => w !== '');
+    if (!words.length) { lines.push(''); continue; }
+    let line = '';
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w;
+      if (lineWidth(test) > maxWidth && line) {
+        lines.push(line);
+        line = w;
+      } else {
+        line = test;
+      }
     }
+    if (line) lines.push(line);
   }
-  if (line) lines.push(line);
   return lines.length ? lines : [''];
 }
 
