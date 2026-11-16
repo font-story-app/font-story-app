@@ -229,12 +229,14 @@ hintClose?.addEventListener('click', (e) => {
   try { localStorage.setItem('fontstory:hintDismissed', '1'); } catch { /* private mode */ }
 });
 
-function setStatus(msg) {
+function setStatus(msg, sticky) {
   if (!msg) { statusEl.hidden = true; return; }
   statusEl.textContent = msg;
   statusEl.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { statusEl.hidden = true; }, 2600);
+  // Sticky toasts (e.g. "sending…") stay up until the next status
+  // replaces them, so a slow request never looks like it vanished.
+  if (!sticky) toastTimer = setTimeout(() => { statusEl.hidden = true; }, 2600);
 }
 function inTelegram() { return typeof Telegram !== 'undefined' && Telegram.WebApp; }
 
@@ -1118,11 +1120,49 @@ async function copyPng() {
   try {
     const blob = await canvasBlob();
     if (!blob) throw new Error('ساخت PNG ناموفق بود');
+    if (!imageClipboardSupported()) {
+      // Android has no image clipboard: the write call can even resolve
+      // while nothing lands on the system clipboard, so the user sees
+      // "copied" and finds nothing to paste. Offer the native share
+      // sheet instead — the user picks Instagram / Telegram / WhatsApp.
+      try {
+        if (await sharePng(blob)) { setStatus('استیکر به اشتراک گذاشته شد.'); return; }
+      } catch (e) {
+        if (e && e.name === 'AbortError') return; // user closed the sheet
+        // Any other share error: fall through to the chat fallback.
+      }
+      // No share sheet (or it failed): send the PNG to the bot chat,
+      // where it can be saved with Telegram's own menu.
+      await sendToChat();
+      return;
+    }
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
     setStatus('استیکر کپی شد — حالا توی برنامه Paste کن.');
   } catch (e) {
     setStatus('کپی نشد: ' + (e.message || e));
   }
+}
+
+// Can this browser actually put a PNG on the system clipboard?
+// ClipboardItem.supports('image/png') is false on Android (the platform
+// has no image clipboard); older WebViews without supports() fall back
+// to the UA check — desktop browsers can copy images, Android cannot.
+function imageClipboardSupported() {
+  if (typeof ClipboardItem !== 'undefined' && typeof ClipboardItem.supports === 'function') {
+    try { return ClipboardItem.supports('image/png'); } catch (e) { /* fall through */ }
+  }
+  return !/Android/i.test(navigator.userAgent);
+}
+
+// Android share sheet with the PNG as a file. Returns true when a share
+// completed, false when the sheet is not available on this device.
+async function sharePng(blob) {
+  const file = new File([blob], 'fontstory.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ files: [file] });
+    return true;
+  }
+  return false;
 }
 
 async function downloadPng() {
@@ -1152,9 +1192,18 @@ function blobToBase64(blob) {
   });
 }
 
+let sendingToChat = false;
 async function sendToChat() {
+  // One send at a time: rapid taps used to fire several sendDocument
+  // calls and Telegram's flood control dropped all but one, so the user
+  // saw "tap tap tap, one arrives". The button stays disabled until
+  // this send finishes, and the progress toast stays up (sticky).
+  if (sendingToChat) return;
+  sendingToChat = true;
+  const galleryBtn = $('saveGallery');
+  if (galleryBtn) galleryBtn.disabled = true;
   try {
-    setStatus('در حال فرستادن استیکر به چت…');
+    setStatus('در حال فرستادن استیکر به چت…', true);
     const blob = await canvasBlob();
     if (!blob) throw new Error('ساخت PNG ناموفق بود');
     if (blob.size > 5 * 1024 * 1024) throw new Error('استیکر خیلی بزرگه');
@@ -1163,6 +1212,9 @@ async function sendToChat() {
     setStatus('استیکر توی چت بات فرستاده شد — بازش کن و «ذخیره در گالری» رو بزن.');
   } catch (e) {
     setStatus('فرستادن نشد: ' + (e.message || e));
+  } finally {
+    sendingToChat = false;
+    if (galleryBtn) galleryBtn.disabled = false;
   }
 }
 
@@ -1302,6 +1354,7 @@ $('bgBtn').addEventListener('click', () => {
   document.body.style.background = bg;
   document.body.classList.toggle('light-bg', bg === '#FFFFFF');
   document.body.classList.toggle('mono-bg', bg === '#000000' || bg === '#FFFFFF');
+  document.body.classList.toggle('dark-bg', bg === '#000000');
   applyDefaultTextColor();
 });
 $('doneBtn').addEventListener('click', openExport);
