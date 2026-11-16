@@ -167,11 +167,14 @@ function sanitizeStyleParams(input) {
 const ASPECTS = { '9:16': [1080, 1920], '1:1': [1080, 1080] };
 
 // Poufi-style background gradients (pink-orange default, cycles on tap).
+// Black and white are solid colours, not gradients — same list, same cycle.
 const BACKGROUNDS = [
   'linear-gradient(180deg, #ff3b5c 0%, #ff7a3d 100%)',
   'linear-gradient(180deg, #3b82f6 0%, #06b6d4 100%)',
   'linear-gradient(180deg, #8b5cf6 0%, #ec4899 100%)',
   'linear-gradient(180deg, #0ea47a 0%, #84cc16 100%)',
+  '#000000',
+  '#FFFFFF',
 ];
 
 const state = {
@@ -581,6 +584,46 @@ function draw() {
     ctx.drawImage(off, 0, 0, off.width, off.height, px, py, pw, ph);
     ctx.imageSmoothingEnabled = true;
   }
+
+  syncEditorLayout(fontSize, lineHeight, blockH);
+}
+
+// Keep the (invisible) editor's text laid out exactly where the canvas
+// draws it, so the native selection highlight — and the iOS selection
+// handles — land on the visible text instead of at the top of the field.
+// The textarea keeps transparent text and background; only its highlight
+// and caret geometry matter. The canvas text area is 920 of the 1080
+// canvas pixels wide (80px margins), centred; the same transform as the
+// canvas rotation is applied around the block centre.
+function syncEditorLayout(fontSize, lineHeight, blockH) {
+  if (!canvas.clientWidth) return;
+  const scale = canvas.clientWidth / 1080;
+  const fs = fontSize * scale;
+  const lh = lineHeight * scale;
+  const blockTop = (canvas.clientHeight - blockH * scale) / 2;
+  const s = textInput.style;
+  s.boxSizing = 'border-box';
+  s.top = `${canvas.offsetTop}px`;
+  s.left = `${canvas.offsetLeft + 80 * scale}px`;
+  s.right = 'auto';
+  s.bottom = 'auto';
+  s.width = `${920 * scale}px`;
+  s.height = `${canvas.clientHeight}px`;
+  s.paddingTop = `${Math.max(0, blockTop)}px`;
+  s.paddingLeft = '0px';
+  s.paddingRight = '0px';
+  s.paddingBottom = '0px';
+  s.fontSize = `${fs}px`;
+  s.lineHeight = `${lh}px`;
+  s.fontFamily = fontFamily();
+  s.fontWeight = String(state.weight);
+  s.letterSpacing = `${state.letterSpacing * scale}px`;
+  s.wordSpacing = `${state.wordSpacing * scale}px`;
+  s.textAlign = 'center';
+  const cosY = Math.cos((state.rotY * Math.PI) / 180);
+  const cosX = Math.cos((state.rotX * Math.PI) / 180);
+  s.transform = `scale(${cosY}, ${cosX})`;
+  s.transformOrigin = `${canvas.clientWidth / 2 - 80 * scale}px ${canvas.clientHeight / 2}px`;
 }
 
 function redraw() {
@@ -836,6 +879,17 @@ function renderStyleControls() {
     }
     wrap.appendChild(row);
   }
+}
+
+// The default text colour follows the background — white text on dark
+// backgrounds, dark text on white — until the user picks a colour
+// themselves in the رنگ tab (then their pick is never overridden).
+function applyDefaultTextColor() {
+  if (state.colorTouched) return;
+  state.color = BACKGROUNDS[state.bg] === '#FFFFFF' ? '#1F2421' : '#FFFFFF';
+  $('colorPicker').value = state.color;
+  buildSwatches();
+  redraw();
 }
 
 function buildSwatches() {
@@ -1116,6 +1170,7 @@ $('aspectBtn').addEventListener('click', () => {
 $('bgBtn').addEventListener('click', () => {
   state.bg = (state.bg + 1) % BACKGROUNDS.length;
   document.body.style.background = BACKGROUNDS[state.bg];
+  applyDefaultTextColor();
 });
 $('doneBtn').addEventListener('click', openExport);
 $('exportClose').addEventListener('click', closeExport);
