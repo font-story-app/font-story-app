@@ -17,11 +17,15 @@ const ADMIN_KEYBOARD = {
   inline_keyboard: [
     [{ text: '📊 آمار', callback_data: 'admin:stats' }],
     [{ text: '📣 پیام همگانی', callback_data: 'admin:broadcast' }],
+    [{ text: '🚪 خروج از پنل', callback_data: 'admin:exit' }],
   ],
 };
 
 const BACK_KEYBOARD = {
-  inline_keyboard: [[{ text: '↩ بازگشت به پنل', callback_data: 'admin:panel' }]],
+  inline_keyboard: [
+    [{ text: '↩ بازگشت به پنل', callback_data: 'admin:panel' }],
+    [{ text: '🚪 خروج از پنل', callback_data: 'admin:exit' }],
+  ],
 };
 
 export const PANEL_TEXT =
