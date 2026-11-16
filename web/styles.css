@@ -11,6 +11,14 @@
 @font-face { font-family: 'Yekan Bakh NoEn'; src: url('fonts/YekanBakhNoEn-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
 @font-face { font-family: 'Yekan Bakh NoEn'; src: url('fonts/YekanBakhNoEn-ExtraBold.woff2') format('woff2'); font-weight: 800; font-display: swap; }
 @font-face { font-family: 'Yekan Bakh NoEn'; src: url('fonts/YekanBakhNoEn-Black.woff2') format('woff2'); font-weight: 900; font-display: swap; }
+/* Kara + Molsaq (Ghalamoom article, 2026-11-16): downloaded from the
+   article, converted TTF -> WOFF2. Molsaq's name tables were broken
+   (each file claimed its style as the family), so they were fixed into
+   one family 'Molsaq Arabic' with real weights 200/300/800. */
+@font-face { font-family: 'SG Kara'; src: url('fonts/SGKara-Light.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Molsaq Arabic'; src: url('fonts/MolsaqArabic-ExtraLight.woff2') format('woff2'); font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Molsaq Arabic'; src: url('fonts/MolsaqArabic-Light.woff2') format('woff2'); font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Molsaq Arabic'; src: url('fonts/MolsaqArabic-ExtraBold.woff2') format('woff2'); font-weight: 800; font-display: swap; }
 
 :root { color-scheme: dark; }
 
