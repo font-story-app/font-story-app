@@ -232,6 +232,16 @@ body.light-bg .brand-title { color: #1F2421; }
   cursor: pointer;
 }
 
+/* While the keyboard is open on mobile, the viewport shrinks and the
+   canvas (height-constrained) shrinks with it, so the text turns tiny.
+   Hiding the bottom sheet while editing gives the canvas its room back. */
+body.editing .sheet { display: none; }
+
+/* Clear-text button: red while armed (first tap), dimmed when the text
+   is already empty. */
+.round-btn.armed { background: rgba(230, 72, 63, 0.9); }
+.round-btn:disabled { opacity: 0.45; cursor: default; }
+
 /* --- Bottom sheet --- */
 .sheet {
   background: rgba(43, 30, 24, 0.92);
