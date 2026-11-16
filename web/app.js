@@ -90,7 +90,9 @@ const STYLE_CONTROLS = {
     { key: 'brushTilt', label: 'کجی قلم‌مو', type: 'range', min: -10, max: 10, step: 1, def: -2, unit: '°' },
   ],
   underline: [
-    { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 2, max: 20, step: 1, def: 8, unit: 'px' },
+    { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 2, max: 40, step: 1, def: 8, unit: 'px' },
+    { key: 'underlineC1', label: 'رنگ اول خط زیر', type: 'color', def: '#7C3AED' },
+    { key: 'underlineC2', label: 'رنگ دوم خط زیر', type: 'color', def: '#2563EB' },
   ],
   pixel: [
     { key: 'pixelSize', label: 'اندازه پیکسل', type: 'range', min: 2, max: 12, step: 1, def: 6, unit: 'px' },
@@ -378,7 +380,7 @@ const STYLE_PAINT = {
   underline: (line, cx, y, lw, fs) => {
     ctx.fillStyle = state.color; drawWords(line, cx, y);
     const uw = sp('underlineWidth');
-    ctx.save(); ctx.fillStyle = textGradient(cx, lw, [[0, '#7c3aed'], [1, '#2563eb']]);
+    ctx.save(); ctx.fillStyle = textGradient(cx, lw, [[0, sp('underlineC1')], [1, sp('underlineC2')]]);
     roundRect(cx - lw / 2, y + fs * 0.58, lw, uw, Math.min(4, uw / 2)); ctx.fill(); ctx.restore();
   },
   pixel: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
