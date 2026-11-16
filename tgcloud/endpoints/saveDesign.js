@@ -37,7 +37,7 @@ const STYLE_PARAMS = {
   underlineC2: { color: true },
   pixelSize: { min: 2, max: 12 },
   stickerOutline: { min: 5, max: 20 },
-  stickerMaroon: { min: 0, max: 60 },
+  stickerShadow: { min: 0, max: 40 },
 };
 
 function sanitizeStyleParams(input) {
