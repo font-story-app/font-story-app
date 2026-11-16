@@ -187,7 +187,7 @@ const state = {
   // until the user does — so the default stay readable, but the text
   // colour becomes changeable the moment they pick one.
   colorTouched: false,
-  aspect: '9:16',
+  aspect: '1:1',
   size: 110,
   bg: 0,
   caret: false,
@@ -1007,7 +1007,6 @@ function applyDesign(d) {
   state.styleParams = sanitizeStyleParams(d.styleParams);
   textInput.value = state.text;
   $('colorPicker').value = state.color;
-  $('aspectBtn').textContent = state.aspect === '9:16' ? '۹:۱۶' : '۱:۱';
   $('canvasWrap').classList.toggle('square', state.aspect === '1:1');
   syncSettingsUI();
   fontFilter = fontLang(state.font); // show the applied font's group
@@ -1343,12 +1342,6 @@ $('colorPicker').addEventListener('input', (e) => {
   state.colorTouched = true;
   document.querySelectorAll('.swatch').forEach((x) => x.classList.remove('active'));
   document.querySelector('.swatch.rainbow')?.classList.add('active');
-  redraw();
-});
-$('aspectBtn').addEventListener('click', () => {
-  state.aspect = state.aspect === '9:16' ? '1:1' : '9:16';
-  $('aspectBtn').textContent = state.aspect === '9:16' ? '۹:۱۶' : '۱:۱';
-  $('canvasWrap').classList.toggle('square', state.aspect === '1:1');
   redraw();
 });
 $('bgBtn').addEventListener('click', () => {
