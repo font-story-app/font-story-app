@@ -57,4 +57,23 @@ export default async function (callbackQuery) {
     });
     return;
   }
+
+  if (data === 'admin:exit') {
+    await api.answerCallbackQuery({
+      callback_query_id: callbackQuery.id,
+      text: 'پنل بسته شد.',
+    });
+    // Delete the panel message; if Telegram refuses (e.g. too old),
+    // replace it with a short closed note instead.
+    try {
+      await api.deleteMessage({ chat_id: chatId, message_id: messageId });
+    } catch {
+      await api.editMessageText({
+        chat_id: chatId,
+        message_id: messageId,
+        text: '🛠 پنل مدیریت بسته شد.',
+      });
+    }
+    return;
+  }
 }
