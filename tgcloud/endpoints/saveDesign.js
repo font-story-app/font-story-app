@@ -32,7 +32,9 @@ const STYLE_PARAMS = {
   roundStroke: { min: 4, max: 16 },
   rossetaStroke: { min: 1, max: 8 },
   brushTilt: { min: -10, max: 10 },
-  underlineWidth: { min: 2, max: 20 },
+  underlineWidth: { min: 2, max: 40 },
+  underlineC1: { color: true },
+  underlineC2: { color: true },
   pixelSize: { min: 2, max: 12 },
   stickerOutline: { min: 8, max: 30 },
 };
