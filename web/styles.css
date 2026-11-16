@@ -214,8 +214,11 @@ body.light-bg .brand-title { color: #1F2421; }
   align-items: center;
   gap: 6px;
   color: #fff;
-  /* Dark chip so the white A+/A− labels and the slider stay readable
-     on any background, including the white one. */
+}
+/* The dark chip behind the size rail shows only on the solid black and
+   white backgrounds, where the white labels need it. On the gradients
+   the rail stays bare. */
+body.mono-bg .size-rail {
   background: rgba(0,0,0,0.35);
   border-radius: 999px;
   padding: 8px 4px;
