@@ -5,7 +5,7 @@
 <h1 align="center">FontStory</h1>
 
 <p align="center">
-  <b>فونت استوری فارسی</b> — Persian story-font &amp; text-styling Telegram Mini App
+  <b>متنت رو بنویس، فونت و استایلش رو انتخاب کن و به‌ صورت عکس شفاف برای استوری ذخیره کن</b>
 </p>
 
 <p align="center">
@@ -13,20 +13,22 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
-> Type → pick a font, style and colour → export a transparent PNG sticker for your story. No watermark, no login, no forced join.
-
 ## Try it
 
 Open [@FontStory_bot](https://t.me/FontStory_bot) and send `/start`.
 
 ## Features
 
-- Live canvas preview — the text IS the preview, tap it to type
-- 9 fonts · 30 text styles · 6 colour presets + custom picker
-- Text settings: font weight, letter spacing, word spacing, line height, X/Y rotation
-- 9:16 story and 1:1 square export · 4 gradient backgrounds
-- Transparent PNG export — copy to clipboard (Instagram / Telegram / WhatsApp) or save to gallery (inside Telegram the file goes through the bot chat, because the in-app WebView ignores `<a download>`)
-- Save designs as templates, reopen them from recents
+1️⃣ کاملا رایگان 🆓
+2️⃣ بدون تبلیغات 📢
+3️⃣ بدون ثبت نام 🤝
+4️⃣ بدون عضویت اجباری 👤
+5️⃣ بدون اشتراک 💵
+6️⃣ بدون واترمارک‌ ❌
+7️⃣ متن باز ✅
+8️⃣ بر پایه فضای ابری تلگرام ☁️
+9️⃣ فونت های پرمیوم ⭐️
+🔟 پشتیبانی 🫂
 
 ## Admin panel (bot owner only)
 
