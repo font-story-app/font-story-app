@@ -122,17 +122,19 @@ body.light-bg .brand-title { color: #1F2421; }
   padding: 8px 14px;
 }
 .canvas-wrap {
-  height: 100%;
-  max-height: 100%;
-  aspect-ratio: 9 / 16;
+  /* No fixed height and no aspect-ratio here: the wrap shrink-wraps the
+     canvas, whose intrinsic size draw() sets from the aspect (1080x1080
+     or 1080x1920), so the ratio always holds. (height: 100% + max-width
+     used to defeat the square ratio: the height stayed full-stage while
+     the width was clamped, so a "square" canvas still rendered tall.) */
   max-width: 100%;
+  max-height: 100%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: text;
 }
-.canvas-wrap.square { aspect-ratio: 1 / 1; }
 #preview { max-width: 100%; max-height: 100%; width: auto; height: auto; }
 .hint-pill {
   position: absolute;
