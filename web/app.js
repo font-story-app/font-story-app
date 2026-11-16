@@ -20,6 +20,11 @@ const FONTS = [
   { id: 'Sahel', label: 'ساحل', family: "'Sahel', sans-serif", lang: 'fa', lazy: true, gname: 'Sahel', cssUrl: 'https://cdn.jsdelivr.net/gh/rastikerdar/sahel-font@master/dist/font-face.css', weights: [300, 400, 600, 700, 900] },
   { id: 'Samim', label: 'صمیم', family: "'Samim', sans-serif", lang: 'fa', lazy: true, gname: 'Samim', cssUrl: 'https://cdn.jsdelivr.net/gh/rastikerdar/samim-font@master/dist/font-face.css', weights: [400, 500, 700] },
   { id: 'Gandom', label: 'گندم', family: "'Gandom', sans-serif", lang: 'fa', lazy: true, gname: 'Gandom', cssUrl: 'https://cdn.jsdelivr.net/gh/rastikerdar/gandom-font@master/dist/font-face.css', weights: [400] },
+  // Self-hosted (downloaded from Ghalamoom, converted TTF -> WOFF2 into
+  // web/fonts/ — local only, NOT in the repo, served by tgcloud static
+  // hosting like the 3 bought fonts).
+  { id: 'SGKara', label: 'کارا', family: "'SG Kara', sans-serif", lang: 'fa' },
+  { id: 'MolsaqArabic', label: 'ملصق', family: "'Molsaq Arabic', sans-serif", lang: 'fa' },
   // English fonts (Google Fonts, lazy-loaded — see ensureLazyFont):
   // nothing is fetched until the card scrolls into view or the font is
   // picked, so the first paint stays light. `css` is the css2 family
