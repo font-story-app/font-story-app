@@ -200,7 +200,10 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('preview');
-const ctx = canvas.getContext('2d');
+let ctx = canvas.getContext('2d');
+// NOTE: `ctx` is `let`, not `const` — paintStickerSamples() temporarily
+// swaps it to a card's small canvas so the sticker preview is painted
+// with the real sticker code (restored in a finally).
 const statusEl = $('status');
 const textInput = $('textInput');
 let toastTimer = null;
@@ -576,9 +579,10 @@ function draw() {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(draw);
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); });
   }
   draw();
+  paintStickerSamples();
 }
 
 // Caret blink.
@@ -721,7 +725,51 @@ function fontCard(item, favs) {
 
 function buildStylePicker() {
   buildCardPicker($('stylePicker'), STYLES, state.style, (id) => { state.style = id; renderStyleControls(); redraw(); },
-    (item) => `<span class="sample-${item.id}">متن شما</span>`);
+    (item) => item.id === 'sticker'
+      // The sticker card is a real canvas (see paintStickerSamples):
+      // a CSS text-shadow approximation can never match the output —
+      // the white ring wraps the maroon extrusion, which text-shadow
+      // cannot express — so the old preview looked like a blob.
+      ? '<canvas class="sample-canvas" width="184" height="54"></canvas>'
+      : `<span class="sample-${item.id}">متن شما</span>`);
+}
+
+// Paint every sticker card preview with the REAL sticker code
+// (STYLE_PAINT.sticker) on its small canvas — same font, weight and
+// sticker knobs as the main canvas, just smaller. Called from redraw(),
+// so it follows every font/weight/knob change and every picker rebuild.
+function paintStickerSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // Fit «متن شما» into the canvas, leaving room for the white
+        // ring (30% of fs) and the maroon offset (25% of fs).
+        let fs = Math.floor(H * 0.42);
+        const setFont = (s) => {
+          ctx.font = `${state.weight} ${s}px ${fontFamily()}`;
+          if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        };
+        setFont(fs);
+        const maxW = W * 0.82;
+        while (fs > 10 && lineWidth('متن شما') > maxW) { fs -= 1; setFont(fs); }
+        STYLE_PAINT.sticker('متن شما', W / 2, H / 2 + fs * 0.06, lineWidth('متن شما'), fs);
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-sticker';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
 }
 
 // Build the «تنظیمات این استایل» controls for the current style.
