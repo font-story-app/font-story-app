@@ -224,6 +224,9 @@ body.mono-bg .size-rail {
   padding: 8px 4px;
   backdrop-filter: blur(6px);
 }
+/* On the black background a dark chip is invisible, so the chip is light
+   grey there instead — it must actually be seen on both solid colours. */
+body.dark-bg .size-rail { background: rgba(255,255,255,0.16); }
 .size-mark { font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 .size-value { font-size: 14px; font-weight: 800; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 #sizeRange {
@@ -238,7 +241,7 @@ body.mono-bg .size-rail {
 /* While the keyboard is open on mobile, the viewport shrinks and the
    canvas (height-constrained) shrinks with it, so the text turns tiny.
    Hiding the bottom sheet while editing gives the canvas its room back. */
-body.editing .sheet { display: none; }
+body.editing .sheet, body.editing .tabbar { display: none; }
 
 /* Clear-text button: red while armed (first tap), dimmed when the text
    is already empty. */
@@ -510,6 +513,7 @@ body.editing .sheet { display: none; }
   font-weight: 700;
   cursor: pointer;
 }
+.export-btn:disabled { opacity: .55; }
 .export-btn.ig { background: #fff; color: #000; }
 .export-btn.tg { background: #229ed9; color: #fff; }
 .export-btn.wa { background: #25d366; color: #fff; }
