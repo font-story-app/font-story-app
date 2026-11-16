@@ -13,23 +13,30 @@ const FONTS = [
   { id: 'Estedad', label: 'استعداد', family: "'Estedad', sans-serif", lang: 'fa' },
   { id: 'Parastoo', label: 'پرستو', family: "'Parastoo', sans-serif", lang: 'fa' },
   { id: 'Amiri', label: 'امیری', family: "'Amiri', serif", lang: 'fa' },
-  // English fonts (Google Fonts, lazy-loaded — see ensureGoogleFont):
+  // From the Ghalamoom «best free Persian fonts» list (2026-11-16): the
+  // four rastikerdar fonts, lazy-loaded from their jsDelivr font-face.css
+  // (same pattern as Vazir). Weights are the faces each CSS declares.
+  { id: 'Shabnam', label: 'شبنم', family: "'Shabnam', sans-serif", lang: 'fa', lazy: true, gname: 'Shabnam', cssUrl: 'https://cdn.jsdelivr.net/gh/rastikerdar/shabnam-font@master/dist/font-face.css', weights: [100, 300, 400, 500, 700] },
+  { id: 'Sahel', label: 'ساحل', family: "'Sahel', sans-serif", lang: 'fa', lazy: true, gname: 'Sahel', cssUrl: 'https://cdn.jsdelivr.net/gh/rastikerdar/sahel-font@master/dist/font-face.css', weights: [300, 400, 600, 700, 900] },
+  { id: 'Samim', label: 'صمیم', family: "'Samim', sans-serif", lang: 'fa', lazy: true, gname: 'Samim', cssUrl: 'https://cdn.jsdelivr.net/gh/rastikerdar/samim-font@master/dist/font-face.css', weights: [400, 500, 700] },
+  { id: 'Gandom', label: 'گندم', family: "'Gandom', sans-serif", lang: 'fa', lazy: true, gname: 'Gandom', cssUrl: 'https://cdn.jsdelivr.net/gh/rastikerdar/gandom-font@master/dist/font-face.css', weights: [400] },
+  // English fonts (Google Fonts, lazy-loaded — see ensureLazyFont):
   // nothing is fetched until the card scrolls into view or the font is
   // picked, so the first paint stays light. `css` is the css2 family
   // param, `weights` the faces we load, `sample` the Latin preview text
   // (these faces have no Persian glyphs).
-  { id: 'Poppins', label: 'Poppins', family: "'Poppins', sans-serif", lang: 'en', google: true, gname: 'Poppins', css: 'family=Poppins:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
-  { id: 'Montserrat', label: 'Montserrat', family: "'Montserrat', sans-serif", lang: 'en', google: true, gname: 'Montserrat', css: 'family=Montserrat:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
-  { id: 'BebasNeue', label: 'Bebas Neue', family: "'Bebas Neue', sans-serif", lang: 'en', google: true, gname: 'Bebas Neue', css: 'family=Bebas+Neue', weights: [400], sample: 'Your text' },
-  { id: 'Anton', label: 'Anton', family: "'Anton', sans-serif", lang: 'en', google: true, gname: 'Anton', css: 'family=Anton', weights: [400], sample: 'Your text' },
-  { id: 'Oswald', label: 'Oswald', family: "'Oswald', sans-serif", lang: 'en', google: true, gname: 'Oswald', css: 'family=Oswald:wght@400;600;700', weights: [400, 600, 700], sample: 'Your text' },
-  { id: 'PlayfairDisplay', label: 'Playfair Display', family: "'Playfair Display', serif", lang: 'en', google: true, gname: 'Playfair Display', css: 'family=Playfair+Display:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
-  { id: 'DancingScript', label: 'Dancing Script', family: "'Dancing Script', cursive", lang: 'en', google: true, gname: 'Dancing Script', css: 'family=Dancing+Script:wght@400;700', weights: [400, 700], sample: 'Your text' },
-  { id: 'Lobster', label: 'Lobster', family: "'Lobster', cursive", lang: 'en', google: true, gname: 'Lobster', css: 'family=Lobster', weights: [400], sample: 'Your text' },
-  { id: 'Pacifico', label: 'Pacifico', family: "'Pacifico', cursive", lang: 'en', google: true, gname: 'Pacifico', css: 'family=Pacifico', weights: [400], sample: 'Your text' },
-  { id: 'Caveat', label: 'Caveat', family: "'Caveat', cursive", lang: 'en', google: true, gname: 'Caveat', css: 'family=Caveat:wght@400;700', weights: [400, 700], sample: 'Your text' },
-  { id: 'ArchivoBlack', label: 'Archivo Black', family: "'Archivo Black', sans-serif", lang: 'en', google: true, gname: 'Archivo Black', css: 'family=Archivo+Black', weights: [400], sample: 'Your text' },
-  { id: 'Rubik', label: 'Rubik', family: "'Rubik', sans-serif", lang: 'en', google: true, gname: 'Rubik', css: 'family=Rubik:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
+  { id: 'Poppins', label: 'Poppins', family: "'Poppins', sans-serif", lang: 'en', lazy: true, gname: 'Poppins', css: 'family=Poppins:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
+  { id: 'Montserrat', label: 'Montserrat', family: "'Montserrat', sans-serif", lang: 'en', lazy: true, gname: 'Montserrat', css: 'family=Montserrat:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
+  { id: 'BebasNeue', label: 'Bebas Neue', family: "'Bebas Neue', sans-serif", lang: 'en', lazy: true, gname: 'Bebas Neue', css: 'family=Bebas+Neue', weights: [400], sample: 'Your text' },
+  { id: 'Anton', label: 'Anton', family: "'Anton', sans-serif", lang: 'en', lazy: true, gname: 'Anton', css: 'family=Anton', weights: [400], sample: 'Your text' },
+  { id: 'Oswald', label: 'Oswald', family: "'Oswald', sans-serif", lang: 'en', lazy: true, gname: 'Oswald', css: 'family=Oswald:wght@400;600;700', weights: [400, 600, 700], sample: 'Your text' },
+  { id: 'PlayfairDisplay', label: 'Playfair Display', family: "'Playfair Display', serif", lang: 'en', lazy: true, gname: 'Playfair Display', css: 'family=Playfair+Display:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
+  { id: 'DancingScript', label: 'Dancing Script', family: "'Dancing Script', cursive", lang: 'en', lazy: true, gname: 'Dancing Script', css: 'family=Dancing+Script:wght@400;700', weights: [400, 700], sample: 'Your text' },
+  { id: 'Lobster', label: 'Lobster', family: "'Lobster', cursive", lang: 'en', lazy: true, gname: 'Lobster', css: 'family=Lobster', weights: [400], sample: 'Your text' },
+  { id: 'Pacifico', label: 'Pacifico', family: "'Pacifico', cursive", lang: 'en', lazy: true, gname: 'Pacifico', css: 'family=Pacifico', weights: [400], sample: 'Your text' },
+  { id: 'Caveat', label: 'Caveat', family: "'Caveat', cursive", lang: 'en', lazy: true, gname: 'Caveat', css: 'family=Caveat:wght@400;700', weights: [400, 700], sample: 'Your text' },
+  { id: 'ArchivoBlack', label: 'Archivo Black', family: "'Archivo Black', sans-serif", lang: 'en', lazy: true, gname: 'Archivo Black', css: 'family=Archivo+Black', weights: [400], sample: 'Your text' },
+  { id: 'Rubik', label: 'Rubik', family: "'Rubik', sans-serif", lang: 'en', lazy: true, gname: 'Rubik', css: 'family=Rubik:wght@400;700;900', weights: [400, 700, 900], sample: 'Your text' },
   // Note: Liana (Poufi's default) is a commercial FontIran font with no
   // public CDN — it is intentionally NOT listed here until Reza buys /
   // self-hosts it. Vazir comes from jsDelivr (not Google Fonts); the other
@@ -605,7 +612,7 @@ function buildFontPicker() {
   // A saved design (or the default) may carry a Google font — make sure
   // it is loaded so the canvas draws it, not the fallback face.
   const current = FONTS.find((f) => f.id === state.font);
-  if (current) ensureGoogleFont(current).then(redraw);
+  if (current) ensureLazyFont(current).then(redraw);
 }
 
 // --- Font favourites + lazy Google Fonts ---
@@ -629,15 +636,17 @@ function toggleFav(id) {
   buildFontPicker();
 }
 
-// Lazy-load a Google font: inject its stylesheet once, then load the
-// faces so the card sample and the canvas switch to the real font.
-const googleFontLoaded = new Set();
-function ensureGoogleFont(font) {
-  if (!font.google || googleFontLoaded.has(font.id)) return Promise.resolve();
-  googleFontLoaded.add(font.id);
+// Lazy-load a font: inject its stylesheet once, then load the faces so
+// the card sample and the canvas switch to the real font. Google fonts
+// use the css2 URL built from `css`; the rastikerdar fonts use their own
+// jsDelivr font-face.css via `cssUrl`.
+const lazyFontLoaded = new Set();
+function ensureLazyFont(font) {
+  if (!font.lazy || lazyFontLoaded.has(font.id)) return Promise.resolve();
+  lazyFontLoaded.add(font.id);
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = `https://fonts.googleapis.com/css2?${font.css}&display=swap`;
+  link.href = font.cssUrl || `https://fonts.googleapis.com/css2?${font.css}&display=swap`;
   document.head.appendChild(link);
   const loads = (font.weights || [400, 700]).map((w) =>
     document.fonts.load(`${w} 18px "${font.gname}"`, font.sample || 'Your text').catch(() => {}));
@@ -651,7 +660,7 @@ const fontObserver = ('IntersectionObserver' in window) ? new IntersectionObserv
     if (!e.isIntersecting) continue;
     const font = FONTS.find((f) => f.id === e.target.dataset.fontId);
     fontObserver.unobserve(e.target);
-    if (font) ensureGoogleFont(font).then(() => { if (state.font === font.id) redraw(); });
+    if (font) ensureLazyFont(font).then(() => { if (state.font === font.id) redraw(); });
   }
 }, { rootMargin: '120px' }) : null;
 
@@ -660,7 +669,7 @@ function selectFont(id) {
   document.querySelectorAll('#panel-font .pick-card').forEach((x) =>
     x.classList.toggle('active', x.dataset.fontId === id));
   const font = FONTS.find((f) => f.id === id);
-  if (font) ensureGoogleFont(font).then(redraw);
+  if (font) ensureLazyFont(font).then(redraw);
   redraw();
 }
 
@@ -688,7 +697,7 @@ function fontCard(item, favs) {
   b.addEventListener('pointercancel', cancelPress);
   b.addEventListener('pointerleave', cancelPress);
   b.addEventListener('click', () => { if (longPressed) return; selectFont(item.id); });
-  if (fontObserver && item.google) fontObserver.observe(b);
+  if (fontObserver && item.lazy) fontObserver.observe(b);
   return b;
 }
 
