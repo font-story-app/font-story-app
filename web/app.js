@@ -99,7 +99,7 @@ const STYLE_CONTROLS = {
   ],
   sticker: [
     { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
-    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
+    { key: 'stickerMaroon', label: 'ضخامت حلقه‌ی زرشکی', type: 'range', min: 0, max: 60, step: 1, def: 36, unit: '٪' },
   ],
 };
 
@@ -395,29 +395,16 @@ const STYLE_PAINT = {
     strokeWords(line, cx, y, '#a7f3d0', sp('rossetaStroke'));
   },
   sticker: (line, cx, y, lw, fs) => {
-    // Sticker look, matched to the reference: golden fill, red outline
-    // (border 1), a solid maroon shadow (border 2, the darker one) and a
-    // thick white outer outline (border 3) wrapping the whole silhouette.
-    // The maroon is a 3D EXTRUSION — the text shape swept from (0,0) to
-    // (dx,dy), filled solid — so the maroon band hugs the red outline
-    // continuously, exactly filled. A single shifted copy can't do that:
-    // it breaks up below short letters and in word gaps, leaving white
-    // between the maroon and the text. The white ring is stroked at every
-    // sweep step too, so it wraps the swept silhouette uniformly.
+    // Sticker look, concentric rings (Reza's pick, 2026-11-16): golden
+    // fill, red outline, a maroon ring, and a thick white outer ring —
+    // all stroked around the text at the origin, no offset shadow. Each
+    // wider stroke is drawn first, so only its outer band stays visible.
+    // The white ring is always as thick (visible) as the red stroke.
     const w = fs * (sp('stickerOutline') / 100);
-    const ww = w * 2.5;
-    const dy = fs * (sp('stickerShadow') / 100);
-    const dx = -0.6 * dy;
-    const steps = Math.max(1, Math.min(24, Math.ceil(Math.hypot(dx, dy) / 3)));
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      strokeWords(line, cx, y, '#ffffff', ww, dx * t, dy * t);
-    }
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      ctx.fillStyle = '#5C1220';
-      drawWords(line, cx, y, dx * t, dy * t);
-    }
+    const wm = fs * (sp('stickerMaroon') / 100);
+    const ww = wm + w * 2;
+    strokeWords(line, cx, y, '#ffffff', ww);
+    strokeWords(line, cx, y, '#5C1220', wm);
     strokeWords(line, cx, y, '#ED1C24', w);
     ctx.fillStyle = '#FFC531';
     drawWords(line, cx, y);
