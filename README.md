@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/media-generation-fontstory-logo-v1-0-e9fcb181-6fa1-4b90-a663-1751c3080354.webp" width="120" alt="FontStory logo">
+  <img src="assets/fontstory-logo.webp" width="120" alt="FontStory logo">
 </p>
 
 <h1 align="center">FontStory</h1>
