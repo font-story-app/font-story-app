@@ -110,7 +110,6 @@ body.light-bg .brand-title { color: #1F2421; }
   cursor: pointer;
   backdrop-filter: blur(6px);
 }
-.aspect-btn { width: auto; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 
 /* --- Stage: canvas is the preview --- */
 .stage {
