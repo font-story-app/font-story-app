@@ -78,7 +78,7 @@ body {
 .done-btn {
   background: #fff;
   color: #1f2421;
-  border: none;
+  border: 1px solid rgba(0,0,0,0.10); /* keeps the pill visible on a white background */
   border-radius: 999px;
   padding: 9px 18px;
   font-family: inherit;
@@ -96,6 +96,8 @@ body {
   color: #fff;
   white-space: nowrap;
 }
+/* On the white background the white brand title would vanish. */
+body.light-bg .brand-title { color: #1F2421; }
 .top-actions { display: flex; gap: 8px; }
 .round-btn {
   width: 38px; height: 38px;
@@ -193,6 +195,12 @@ body {
   font-size: 16px; /* >=16px stops iOS auto-zoom when the keyboard opens */
   -webkit-tap-highlight-color: transparent;
 }
+/* The native selection band is hidden: the canvas draws the highlight
+   itself (see draw()), so it lands exactly on the visible glyphs. The
+   native band lives in the textarea's own layer and can never line up
+   with the canvas text. */
+.hidden-input::selection { background: transparent; }
+.hidden-input::-moz-selection { background: transparent; }
 
 /* Vertical size slider, left edge of the canvas */
 .size-rail {
@@ -206,6 +214,12 @@ body {
   align-items: center;
   gap: 6px;
   color: #fff;
+  /* Dark chip so the white A+/A− labels and the slider stay readable
+     on any background, including the white one. */
+  background: rgba(0,0,0,0.35);
+  border-radius: 999px;
+  padding: 8px 4px;
+  backdrop-filter: blur(6px);
 }
 .size-mark { font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 .size-value { font-size: 14px; font-weight: 800; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
