@@ -297,27 +297,63 @@ function hexAlpha(hex, alpha) {
 }
 
 function wrapLines(text, maxWidth) {
-  // \n is a hard break: wrap each paragraph on its own and keep empty
-  // lines, so Enter in the editor really moves to the next line.
-  // (The old version split on /\s+/, which treats \n like a space and
-  // re-flowed everything onto one line — that was the bug.)
-  const lines = [];
+  return wrapLineRanges(text, maxWidth).map((r) => r.text);
+}
+
+// Same wrapping as wrapLines, but each line also carries its character
+// range [start, end] in the original text — the canvas-drawn selection
+// highlight needs to know which characters each line holds. Keep the
+// wrapping loop identical to wrapLines so the ranges never drift.
+// \n is a hard break: wrap each paragraph on its own and keep empty
+// lines, so Enter in the editor really moves to the next line.
+function wrapLineRanges(text, maxWidth) {
+  const ranges = [];
+  let paraStart = 0;
   for (const para of text.split('\n')) {
-    const words = para.split(/\s+/).filter((w) => w !== '');
-    if (!words.length) { lines.push(''); continue; }
+    const words = [...para.matchAll(/\S+/g)].map((m) => ({ w: m[0], i: m.index }));
+    if (!words.length) { ranges.push({ text: '', start: paraStart, end: paraStart }); paraStart += para.length + 1; continue; }
     let line = '';
-    for (const w of words) {
+    let lineStart = -1; // offset of the line's first word in the original text
+    let lineEnd = -1;   // offset just past the line's last word
+    for (const { w, i } of words) {
       const test = line ? line + ' ' + w : w;
       if (lineWidth(test) > maxWidth && line) {
-        lines.push(line);
-        line = w;
+        ranges.push({ text: line, start: lineStart, end: lineEnd });
+        line = w; lineStart = paraStart + i; lineEnd = paraStart + i + w.length;
       } else {
-        line = test;
+        if (!line) lineStart = paraStart + i;
+        line = test; lineEnd = paraStart + i + w.length;
       }
     }
-    if (line) lines.push(line);
+    if (line) ranges.push({ text: line, start: lineStart, end: lineEnd });
+    paraStart += para.length + 1;
   }
-  return lines.length ? lines : [''];
+  return ranges.length ? ranges : [{ text: '', start: 0, end: 0 }];
+}
+
+// Width of the first n characters of a line, measured the same way the
+// line is drawn (word by word, with the word gaps). Used to place the
+// canvas-drawn selection highlight.
+function prefixWidth(line, n) {
+  n = Math.max(0, Math.min(n, line.length));
+  if (n === 0) return 0;
+  const words = line.split(' ').filter((w) => w !== '');
+  const gap = spaceWidth() + state.wordSpacing;
+  let x = 0, off = 0;
+  for (const w of words) {
+    if (n <= off) return x;
+    if (n <= off + w.length) {
+      const k = n - off;
+      // The boundary after k chars of a word sits one letter-spacing
+      // past the measured k-char prefix (the spacing before the next
+      // char), except at the word's edges.
+      const extra = (k > 0 && k < w.length && 'letterSpacing' in ctx) ? state.letterSpacing : 0;
+      return x + ctx.measureText(w.slice(0, k)).width + extra;
+    }
+    x += ctx.measureText(w).width + gap;
+    off += w.length + 1;
+  }
+  return x;
 }
 
 // Draw one line word by word (word spacing has no canvas API, so the
@@ -495,11 +531,18 @@ function draw() {
   // Safari 17+); word spacing is applied manually in drawWords.
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
   const maxWidth = w - 160;
-  const lines = wrapLines(state.text || '…', maxWidth);
+  const lineRanges = wrapLineRanges(state.text || '…', maxWidth);
+  const lines = lineRanges.map((r) => r.text);
   const lineHeight = fontSize * state.lineHeight;
   const blockH = lines.length * lineHeight;
   let y = h / 2 - blockH / 2 + lineHeight / 2;
   const cx = w / 2;
+
+  // The native selection highlight is hidden (see styles.css) — the
+  // canvas draws it instead, so it lands exactly on the visible glyphs.
+  const selStart = textInput.selectionStart ?? 0;
+  const selEnd = textInput.selectionEnd ?? 0;
+  const hasSel = document.activeElement === textInput && selEnd > selStart;
 
   // X/Y rotation as a scale around the block centre (the 2D-canvas
   // equivalent of a 3D tilt): X squashes vertically, Y horizontally.
@@ -540,9 +583,23 @@ function draw() {
     ctx.restore();
   }
 
-  for (const line of lines) {
+  for (let li = 0; li < lineRanges.length; li++) {
+    const line = lines[li];
+    const lr = lineRanges[li];
     ctx.save();
     const lw = lineWidth(line);
+    if (hasSel) {
+      const a = Math.max(selStart, lr.start);
+      const b = Math.min(selEnd, lr.end);
+      if (b > a) {
+        const rtl = isRTLText(line);
+        const xa = rtl ? cx + lw / 2 - prefixWidth(line, a - lr.start) : cx - lw / 2 + prefixWidth(line, a - lr.start);
+        const xb = rtl ? cx + lw / 2 - prefixWidth(line, b - lr.start) : cx - lw / 2 + prefixWidth(line, b - lr.start);
+        ctx.fillStyle = 'rgba(80, 140, 255, 0.45)';
+        const x0 = Math.min(xa, xb) - 6;
+        ctx.fillRect(x0, y - lineHeight / 2 + 3, Math.abs(xb - xa) + 12, lineHeight - 6);
+      }
+    }
     const paint = STYLE_PAINT[state.style] || STYLE_PAINT.bold;
     paint(line, cx, y, lw, fontSize);
     ctx.restore();
@@ -550,8 +607,9 @@ function draw() {
   }
 
   // Blinking caret at the end of the text while the input is focused
-  // (left end for RTL text, right end for LTR).
-  if (state.caret && document.activeElement === textInput) {
+  // (left end for RTL text, right end for LTR). Hidden while a
+  // selection is active — the highlight shows the selection instead.
+  if (state.caret && document.activeElement === textInput && !hasSel) {
     const last = lines[lines.length - 1] || '';
     const lw = lineWidth(last);
     const caretY = h / 2 - blockH / 2 + (lines.length - 1) * lineHeight;
@@ -1147,6 +1205,7 @@ async function saveDesign() {
 // --- Wire up ---
 $('canvasWrap').addEventListener('click', () => { textInput.focus(); });
 textInput.addEventListener('input', (e) => { state.text = e.target.value; updateDoneBtn(); redraw(); });
+textInput.addEventListener('select', () => { if (document.activeElement === textInput) draw(); });
 textInput.addEventListener('focus', () => { state.caret = true; draw(); });
 textInput.addEventListener('blur', () => { state.caret = false; draw(); });
 $('sizeRange').addEventListener('input', (e) => {
@@ -1170,6 +1229,7 @@ $('aspectBtn').addEventListener('click', () => {
 $('bgBtn').addEventListener('click', () => {
   state.bg = (state.bg + 1) % BACKGROUNDS.length;
   document.body.style.background = BACKGROUNDS[state.bg];
+  document.body.classList.toggle('light-bg', BACKGROUNDS[state.bg] === '#FFFFFF');
   applyDefaultTextColor();
 });
 $('doneBtn').addEventListener('click', openExport);
