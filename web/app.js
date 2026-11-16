@@ -205,6 +205,19 @@ const statusEl = $('status');
 const textInput = $('textInput');
 let toastTimer = null;
 
+// Dismissible "tap to type" hint: the × hides it and remembers the
+// choice, so it stays gone on later opens.
+const hintPill = $('hintPill');
+const hintClose = $('hintClose');
+try {
+  if (localStorage.getItem('fontstory:hintDismissed') === '1') hintPill?.classList.add('hidden');
+} catch { /* private mode */ }
+hintClose?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  hintPill?.classList.add('hidden');
+  try { localStorage.setItem('fontstory:hintDismissed', '1'); } catch { /* private mode */ }
+});
+
 function setStatus(msg) {
   if (!msg) { statusEl.hidden = true; return; }
   statusEl.textContent = msg;
