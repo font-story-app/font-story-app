@@ -179,6 +179,11 @@ const state = {
   font: 'Vazir',
   style: 'bold',
   color: '#FFFFFF',
+  // Has the user picked a text colour in the رنگ tab? The box styles
+  // (highlight, brush) auto-contrast their text against the box colour
+  // until the user does — so the default stay readable, but the text
+  // colour becomes changeable the moment they pick one.
+  colorTouched: false,
   aspect: '9:16',
   size: 110,
   bg: 0,
@@ -374,7 +379,9 @@ const STYLE_PAINT = {
   bold: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   highlight: (line, cx, y, lw, fs) => {
     bgBox(cx, y, lw, fs, { fill: state.styleColor, radius: state.borderRadius, padX: 24 });
-    ctx.fillStyle = contrastText(state.styleColor); drawWords(line, cx, y);
+    // Text colour: the رنگ tab's colour once the user picks one, else
+    // auto-contrast against the box so the default stays readable.
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(state.styleColor); drawWords(line, cx, y);
   },
   neon: (line, cx, y) => {
     ctx.shadowColor = state.color; ctx.shadowBlur = sp('neonGlow'); ctx.fillStyle = state.color;
@@ -407,7 +414,7 @@ const STYLE_PAINT = {
     ctx.save(); ctx.translate(cx, y); ctx.rotate((sp('brushTilt') * Math.PI) / 180);
     ctx.fillStyle = state.styleColor;
     roundRect(-lw / 2 - 30, -fs * 0.62, lw + 60, fs * 1.24, state.borderRadius); ctx.fill(); ctx.restore();
-    ctx.fillStyle = contrastText(state.styleColor); drawWords(line, cx, y);
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(state.styleColor); drawWords(line, cx, y);
   },
   pastille: (line, cx, y, lw, fs) => {
     strokeWords(line, cx, y, '#7c3aed', fs * (sp('pastilleStroke') / 100));
@@ -842,6 +849,7 @@ function buildSwatches() {
     b.setAttribute('aria-label', c);
     b.addEventListener('click', () => {
       state.color = c;
+      state.colorTouched = true;
       $('colorPicker').value = c;
       wrap.querySelectorAll('.swatch').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
@@ -870,6 +878,9 @@ function applyDesign(d) {
   // Old saved designs may carry a style that was later deleted.
   state.style = STYLES.some((s) => s.id === d.style) ? d.style : 'bold';
   state.color = d.color || '#FFFFFF';
+  // A saved design with a non-default text colour was saved with the
+  // colour deliberately picked, so the box styles keep using it.
+  state.colorTouched = typeof d.color === 'string' && d.color.toUpperCase() !== '#FFFFFF';
   state.aspect = d.aspect || '9:16';
   state.weight = [400, 500, 600, 700, 800, 900].includes(Number(d.weight)) ? Number(d.weight) : 800;
   state.letterSpacing = clampNum(d.letterSpacing, 0, 40, 0);
@@ -1091,6 +1102,7 @@ $('sizeRange').addEventListener('input', (e) => {
 });
 $('colorPicker').addEventListener('input', (e) => {
   state.color = e.target.value;
+  state.colorTouched = true;
   document.querySelectorAll('.swatch').forEach((x) => x.classList.remove('active'));
   document.querySelector('.swatch.rainbow')?.classList.add('active');
   redraw();
