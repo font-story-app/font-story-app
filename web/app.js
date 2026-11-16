@@ -1234,7 +1234,10 @@ textInput.addEventListener('blur', () => {
 function updateEditingLayout() {
   const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   const kbOpen = fullViewportH > 0 && h < fullViewportH * 0.85;
-  const editing = document.activeElement === textInput && kbOpen;
+  // ?editing=1 previews the keyboard-open layout; it survives here so
+  // the preview isn't wiped out by the first resize/focus event.
+  const previewEditing = new URLSearchParams(location.search).has('editing');
+  const editing = previewEditing || (document.activeElement === textInput && kbOpen);
   document.body.classList.toggle('editing', editing);
   // The canvas size follows the stage, so re-sync the editor layout
   // while the viewport is changing (keyboard sliding in/out).
@@ -1242,6 +1245,11 @@ function updateEditingLayout() {
 }
 if (window.visualViewport) window.visualViewport.addEventListener('resize', updateEditingLayout);
 window.addEventListener('resize', updateEditingLayout);
+
+// Test hook: ?editing=1 previews the keyboard-open layout (bottom sheet
+// hidden) without a mobile keyboard. Real focus/blur behaviour takes
+// over as soon as the editor is focused.
+if (new URLSearchParams(location.search).has('editing')) document.body.classList.add('editing');
 
 // Clear-text button (2026-11-16): two taps — the first arms it (red +
 // toast), the second clears the whole text at once. Guards against
@@ -1259,7 +1267,7 @@ $('clearBtn').addEventListener('click', () => {
     $('clearBtn').classList.add('armed');
     setStatus('برای پاک کردن متن، دوباره روی سطل بزن.');
     clearTimeout(clearArmTimer);
-    clearArmTimer = setTimeout(disarmClear, 3000);
+    clearArmTimer = setTimeout(disarmClear, 5000);
     return;
   }
   clearTimeout(clearArmTimer);
@@ -1290,8 +1298,10 @@ $('aspectBtn').addEventListener('click', () => {
 });
 $('bgBtn').addEventListener('click', () => {
   state.bg = (state.bg + 1) % BACKGROUNDS.length;
-  document.body.style.background = BACKGROUNDS[state.bg];
-  document.body.classList.toggle('light-bg', BACKGROUNDS[state.bg] === '#FFFFFF');
+  const bg = BACKGROUNDS[state.bg];
+  document.body.style.background = bg;
+  document.body.classList.toggle('light-bg', bg === '#FFFFFF');
+  document.body.classList.toggle('mono-bg', bg === '#000000' || bg === '#FFFFFF');
   applyDefaultTextColor();
 });
 $('doneBtn').addEventListener('click', openExport);
