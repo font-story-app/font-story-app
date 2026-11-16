@@ -85,7 +85,7 @@ export default async function (input, ctx) {
   const color = typeof input?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.color)
     ? input.color
     : '#FFFFFF';
-  const aspect = ALLOWED_ASPECTS.includes(input?.aspect) ? input.aspect : '9:16';
+  const aspect = ALLOWED_ASPECTS.includes(input?.aspect) ? input.aspect : '1:1';
   const weight = ALLOWED_WEIGHTS.includes(Number(input?.weight)) ? Number(input.weight) : 800;
   const styleColor = typeof input?.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.styleColor)
     ? input.styleColor
