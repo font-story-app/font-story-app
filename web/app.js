@@ -7,7 +7,7 @@ const FONTS = [
   { id: 'Vazir', label: 'وزیر', family: "'Vazir', sans-serif" },
   { id: 'IRANYekanXNoEn', label: 'ایران یکان ایکس', family: "'IRANYekanXNoEn', sans-serif" },
   { id: 'IRAN', label: 'ایران', family: "'IRAN', sans-serif" },
-  { id: 'YekanBakh', label: 'یکان‌بخش', family: "'Yekan Bakh NoEn', sans-serif" },
+  { id: 'YekanBakh', label: 'یکان‌بخ', family: "'Yekan Bakh NoEn', sans-serif" },
   { id: 'Vazirmatn', label: 'وزیرمتن', family: "'Vazirmatn', sans-serif" },
   { id: 'Lalezar', label: 'لاله‌زار', family: "'Lalezar', sans-serif" },
   { id: 'Estedad', label: 'استعداد', family: "'Estedad', sans-serif" },
