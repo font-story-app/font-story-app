@@ -75,8 +75,6 @@ Out of the box, with no files needed:
 
 To use your own licensed fonts, drop the WOFF2 files into `web/fonts/`, add matching `@font-face` rules at the top of `web/styles.css`, and add an entry to `FONTS` in `web/app.js` (plus the allow-list in `tgcloud/endpoints/saveDesign.js`). Serve WOFF2 only — never commit or serve the original TTF/OTF files.
 
-Liana is a commercial FontIran font with no public CDN, so it is deliberately not included.
-
 ## Project structure
 
 - `web/` — Mini App source (plain HTML/CSS/JS, no framework), RTL Persian UI
