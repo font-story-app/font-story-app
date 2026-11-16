@@ -582,21 +582,26 @@ function buildCardPicker(el, items, current, onPick, sampleHtml) {
   }
 }
 
+// One row, like the style panel: the three filter buttons in the head
+// switch which fonts the row shows — Persian, English, or favourites.
+let fontFilter = null; // 'fa' | 'en' | 'fav' — defaults to the current font's language
+function fontLang(id) {
+  const f = FONTS.find((x) => x.id === id);
+  return f && f.lang === 'en' ? 'en' : 'fa';
+}
 function buildFontPicker() {
-  // Three sections: favourites (long-press a card to add), Persian,
-  // English. A favourited font shows in both its own section and the
-  // favourites row at the top.
   const favs = getFavs();
-  const favFonts = favs.map((id) => FONTS.find((f) => f.id === id)).filter(Boolean);
-  $('favRow').style.display = favFonts.length ? '' : 'none';
-  $('favEmpty').hidden = favFonts.length > 0;
-  const fill = (el, items) => {
-    el.innerHTML = '';
-    for (const item of items) el.appendChild(fontCard(item, favs));
-  };
-  fill($('favRow'), favFonts);
-  fill($('faRow'), FONTS.filter((f) => f.lang === 'fa'));
-  fill($('enRow'), FONTS.filter((f) => f.lang === 'en'));
+  if (!fontFilter) fontFilter = fontLang(state.font);
+  const items = fontFilter === 'fav'
+    ? favs.map((id) => FONTS.find((f) => f.id === id)).filter(Boolean)
+    : FONTS.filter((f) => f.lang === fontFilter);
+  const row = $('fontRow');
+  row.innerHTML = '';
+  for (const item of items) row.appendChild(fontCard(item, favs));
+  row.style.display = items.length ? '' : 'none';
+  $('favEmpty').hidden = !(fontFilter === 'fav' && !items.length);
+  document.querySelectorAll('.font-filter').forEach((b) =>
+    b.classList.toggle('active', b.dataset.filter === fontFilter));
   // A saved design (or the default) may carry a Google font — make sure
   // it is loaded so the canvas draws it, not the fallback face.
   const current = FONTS.find((f) => f.id === state.font);
@@ -780,6 +785,9 @@ function switchTab(tab) {
 document.querySelectorAll('.tab').forEach((b) => {
   b.addEventListener('click', () => switchTab(b.dataset.tab));
 });
+document.querySelectorAll('.font-filter').forEach((b) => {
+  b.addEventListener('click', () => { fontFilter = b.dataset.filter; buildFontPicker(); });
+});
 
 function applyDesign(d) {
   state.text = d.text || '';
@@ -802,6 +810,7 @@ function applyDesign(d) {
   $('aspectBtn').textContent = state.aspect === '9:16' ? '۹:۱۶' : '۱:۱';
   $('canvasWrap').classList.toggle('square', state.aspect === '1:1');
   syncSettingsUI();
+  fontFilter = fontLang(state.font); // show the applied font's group
   buildFontPicker();
   buildStylePicker();
   buildSwatches();
