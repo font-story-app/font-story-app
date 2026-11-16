@@ -1166,7 +1166,11 @@ async function sendToChat() {
   }
 }
 
-function updateDoneBtn() { $('doneBtn').disabled = !state.text.trim(); }
+function updateDoneBtn() {
+  const empty = !state.text.trim();
+  $('doneBtn').disabled = empty;
+  $('clearBtn').disabled = empty;
+}
 
 function openExport() {
   if (!state.text.trim()) return;
@@ -1206,8 +1210,66 @@ async function saveDesign() {
 $('canvasWrap').addEventListener('click', () => { textInput.focus(); });
 textInput.addEventListener('input', (e) => { state.text = e.target.value; updateDoneBtn(); redraw(); });
 textInput.addEventListener('select', () => { if (document.activeElement === textInput) draw(); });
-textInput.addEventListener('focus', () => { state.caret = true; draw(); });
-textInput.addEventListener('blur', () => { state.caret = false; draw(); });
+let fullViewportH = 0; // viewport height at focus time (keyboard closed)
+textInput.addEventListener('focus', () => {
+  state.caret = true;
+  // Viewport height before the keyboard slides in — the reference for
+  // detecting the keyboard-open shrink below.
+  fullViewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  draw();
+  updateEditingLayout();
+});
+textInput.addEventListener('blur', () => {
+  state.caret = false;
+  fullViewportH = 0;
+  draw();
+  updateEditingLayout();
+});
+
+// Keyboard-open layout (2026-11-16): on mobile the viewport shrinks when
+// the keyboard opens and the height-constrained canvas shrinks with it,
+// so the text turns tiny while editing. While the editor is focused and
+// the visual viewport is much shorter than at focus time (keyboard open),
+// hide the bottom sheet so the canvas keeps (almost) its full size.
+function updateEditingLayout() {
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const kbOpen = fullViewportH > 0 && h < fullViewportH * 0.85;
+  const editing = document.activeElement === textInput && kbOpen;
+  document.body.classList.toggle('editing', editing);
+  // The canvas size follows the stage, so re-sync the editor layout
+  // while the viewport is changing (keyboard sliding in/out).
+  if (document.activeElement === textInput) draw();
+}
+if (window.visualViewport) window.visualViewport.addEventListener('resize', updateEditingLayout);
+window.addEventListener('resize', updateEditingLayout);
+
+// Clear-text button (2026-11-16): two taps — the first arms it (red +
+// toast), the second clears the whole text at once. Guards against
+// wiping a long text by accident; matches the two-tap delete in recents.
+let clearArmed = false;
+let clearArmTimer = null;
+function disarmClear() {
+  clearArmed = false;
+  $('clearBtn').classList.remove('armed');
+}
+$('clearBtn').addEventListener('click', () => {
+  if (!state.text.trim()) return;
+  if (!clearArmed) {
+    clearArmed = true;
+    $('clearBtn').classList.add('armed');
+    setStatus('برای پاک کردن متن، دوباره روی سطل بزن.');
+    clearTimeout(clearArmTimer);
+    clearArmTimer = setTimeout(disarmClear, 3000);
+    return;
+  }
+  clearTimeout(clearArmTimer);
+  disarmClear();
+  state.text = '';
+  textInput.value = '';
+  updateDoneBtn();
+  redraw();
+  textInput.focus();
+});
 $('sizeRange').addEventListener('input', (e) => {
   state.size = Number(e.target.value);
   $('sizeValue').textContent = state.size;
