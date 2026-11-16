@@ -43,3 +43,19 @@ export const designs = table('designs', {
 }, (t) => ({
   userIdx: index('idx_designs_user').on(t.userId),
 }));
+
+// Support inbox (added 2026-11-16): a user taps the reply-keyboard
+// «پیام به پشتیبانی» button, writes one message, it is sent to the
+// owner; the owner answers by replying to that message in the bot chat.
+// support_pending tracks who is mid-message; support_map links the
+// owner's copy of a support message back to the user who sent it.
+export const supportPending = table('support_pending', {
+  tgId: integer('tg_id').primaryKey(),
+  createdAt: integer('created_at').default(sql`(unixepoch())`),
+});
+
+export const supportMap = table('support_map', {
+  ownerMsgId: integer('owner_msg_id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  createdAt: integer('created_at').default(sql`(unixepoch())`),
+});
