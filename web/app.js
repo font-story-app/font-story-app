@@ -1007,7 +1007,6 @@ function applyDesign(d) {
   state.styleParams = sanitizeStyleParams(d.styleParams);
   textInput.value = state.text;
   $('colorPicker').value = state.color;
-  $('canvasWrap').classList.toggle('square', state.aspect === '1:1');
   syncSettingsUI();
   fontFilter = fontLang(state.font); // show the applied font's group
   buildFontPicker();
