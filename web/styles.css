@@ -146,7 +146,30 @@ body {
   border-radius: 999px;
   white-space: nowrap;
   pointer-events: none;
+  /* Above the transparent editor so the × is tappable; taps on the
+     text itself still pass through to the editor below. */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+.hint-pill.hidden { display: none; }
+.hint-close {
+  pointer-events: auto;
+  background: none;
+  border: none;
+  color: #fff;
+  opacity: 0.75;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hint-close:hover { opacity: 1; }
+.hint-close svg { width: 12px; height: 12px; }
 .hidden-input {
   position: absolute;
   inset: 0;
