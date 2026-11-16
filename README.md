@@ -32,9 +32,25 @@ Open [@FontStory_bot](https://t.me/FontStory_bot) and send `/start`.
 
 The bot chat has an owner-only admin panel:
 
-- `/admin` — panel with stats and broadcast buttons
+- `/admin` — panel with stats, broadcast and exit buttons
 - `/stats` — users, designs and top fonts/styles
 - `/broadcast <text>` — send a message to all users
+
+The panel's **🚪 خروج از پنل** button closes it (the message is
+deleted; if Telegram refuses, it is replaced with a short closed note).
+It is also on the stats and broadcast screens, next to «بازگشت».
+
+## Support inbox (users message the owner)
+
+Users get a persistent, non-inline reply-keyboard button
+**💬 پیام به پشتیبانی** (set on `/start`, under the chat input).
+Tapping it asks them to write one message; that message is sent to
+the owner, who answers by replying to it in the bot chat — the reply
+goes back to the user. An **❌ انصراف** button cancels before sending.
+Only text messages are relayed; anything else gets a «send text»
+hint. The owner's copy carries the sender's name, handle and numeric
+ID, and the link between the two messages is kept in the database
+(`support_map`), with the ID in the message text as a fallback.
 
 Only the Telegram user ID in `tgcloud/lib/owner.js` can use these
 commands. That file is gitignored — create it locally with one line:
