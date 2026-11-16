@@ -54,6 +54,14 @@ body {
 .fav-pill { display: inline-flex; align-items: center; gap: 4px; }
 .fav-pill .icon { width: 12px; height: 12px; }
 .tab .icon, .settings-tab .icon { width: 20px; height: 20px; }
+/* The font tab's icon is the text "Aa" (not an SVG): give it the same
+   20x20 box as the SVG icons, or its line-height makes it taller and
+   the whole tab — label included — sits lower than the others. */
+.tab .icon-text {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; line-height: 1; font-weight: 700;
+}
 .round-btn { display: inline-flex; align-items: center; justify-content: center; }
 .round-btn .icon { width: 18px; height: 18px; }
 .export-close { display: inline-flex; align-items: center; justify-content: center; }
