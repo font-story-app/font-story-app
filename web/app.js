@@ -1121,10 +1121,10 @@ async function copyPng() {
     const blob = await canvasBlob();
     if (!blob) throw new Error('ساخت PNG ناموفق بود');
     if (!imageClipboardSupported()) {
-      // Android has no image clipboard: the write call can even resolve
-      // while nothing lands on the system clipboard, so the user sees
-      // "copied" and finds nothing to paste. Offer the native share
-      // sheet instead — the user picks Instagram / Telegram / WhatsApp.
+      // Android: no image clipboard and no Web Share in the WebView —
+      // the share sheet only exists when the app is opened in a real
+      // browser (Chrome for Android). Otherwise the PNG goes to the bot
+      // chat, where it can be saved or shared to any app from Telegram.
       try {
         if (await sharePng(blob)) { setStatus('استیکر به اشتراک گذاشته شد.'); return; }
       } catch (e) {
@@ -1144,14 +1144,17 @@ async function copyPng() {
 }
 
 // Can this browser actually put a PNG on the system clipboard?
-// ClipboardItem.supports('image/png') is false on Android (the platform
-// has no image clipboard); older WebViews without supports() fall back
-// to the UA check — desktop browsers can copy images, Android cannot.
+// Android first: Telegram's Android WebView may report image clipboard
+// as supported (ClipboardItem.supports says yes) while the write
+// silently drops the image — and Android WebView has no Web Share
+// implementation at all (crbug 40540400), so the clipboard path must
+// never be trusted there. Only desktop browsers take it.
 function imageClipboardSupported() {
+  if (/Android/i.test(navigator.userAgent)) return false;
   if (typeof ClipboardItem !== 'undefined' && typeof ClipboardItem.supports === 'function') {
     try { return ClipboardItem.supports('image/png'); } catch (e) { /* fall through */ }
   }
-  return !/Android/i.test(navigator.userAgent);
+  return true; // desktop browsers can copy images
 }
 
 // Android share sheet with the PNG as a file. Returns true when a share
@@ -1209,7 +1212,7 @@ async function sendToChat() {
     if (blob.size > 5 * 1024 * 1024) throw new Error('استیکر خیلی بزرگه');
     const image = await blobToBase64(blob);
     await callEndpoint('sendSticker', { image, text: state.text });
-    setStatus('استیکر توی چت بات فرستاده شد — بازش کن و «ذخیره در گالری» رو بزن.');
+    setStatus('استیکر توی چت بات فرستاده شد — بازش کن، از اونجا ذخیره‌اش کن یا برای اینستاگرام/واتساپ بفرست.');
   } catch (e) {
     setStatus('فرستادن نشد: ' + (e.message || e));
   } finally {
