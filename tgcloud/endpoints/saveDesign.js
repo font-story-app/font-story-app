@@ -2,7 +2,7 @@ import { db, EndpointError } from 'sdk';
 import { designs } from '../schema.js';
 import { ensureUser } from '../lib/users.js';
 
-const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmatn', 'Lalezar', 'Estedad', 'Parastoo', 'Amiri'];
+const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmatn', 'Lalezar', 'Estedad', 'Parastoo', 'Amiri', 'Poppins', 'Montserrat', 'BebasNeue', 'Anton', 'Oswald', 'PlayfairDisplay', 'DancingScript', 'Lobster', 'Pacifico', 'Caveat', 'ArchivoBlack', 'Rubik'];
 const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
