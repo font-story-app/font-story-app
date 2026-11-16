@@ -98,8 +98,8 @@ const STYLE_CONTROLS = {
     { key: 'pixelSize', label: 'اندازه پیکسل', type: 'range', min: 2, max: 12, step: 1, def: 6, unit: 'px' },
   ],
   sticker: [
-    { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 10, unit: '٪' },
-    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 20, unit: '٪' },
+    { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
+    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
   ],
 };
 
@@ -396,22 +396,28 @@ const STYLE_PAINT = {
   },
   sticker: (line, cx, y, lw, fs) => {
     // Sticker look, matched to the reference: golden fill, red outline
-    // (border 1), a solid maroon shadow offset down-left (border 2, the
-    // darker one), and a thick white outer outline (border 3) wrapping
-    // the whole silhouette. The white stroke is 4x the red one, so the
-    // white ring reads ~3x as thick as the red ring.
-    // Paint order is the trick: the white rings go down FIRST (one around
-    // the shadow shape, one around the text), then the maroon fill covers
-    // their inner halves — so the maroon sits between the red and the
-    // white on the shadow side, with no white between red and maroon.
-    // Red + fill go last and win wherever they overlap the maroon.
+    // (border 1), a solid maroon shadow (border 2, the darker one) and a
+    // thick white outer outline (border 3) wrapping the whole silhouette.
+    // The maroon is a 3D EXTRUSION — the text shape swept from (0,0) to
+    // (dx,dy), filled solid — so the maroon band hugs the red outline
+    // continuously, exactly filled. A single shifted copy can't do that:
+    // it breaks up below short letters and in word gaps, leaving white
+    // between the maroon and the text. The white ring is stroked at every
+    // sweep step too, so it wraps the swept silhouette uniformly.
     const w = fs * (sp('stickerOutline') / 100);
+    const ww = w * 2.5;
     const dy = fs * (sp('stickerShadow') / 100);
     const dx = -0.6 * dy;
-    strokeWords(line, cx, y, '#ffffff', w * 4, dx, dy);
-    strokeWords(line, cx, y, '#ffffff', w * 4);
-    ctx.fillStyle = '#5C1220';
-    drawWords(line, cx, y, dx, dy);
+    const steps = Math.max(1, Math.min(24, Math.ceil(Math.hypot(dx, dy) / 3)));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      strokeWords(line, cx, y, '#ffffff', ww, dx * t, dy * t);
+    }
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      ctx.fillStyle = '#5C1220';
+      drawWords(line, cx, y, dx * t, dy * t);
+    }
     strokeWords(line, cx, y, '#ED1C24', w);
     ctx.fillStyle = '#FFC531';
     drawWords(line, cx, y);
