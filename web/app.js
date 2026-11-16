@@ -98,7 +98,8 @@ const STYLE_CONTROLS = {
     { key: 'pixelSize', label: 'اندازه پیکسل', type: 'range', min: 2, max: 12, step: 1, def: 6, unit: 'px' },
   ],
   sticker: [
-    { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 8, max: 30, step: 1, def: 16, unit: '٪' },
+    { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 10, unit: '٪' },
+    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 20, unit: '٪' },
   ],
 };
 
@@ -315,12 +316,12 @@ function textGradient(cx, lw, stops) {
   return g;
 }
 
-function strokeWords(line, cx, y, color, width) {
+function strokeWords(line, cx, y, color, width, dx = 0, dy = 0) {
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = width;
   ctx.lineJoin = 'round';
-  drawWords(line, cx, y, 0, 0, 'stroke');
+  drawWords(line, cx, y, dx, dy, 'stroke');
   ctx.restore();
 }
 
@@ -394,14 +395,23 @@ const STYLE_PAINT = {
     strokeWords(line, cx, y, '#a7f3d0', sp('rossetaStroke'));
   },
   sticker: (line, cx, y, lw, fs) => {
-    // Sticker look (keeps its own colours, like gradient/arcadia/retro):
-    // golden fill, thick red outline, white outer outline, and a solid
-    // maroon shadow offset down-left. The white stroke is twice the red
-    // one, so the two visible rings come out the same thickness.
+    // Sticker look, matched to the reference: golden fill, red outline
+    // (border 1), a solid maroon shadow offset down-left (border 2, the
+    // darker one), and a thick white outer outline (border 3) wrapping
+    // the whole silhouette. The white stroke is 4x the red one, so the
+    // white ring reads ~3x as thick as the red ring.
+    // Paint order is the trick: the white rings go down FIRST (one around
+    // the shadow shape, one around the text), then the maroon fill covers
+    // their inner halves — so the maroon sits between the red and the
+    // white on the shadow side, with no white between red and maroon.
+    // Red + fill go last and win wherever they overlap the maroon.
     const w = fs * (sp('stickerOutline') / 100);
+    const dy = fs * (sp('stickerShadow') / 100);
+    const dx = -0.6 * dy;
+    strokeWords(line, cx, y, '#ffffff', w * 4, dx, dy);
+    strokeWords(line, cx, y, '#ffffff', w * 4);
     ctx.fillStyle = '#5C1220';
-    drawWords(line, cx, y, -fs * 0.04, fs * 0.09);
-    strokeWords(line, cx, y, '#ffffff', w * 2);
+    drawWords(line, cx, y, dx, dy);
     strokeWords(line, cx, y, '#ED1C24', w);
     ctx.fillStyle = '#FFC531';
     drawWords(line, cx, y);
