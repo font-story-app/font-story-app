@@ -824,6 +824,9 @@ async function loadImportedFonts() {
   let rows = [];
   try { rows = await idbFonts('readonly', (s) => s.getAll()); } catch (e) { return; }
   for (const r of rows || []) {
+    // A row with no bytes (left by the pre-fix import, which stored a
+    // buffer FontFace had neutered) can never load — drop it.
+    if (!r.data || r.data.byteLength === 0) { try { await idbFonts('readwrite', (s) => s.delete(r.id)); } catch (e) {} continue; }
     try {
       const face = new FontFace(customFamily(r.id), r.data);
       await face.load();
@@ -852,17 +855,27 @@ async function importFontFile(file) {
       return;
     }
     if (importedFonts.size >= MAX_IMPORTED_FONTS) { setStatus('حداکثر ۱۰ فونت می‌تونی اضافه کنی — اول یکی رو حذف کن.'); return; }
-    const face = new FontFace(customFamily(id), buf);
+    // Hand FontFace a COPY of the bytes: some engines neuter the buffer
+    // they are given, and the original is what IndexedDB must store —
+    // storing the neutered buffer failed silently and the font was lost
+    // on reload (reproduced 2026-11-17 with a detaching FontFace stub).
+    const face = new FontFace(customFamily(id), buf.slice(0));
     await face.load();
     document.fonts.add(face);
     const label = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'فونت من';
     importedFonts.set(id, { id, label, family: `'${customFamily(id)}', sans-serif`, face, custom: true, sample: document.fonts.check(`18px "${customFamily(id)}"`, 'متن شما') ? 'متن شما' : 'Your text' });
-    try { await idbFonts('readwrite', (s) => s.put({ id, name: label, data: buf })); }
-    catch (e) { /* no IndexedDB — the font works for this session only */ }
+    // Persist, then read back and verify the bytes actually landed —
+    // never again report success for a font that won't survive reload.
+    let persisted = false;
+    try {
+      await idbFonts('readwrite', (s) => s.put({ id, name: label, data: buf }));
+      const rows = await idbFonts('readonly', (s) => s.getAll());
+      persisted = (rows || []).some((r) => r.id === id && r.data && r.data.byteLength > 0);
+    } catch (e) { /* no IndexedDB — the font works for this session only */ }
     fontFilter = 'custom';
     buildFontPicker();
     selectFont(id);
-    setStatus('فونت اضافه شد.');
+    setStatus(persisted ? 'فونت اضافه شد.' : 'فونت اضافه شد، ولی ذخیره نشد.');
   } catch (e) {
     setStatus('این فایل فونت معتبر نیست.');
   }
