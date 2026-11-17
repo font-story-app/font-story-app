@@ -25,6 +25,7 @@ const FONTS = [
   // hosting like the 3 bought fonts).
   { id: 'SGKara', label: 'کارا', family: "'SG Kara', sans-serif", lang: 'fa' },
   { id: 'MolsaqArabic', label: 'ملصق', family: "'Molsaq Arabic', sans-serif", lang: 'fa' },
+  { id: 'Dastkhat', label: 'دستخط', family: "'Dastkhat', sans-serif", lang: 'fa' },
   // English fonts (Google Fonts, lazy-loaded — see ensureLazyFont):
   // nothing is fetched until the card scrolls into view or the font is
   // picked, so the first paint stays light. `css` is the css2 family
