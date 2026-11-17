@@ -188,6 +188,7 @@ const state = {
   // colour becomes changeable the moment they pick one.
   colorTouched: false,
   aspect: '1:1',
+  align: 'center',
   size: 110,
   bg: 0,
   caret: false,
@@ -519,6 +520,18 @@ const STYLE_PAINT = {
   },
 };
 
+// Text alignment: the canvas text block spans the 80px margins.
+// وسط‌چین centres each line; راست‌چین lands every line's right edge on
+// the right margin, چپ‌چین every line's left edge on the left margin.
+// A full-width line (lw = maxWidth) doesn't move in any alignment.
+const ALIGN_EDGE = 80;
+function alignCx(lw) {
+  const w = canvas.width || 1080;
+  if (state.align === 'right') return w - ALIGN_EDGE - lw / 2;
+  if (state.align === 'left') return ALIGN_EDGE + lw / 2;
+  return w / 2;
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -538,7 +551,8 @@ function draw() {
   const lineHeight = fontSize * state.lineHeight;
   const blockH = lines.length * lineHeight;
   let y = h / 2 - blockH / 2 + lineHeight / 2;
-  const cx = w / 2;
+  const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+  const bcx = alignCx(maxLw); // anchor of the whole block (widest line)
 
   // The native selection highlight is hidden (see styles.css) — the
   // canvas draws it instead, so it lands exactly on the visible glyphs.
@@ -549,9 +563,9 @@ function draw() {
   // X/Y rotation as a scale around the block centre (the 2D-canvas
   // equivalent of a 3D tilt): X squashes vertically, Y horizontally.
   ctx.save();
-  ctx.translate(cx, h / 2);
+  ctx.translate(bcx, h / 2);
   ctx.scale(Math.cos((state.rotY * Math.PI) / 180), Math.cos((state.rotX * Math.PI) / 180));
-  ctx.translate(-cx, -h / 2);
+  ctx.translate(-bcx, -h / 2);
 
   if (state.style === 'glass') {
     const pad = 48;
@@ -560,7 +574,7 @@ function draw() {
     ctx.fillStyle = hexAlpha(state.styleColor, sp('glassOpacity') / 100);
     ctx.strokeStyle = hexAlpha(state.styleColor, 0.55);
     ctx.lineWidth = 3;
-    roundRect(cx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, state.borderRadius);
+    roundRect(bcx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, state.borderRadius);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -575,13 +589,13 @@ function draw() {
     ctx.save();
     ctx.strokeStyle = state.styleColor;
     ctx.lineWidth = 4;
-    roundRect(cx - bw / 2, top, bw, blockH + pad, state.borderRadius);
+    roundRect(bcx - bw / 2, top, bw, blockH + pad, state.borderRadius);
     ctx.stroke();
     ctx.fillStyle = state.styleColor;
     ctx.font = `${fontSize}px ${fontFamily()}`;
     ctx.textAlign = 'center';
-    ctx.fillText('“', cx + bw / 2 - 24, top + fontSize * 0.75);
-    ctx.fillText('”', cx - bw / 2 + 24, top + blockH + pad - 12);
+    ctx.fillText('“', bcx + bw / 2 - 24, top + fontSize * 0.75);
+    ctx.fillText('”', bcx - bw / 2 + 24, top + blockH + pad - 12);
     ctx.restore();
   }
 
@@ -590,20 +604,21 @@ function draw() {
     const lr = lineRanges[li];
     ctx.save();
     const lw = lineWidth(line);
+    const lcx = alignCx(lw); // this line's own anchor for the alignment
     if (hasSel) {
       const a = Math.max(selStart, lr.start);
       const b = Math.min(selEnd, lr.end);
       if (b > a) {
         const rtl = isRTLText(line);
-        const xa = rtl ? cx + lw / 2 - prefixWidth(line, a - lr.start) : cx - lw / 2 + prefixWidth(line, a - lr.start);
-        const xb = rtl ? cx + lw / 2 - prefixWidth(line, b - lr.start) : cx - lw / 2 + prefixWidth(line, b - lr.start);
+        const xa = rtl ? lcx + lw / 2 - prefixWidth(line, a - lr.start) : lcx - lw / 2 + prefixWidth(line, a - lr.start);
+        const xb = rtl ? lcx + lw / 2 - prefixWidth(line, b - lr.start) : lcx - lw / 2 + prefixWidth(line, b - lr.start);
         ctx.fillStyle = 'rgba(80, 140, 255, 0.45)';
         const x0 = Math.min(xa, xb) - 6;
         ctx.fillRect(x0, y - lineHeight / 2 + 3, Math.abs(xb - xa) + 12, lineHeight - 6);
       }
     }
     const paint = STYLE_PAINT[state.style] || STYLE_PAINT.bold;
-    paint(line, cx, y, lw, fontSize);
+    paint(line, lcx, y, lw, fontSize);
     ctx.restore();
     y += lineHeight;
   }
@@ -614,8 +629,9 @@ function draw() {
   if (state.caret && document.activeElement === textInput && !hasSel) {
     const last = lines[lines.length - 1] || '';
     const lw = lineWidth(last);
+    const lcx = alignCx(lw);
     const caretY = h / 2 - blockH / 2 + (lines.length - 1) * lineHeight;
-    const caretX = isRTLText(last) ? cx - lw / 2 - 15 : cx + lw / 2 + 8;
+    const caretX = isRTLText(last) ? lcx - lw / 2 - 15 : lcx + lw / 2 + 8;
     ctx.save();
     ctx.fillStyle = state.color;
     ctx.fillRect(caretX, caretY - fontSize * 0.55, 7, fontSize * 1.1);
@@ -628,9 +644,8 @@ function draw() {
   // smoothing off — the classic pixelated look. Runs in unrotated
   // device space, after the rotation transform is restored.
   if (state.style === 'pixel') {
-    const maxLw = Math.max(...lines.map((l) => lineWidth(l)));
     const cell = sp('pixelSize');
-    const px = Math.max(0, cx - maxLw / 2 - 40);
+    const px = Math.max(0, bcx - maxLw / 2 - 40);
     const py = Math.max(0, h / 2 - blockH / 2 - 40);
     const pw = Math.min(w - px, maxLw + 80);
     const ph = Math.min(h - py, blockH + 80);
@@ -645,7 +660,7 @@ function draw() {
     ctx.imageSmoothingEnabled = true;
   }
 
-  syncEditorLayout(fontSize, lineHeight, blockH);
+  syncEditorLayout(fontSize, lineHeight, blockH, bcx);
 }
 
 // Keep the (invisible) editor's text laid out exactly where the canvas
@@ -655,7 +670,7 @@ function draw() {
 // and caret geometry matter. The canvas text area is 920 of the 1080
 // canvas pixels wide (80px margins), centred; the same transform as the
 // canvas rotation is applied around the block centre.
-function syncEditorLayout(fontSize, lineHeight, blockH) {
+function syncEditorLayout(fontSize, lineHeight, blockH, bcx) {
   if (!canvas.clientWidth) return;
   const scale = canvas.clientWidth / 1080;
   const fs = fontSize * scale;
@@ -679,11 +694,12 @@ function syncEditorLayout(fontSize, lineHeight, blockH) {
   s.fontWeight = String(state.weight);
   s.letterSpacing = `${state.letterSpacing * scale}px`;
   s.wordSpacing = `${state.wordSpacing * scale}px`;
-  s.textAlign = 'center';
+  s.textAlign = state.align;
   const cosY = Math.cos((state.rotY * Math.PI) / 180);
   const cosX = Math.cos((state.rotX * Math.PI) / 180);
   s.transform = `scale(${cosY}, ${cosX})`;
-  s.transformOrigin = `${canvas.clientWidth / 2 - 80 * scale}px ${canvas.clientHeight / 2}px`;
+  // Rotation pivots on the block centre, which moves with the alignment.
+  s.transformOrigin = `${bcx * scale - 80 * scale}px ${canvas.clientHeight / 2}px`;
 }
 
 function redraw() {
@@ -1178,6 +1194,7 @@ function applyDesign(d) {
   // colour deliberately picked, so the box styles keep using it.
   state.colorTouched = typeof d.color === 'string' && d.color.toUpperCase() !== '#FFFFFF';
   state.aspect = d.aspect || '9:16';
+  state.align = ['center', 'right', 'left'].includes(d.align) ? d.align : 'center';
   state.weight = [400, 500, 600, 700, 800, 900].includes(Number(d.weight)) ? Number(d.weight) : 800;
   state.letterSpacing = clampNum(d.letterSpacing, 0, 40, 0);
   state.wordSpacing = clampNum(d.wordSpacing, 0, 60, 0);
@@ -1194,6 +1211,7 @@ function applyDesign(d) {
   buildFontPicker();
   buildStylePicker();
   buildSwatches();
+  setAlign(state.align);
   renderStyleControls();
   updateDoneBtn();
   redraw();
@@ -1428,6 +1446,7 @@ async function saveDesign() {
       style: state.style,
       color: state.color,
       aspect: state.aspect,
+      align: state.align,
       weight: state.weight,
       letterSpacing: state.letterSpacing,
       wordSpacing: state.wordSpacing,
@@ -1537,6 +1556,28 @@ $('bgBtn').addEventListener('click', () => {
   document.body.classList.toggle('mono-bg', bg === '#000000' || bg === '#FFFFFF');
   document.body.classList.toggle('dark-bg', bg === '#000000');
   applyDefaultTextColor();
+});
+// Text alignment button (right edge of the stage): one tap cycles
+// وسط‌چین → راست‌چین → چپ‌چین. The icon always shows the current state.
+const ALIGN_ORDER = ['center', 'right', 'left'];
+const ALIGN_LABELS = { center: 'وسط‌چین', right: 'راست‌چین', left: 'چپ‌چین' };
+const ALIGN_ICONS = {
+  center: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>',
+  right: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>',
+  left: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>',
+};
+function setAlign(a) {
+  state.align = a;
+  const btn = $('alignBtn');
+  btn.innerHTML = ALIGN_ICONS[a];
+  btn.setAttribute('aria-label', 'تراز متن: ' + ALIGN_LABELS[a]);
+  btn.title = 'تراز متن: ' + ALIGN_LABELS[a];
+  redraw();
+}
+$('alignBtn').addEventListener('click', () => {
+  const next = ALIGN_ORDER[(ALIGN_ORDER.indexOf(state.align) + 1) % ALIGN_ORDER.length];
+  setAlign(next);
+  setStatus('تراز متن: ' + ALIGN_LABELS[next]);
 });
 $('doneBtn').addEventListener('click', openExport);
 $('exportClose').addEventListener('click', closeExport);
