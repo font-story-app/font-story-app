@@ -23,6 +23,8 @@ export const designs = table('designs', {
   style: text('style').notNull().default('bold'),
   color: text('color').notNull().default('#FFFFFF'),
   aspect: text('aspect').notNull().default('9:16'),
+  // Text alignment (added 2026-11-17): center | right | left.
+  align: text('align').notNull().default('center'),
   // Text settings (added 2026-11-15): weight, letter/word spacing (px),
   // line height (multiplier), X/Y rotation (degrees).
   weight: integer('weight').notNull().default(800),
