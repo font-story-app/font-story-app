@@ -725,9 +725,11 @@ function buildCardPicker(el, items, current, onPick, sampleHtml) {
 // switch which fonts the row shows — Persian, English, or favourites.
 let fontFilter = null; // 'fa' | 'en' | 'fav' | 'custom' — defaults to the current font's language
 function fontLang(id) {
-  if (CUSTOM_FONT_RE.test(id || '')) return 'custom';
-  const f = FONTS.find((x) => x.id === id);
-  return f && f.lang === 'en' ? 'en' : 'fa';
+  const f = fontEntry(id);
+  if (!f) return 'fa';
+  // Imported fonts carry their own lang (detected from glyph coverage
+  // at import/load time), so they show in the matching language list.
+  return f.lang === 'en' ? 'en' : 'fa';
 }
 // Any font, built-in or imported, by id.
 function fontEntry(id) {
@@ -746,7 +748,7 @@ function buildFontPicker() {
     ? favs.map((id) => fontEntry(id)).filter(Boolean)
     : fontFilter === 'custom'
       ? imported
-      : FONTS.filter((f) => f.lang === fontFilter);
+      : [...FONTS.filter((f) => f.lang === fontFilter), ...imported.filter((f) => f.lang === fontFilter)];
   const row = $('fontRow');
   row.innerHTML = '';
   for (const item of items) row.appendChild(fontCard(item, favs));
@@ -831,7 +833,11 @@ async function loadImportedFonts() {
       const face = new FontFace(customFamily(r.id), r.data);
       await face.load();
       document.fonts.add(face);
-      importedFonts.set(r.id, { id: r.id, label: r.name, family: `'${customFamily(r.id)}', sans-serif`, face, custom: true, sample: document.fonts.check(`18px "${customFamily(r.id)}"`, 'متن شما') ? 'متن شما' : 'Your text' });
+      // Language comes from glyph coverage, not the file name: a font
+      // that renders Persian text belongs in the فارسی list (and in
+      // «فونت‌های من»), a Latin-only one in انگلیسی.
+      const canFa = document.fonts.check(`18px "${customFamily(r.id)}"`, 'متن شما');
+      importedFonts.set(r.id, { id: r.id, label: r.name, family: `'${customFamily(r.id)}', sans-serif`, face, custom: true, lang: canFa ? 'fa' : 'en', sample: canFa ? 'متن شما' : 'Your text' });
     } catch (e) { /* a corrupt stored font is skipped, the rest still load */ }
   }
   if (importedFonts.size) { syncCustomFilter(); buildFontPicker(); }
@@ -863,7 +869,8 @@ async function importFontFile(file) {
     await face.load();
     document.fonts.add(face);
     const label = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'فونت من';
-    importedFonts.set(id, { id, label, family: `'${customFamily(id)}', sans-serif`, face, custom: true, sample: document.fonts.check(`18px "${customFamily(id)}"`, 'متن شما') ? 'متن شما' : 'Your text' });
+    const canFa = document.fonts.check(`18px "${customFamily(id)}"`, 'متن شما');
+    importedFonts.set(id, { id, label, family: `'${customFamily(id)}', sans-serif`, face, custom: true, lang: canFa ? 'fa' : 'en', sample: canFa ? 'متن شما' : 'Your text' });
     // Persist, then read back and verify the bytes actually landed —
     // never again report success for a font that won't survive reload.
     let persisted = false;
