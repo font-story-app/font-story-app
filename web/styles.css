@@ -19,6 +19,10 @@
 @font-face { font-family: 'Molsaq Arabic'; src: url('fonts/MolsaqArabic-ExtraLight.woff2') format('woff2'); font-weight: 200; font-display: swap; }
 @font-face { font-family: 'Molsaq Arabic'; src: url('fonts/MolsaqArabic-Light.woff2') format('woff2'); font-weight: 300; font-display: swap; }
 @font-face { font-family: 'Molsaq Arabic'; src: url('fonts/MolsaqArabic-ExtraBold.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+/* Dastkhat (2026-11-17, Reza's ask): OFL 1.1 Persian/Latin UI font by
+   Dastyar, based on Vazirmatn. Variable file, weight 100-900, so the
+   weight slider works exactly; one file instead of 9 static weights. */
+@font-face { font-family: 'Dastkhat'; src: url('fonts/Dastkhat-Variable.woff2') format('woff2-variations'); font-weight: 100 900; font-display: swap; }
 
 :root { color-scheme: dark; }
 
