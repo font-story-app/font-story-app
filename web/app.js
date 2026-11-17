@@ -1547,6 +1547,23 @@ document.addEventListener('pointerdown', (e) => {
   textInput.blur();
 });
 
+// PC scrolling (2026-11-17, support report): the font/style rows are
+// horizontal scrollers with a hidden scrollbar — on touch you swipe them,
+// but on a PC a mouse wheel does nothing and there's no scrollbar to drag,
+// so only the first ~5 cards were reachable. Convert the wheel into a
+// horizontal scroll; when the row is already at the edge in that
+// direction, let the wheel fall through to the sheet's vertical scroll.
+function onRowWheel(e) {
+  const row = e.target.closest ? e.target.closest('.card-row') : null;
+  if (!row || row.scrollWidth <= row.clientWidth) return;
+  const d = e.deltaX + e.deltaY;
+  if (d > 0 && row.scrollLeft + row.clientWidth >= row.scrollWidth - 1) return;
+  if (d < 0 && row.scrollLeft <= 0) return;
+  e.preventDefault();
+  row.scrollLeft += d;
+}
+document.addEventListener('wheel', onRowWheel, { passive: false });
+
 // Test hook: ?editing=1 previews the keyboard-open layout (bottom sheet
 // hidden) without a mobile keyboard. Real focus/blur behaviour takes
 // over as soon as the editor is focused.
