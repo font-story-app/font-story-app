@@ -228,6 +228,19 @@ body.mono-bg .size-rail {
 /* On the black background a dark chip is invisible, so the chip is light
    grey there instead — it must actually be seen on both solid colours. */
 body.dark-bg .size-rail { background: rgba(255,255,255,0.16); }
+
+/* Text-alignment button, right edge of the canvas, mirroring the
+   size rail on the left. */
+.align-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+/* On the black background the dark circle is invisible — same light
+   treatment as the size-rail chip there. */
+body.dark-bg .align-btn { background: rgba(255,255,255,0.16); }
 .size-mark { font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 .size-value { font-size: 14px; font-weight: 800; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 #sizeRange {
