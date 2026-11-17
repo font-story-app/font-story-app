@@ -26,6 +26,7 @@ export default async function (_input, ctx) {
       style: r.style,
       color: r.color,
       aspect: r.aspect,
+      align: r.align,
       weight: r.weight,
       letterSpacing: r.letterSpacing,
       wordSpacing: r.wordSpacing,
