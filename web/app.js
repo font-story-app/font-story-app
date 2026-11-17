@@ -255,7 +255,7 @@ function callEndpoint(name, input) {
 
 // --- Canvas rendering (transparent background; PNG export has no bg) ---
 function fontFamily() {
-  const f = FONTS.find((x) => x.id === state.font);
+  const f = FONTS.find((x) => x.id === state.font) || importedFonts.get(state.font);
   return f ? f.family : "'Vazirmatn', sans-serif";
 }
 
@@ -723,28 +723,180 @@ function buildCardPicker(el, items, current, onPick, sampleHtml) {
 
 // One row, like the style panel: the three filter buttons in the head
 // switch which fonts the row shows — Persian, English, or favourites.
-let fontFilter = null; // 'fa' | 'en' | 'fav' — defaults to the current font's language
+let fontFilter = null; // 'fa' | 'en' | 'fav' | 'custom' — defaults to the current font's language
 function fontLang(id) {
+  if (CUSTOM_FONT_RE.test(id || '')) return 'custom';
   const f = FONTS.find((x) => x.id === id);
   return f && f.lang === 'en' ? 'en' : 'fa';
+}
+// Any font, built-in or imported, by id.
+function fontEntry(id) {
+  return FONTS.find((f) => f.id === id) || importedFonts.get(id) || null;
+}
+function fontLabel(id) {
+  const f = fontEntry(id);
+  if (f) return f.label;
+  return CUSTOM_FONT_RE.test(id || '') ? 'فونت واردشده' : id;
 }
 function buildFontPicker() {
   const favs = getFavs();
   if (!fontFilter) fontFilter = fontLang(state.font);
+  const imported = [...importedFonts.values()];
   const items = fontFilter === 'fav'
-    ? favs.map((id) => FONTS.find((f) => f.id === id)).filter(Boolean)
-    : FONTS.filter((f) => f.lang === fontFilter);
+    ? favs.map((id) => fontEntry(id)).filter(Boolean)
+    : fontFilter === 'custom'
+      ? imported
+      : FONTS.filter((f) => f.lang === fontFilter);
   const row = $('fontRow');
   row.innerHTML = '';
   for (const item of items) row.appendChild(fontCard(item, favs));
-  row.style.display = items.length ? '' : 'none';
+  // The import card sits at the end of every list except favourites —
+  // it is the way in, not a font, so it never hides behind a filter.
+  if (fontFilter !== 'fav') row.appendChild(importCard());
+  row.style.display = (items.length || fontFilter !== 'fav') ? '' : 'none';
   $('favEmpty').hidden = !(fontFilter === 'fav' && !items.length);
+  syncCustomFilter();
   document.querySelectorAll('.font-filter').forEach((b) =>
     b.classList.toggle('active', b.dataset.filter === fontFilter));
   // A saved design (or the default) may carry a Google font — make sure
   // it is loaded so the canvas draws it, not the fallback face.
-  const current = FONTS.find((f) => f.id === state.font);
-  if (current) ensureLazyFont(current).then(redraw);
+  // Imported fonts are already loaded via FontFace, so they skip this.
+  const current = fontEntry(state.font);
+  if (current && !current.custom) ensureLazyFont(current).then(redraw);
+}
+function syncCustomFilter() {
+  const pill = $('customFilter');
+  if (pill) pill.hidden = importedFonts.size === 0;
+}
+
+// --- User-imported fonts (client-side only) ---
+// A user picks a font file (ttf/otf/woff/woff2) from their device; it is
+// loaded with the FontFace API and kept in IndexedDB so it survives
+// reloads. Nothing is uploaded: the file never leaves the phone, so
+// licensed fonts stay the user's own and the server never redistributes
+// them. The id is `custom-<8 hex>` (SHA-256 of the bytes, FNV-1a
+// fallback) — the back-end allow-list accepts that shape, so designs
+// saved with an imported font restore it when the font is on the device
+// and fall back to Vazir (with a toast) when it isn't.
+const CUSTOM_FONT_RE = /^custom-[0-9a-f]{8}$/;
+const importedFonts = new Map(); // id -> {id, label, family, face, custom, sample}
+const MAX_IMPORTED_FONTS = 10;
+const MAX_FONT_BYTES = 10 * 1024 * 1024;
+function customFamily(id) { return 'FontStory-' + id; }
+
+async function hashFontId(buf) {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      const d = await crypto.subtle.digest('SHA-256', buf);
+      return [...new Uint8Array(d)].slice(0, 4).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (e) { /* fall through to the FNV-1a hash */ }
+  let h = 0x811c9dc5;
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+// Tiny IndexedDB wrapper (one store, keyed by font id).
+let fontDbPromise = null;
+function openFontDb() {
+  if (!fontDbPromise) {
+    fontDbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open('fontstory', 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore('fonts', { keyPath: 'id' }); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  return fontDbPromise;
+}
+function idbFonts(mode, run) {
+  return openFontDb().then((db) => new Promise((resolve, reject) => {
+    const tx = db.transaction('fonts', mode);
+    const store = tx.objectStore('fonts');
+    let out;
+    try { out = run(store); } catch (e) { reject(e); return; }
+    tx.oncomplete = () => resolve(out && out.result !== undefined ? out.result : undefined);
+    tx.onerror = () => reject(tx.error);
+  }));
+}
+async function loadImportedFonts() {
+  let rows = [];
+  try { rows = await idbFonts('readonly', (s) => s.getAll()); } catch (e) { return; }
+  for (const r of rows || []) {
+    try {
+      const face = new FontFace(customFamily(r.id), r.data);
+      await face.load();
+      document.fonts.add(face);
+      importedFonts.set(r.id, { id: r.id, label: r.name, family: `'${customFamily(r.id)}', sans-serif`, face, custom: true, sample: document.fonts.check(`18px "${customFamily(r.id)}"`, 'متن شما') ? 'متن شما' : 'Your text' });
+    } catch (e) { /* a corrupt stored font is skipped, the rest still load */ }
+  }
+  if (importedFonts.size) { syncCustomFilter(); buildFontPicker(); }
+}
+const importedReady = loadImportedFonts();
+
+async function importFontFile(file) {
+  if (!file) return;
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (!['ttf', 'otf', 'woff', 'woff2'].includes(ext)) { setStatus('فایل فونت معتبر نیست — ttf، otf، woff یا woff2 انتخاب کن.'); return; }
+  if (file.size > MAX_FONT_BYTES) { setStatus('این فونت خیلی بزرگه (حداکثر ۱۰ مگابایت).'); return; }
+  setStatus('در حال اضافه کردن فونت…');
+  try {
+    const buf = await file.arrayBuffer();
+    const id = 'custom-' + await hashFontId(buf);
+    if (importedFonts.has(id)) {
+      fontFilter = 'custom';
+      buildFontPicker();
+      selectFont(id);
+      setStatus('این فونت قبلاً اضافه شده.');
+      return;
+    }
+    if (importedFonts.size >= MAX_IMPORTED_FONTS) { setStatus('حداکثر ۱۰ فونت می‌تونی اضافه کنی — اول یکی رو حذف کن.'); return; }
+    const face = new FontFace(customFamily(id), buf);
+    await face.load();
+    document.fonts.add(face);
+    const label = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'فونت من';
+    importedFonts.set(id, { id, label, family: `'${customFamily(id)}', sans-serif`, face, custom: true, sample: document.fonts.check(`18px "${customFamily(id)}"`, 'متن شما') ? 'متن شما' : 'Your text' });
+    try { await idbFonts('readwrite', (s) => s.put({ id, name: label, data: buf })); }
+    catch (e) { /* no IndexedDB — the font works for this session only */ }
+    fontFilter = 'custom';
+    buildFontPicker();
+    selectFont(id);
+    setStatus('فونت اضافه شد.');
+  } catch (e) {
+    setStatus('این فایل فونت معتبر نیست.');
+  }
+}
+
+async function removeImportedFont(id) {
+  const entry = importedFonts.get(id);
+  if (!entry) return;
+  importedFonts.delete(id);
+  try { document.fonts.delete(entry.face); } catch (e) { /* already gone */ }
+  try { await idbFonts('readwrite', (s) => s.delete(id)); } catch (e) { /* session-only font */ }
+  saveFavs(getFavs().filter((x) => x !== id));
+  if (state.font === id) { state.font = 'Vazir'; redraw(); }
+  if (!importedFonts.size && fontFilter === 'custom') fontFilter = 'fa';
+  syncCustomFilter();
+  buildFontPicker();
+  setStatus('فونت حذف شد.');
+}
+
+// The import card: a dashed "+" card at the end of the font row. The
+// real file input sits transparently on top of it (same pattern as the
+// colour picker — a hidden input + .click() is ignored by iOS WebKit),
+// so the tap lands on the input itself and the system picker opens.
+function importCard() {
+  const d = document.createElement('div');
+  d.className = 'pick-card import-card';
+  d.innerHTML = `<span class="sample import-plus"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="name">فونت خودم</span><input type="file" accept=".ttf,.otf,.woff,.woff2" class="font-file-input" aria-label="ایمپورت فونت">`;
+  const input = d.querySelector('input');
+  input.addEventListener('change', () => {
+    const f = input.files && input.files[0];
+    input.value = '';
+    if (f) importFontFile(f);
+  });
+  return d;
 }
 
 // --- Font favourites + lazy Google Fonts ---
@@ -753,7 +905,7 @@ const LONG_PRESS_MS = 1000; // hold a card this long to (un)favourite it
 const HEART_SVG = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
 
 function getFavs() {
-  try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]').filter((id) => FONTS.some((f) => f.id === id)); }
+  try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]').filter((id) => fontEntry(id)); }
   catch { return []; }
 }
 function saveFavs(ids) {
@@ -800,8 +952,8 @@ function selectFont(id) {
   state.font = id;
   document.querySelectorAll('#panel-font .pick-card').forEach((x) =>
     x.classList.toggle('active', x.dataset.fontId === id));
-  const font = FONTS.find((f) => f.id === id);
-  if (font) ensureLazyFont(font).then(redraw);
+  const font = fontEntry(id);
+  if (font && !font.custom) ensureLazyFont(font).then(redraw);
   redraw();
 }
 
@@ -812,8 +964,11 @@ function fontCard(item, favs) {
   b.dataset.fontId = item.id;
   const sample = item.sample || 'متن شما';
   b.innerHTML = `<span class="sample"><span style="font-family:${item.family}">${sample}</span></span><span class="name"></span>` +
-    (favs.includes(item.id) ? `<span class="fav-badge" aria-hidden="true">${HEART_SVG}</span>` : '');
+    (favs.includes(item.id) ? `<span class="fav-badge" aria-hidden="true">${HEART_SVG}</span>` : '') +
+    (item.custom ? `<span class="del-badge" role="button" aria-label="حذف فونت"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>` : '');
   b.querySelector('.name').textContent = item.label;
+  const del = b.querySelector('.del-badge');
+  if (del) del.addEventListener('click', (e) => { e.stopPropagation(); removeImportedFont(item.id); });
   // Tap picks the font; a ~1s hold (un)favourites it instead.
   let pressTimer = null, pressStart = null, longPressed = false;
   const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
@@ -988,7 +1143,14 @@ document.querySelectorAll('.font-filter').forEach((b) => {
 
 function applyDesign(d) {
   state.text = d.text || '';
-  state.font = d.font || 'Vazir';
+  // A saved design may reference an imported font that isn't on this
+  // device (deleted, or another phone) — fall back to Vazir and say so.
+  if (d.font && CUSTOM_FONT_RE.test(d.font) && !importedFonts.has(d.font)) {
+    state.font = 'Vazir';
+    setStatus('فونت این طرح روی این گوشی نیست، با وزیر باز شد.');
+  } else {
+    state.font = d.font || 'Vazir';
+  }
   // Old saved designs may carry a style that was later deleted.
   state.style = STYLES.some((s) => s.id === d.style) ? d.style : 'bold';
   state.color = d.color || '#FFFFFF';
@@ -1051,6 +1213,10 @@ const TRASH_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="cu
 // --- Recents (in the قالب panel) ---
 async function loadRecents() {
   const list = $('recents');
+  // Imported fonts load from IndexedDB asynchronously — wait for them
+  // before rendering, so a design saved with one shows its real name
+  // and applies it instead of falling back to Vazir.
+  await importedReady.catch(() => {});
   try {
     const res = await callEndpoint('myDesigns', {});
     const rows = res?.designs || [];
@@ -1062,7 +1228,7 @@ async function loadRecents() {
     for (const d of rows) {
       const li = document.createElement('li');
       const date = d.created_at ? new Date(d.created_at * 1000).toLocaleDateString('fa-IR') : '';
-      li.innerHTML = `<div class="recent-text"></div><div class="meta">${d.font} · ${d.style} · ${d.aspect} · ${date}</div>`;
+      li.innerHTML = `<div class="recent-text"></div><div class="meta">${fontLabel(d.font)} · ${d.style} · ${d.aspect} · ${date}</div>`;
       li.querySelector('.recent-text').textContent = d.text;
       li.addEventListener('click', () => applyDesign(d));
       // Delete button: first tap arms it («حذف؟»), second tap within
