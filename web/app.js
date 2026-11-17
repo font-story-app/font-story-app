@@ -520,15 +520,14 @@ const STYLE_PAINT = {
   },
 };
 
-// Text alignment: the canvas text block spans the 80px margins.
-// وسط‌چین centres each line; راست‌چین lands every line's right edge on
-// the right margin, چپ‌چین every line's left edge on the left margin.
-// A full-width line (lw = maxWidth) doesn't move in any alignment.
-const ALIGN_EDGE = 80;
-function alignCx(lw) {
+// Text alignment happens INSIDE the text block, which stays centred on
+// the canvas: وسط‌چین centres each line; راست‌چین lines every line's
+// right edge up with the widest line's right edge, چپ‌چین every line's
+// left edge with the widest line's left edge. A single line never moves.
+function alignCx(lw, maxLw) {
   const w = canvas.width || 1080;
-  if (state.align === 'right') return w - ALIGN_EDGE - lw / 2;
-  if (state.align === 'left') return ALIGN_EDGE + lw / 2;
+  if (state.align === 'right') return w / 2 + maxLw / 2 - lw / 2;
+  if (state.align === 'left') return w / 2 - maxLw / 2 + lw / 2;
   return w / 2;
 }
 
@@ -552,7 +551,7 @@ function draw() {
   const blockH = lines.length * lineHeight;
   let y = h / 2 - blockH / 2 + lineHeight / 2;
   const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
-  const bcx = alignCx(maxLw); // anchor of the whole block (widest line)
+  const cx = w / 2; // the block stays centred; only lines move within it
 
   // The native selection highlight is hidden (see styles.css) — the
   // canvas draws it instead, so it lands exactly on the visible glyphs.
@@ -563,9 +562,9 @@ function draw() {
   // X/Y rotation as a scale around the block centre (the 2D-canvas
   // equivalent of a 3D tilt): X squashes vertically, Y horizontally.
   ctx.save();
-  ctx.translate(bcx, h / 2);
+  ctx.translate(cx, h / 2);
   ctx.scale(Math.cos((state.rotY * Math.PI) / 180), Math.cos((state.rotX * Math.PI) / 180));
-  ctx.translate(-bcx, -h / 2);
+  ctx.translate(-cx, -h / 2);
 
   if (state.style === 'glass') {
     const pad = 48;
@@ -574,7 +573,7 @@ function draw() {
     ctx.fillStyle = hexAlpha(state.styleColor, sp('glassOpacity') / 100);
     ctx.strokeStyle = hexAlpha(state.styleColor, 0.55);
     ctx.lineWidth = 3;
-    roundRect(bcx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, state.borderRadius);
+    roundRect(cx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, state.borderRadius);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -589,13 +588,13 @@ function draw() {
     ctx.save();
     ctx.strokeStyle = state.styleColor;
     ctx.lineWidth = 4;
-    roundRect(bcx - bw / 2, top, bw, blockH + pad, state.borderRadius);
+    roundRect(cx - bw / 2, top, bw, blockH + pad, state.borderRadius);
     ctx.stroke();
     ctx.fillStyle = state.styleColor;
     ctx.font = `${fontSize}px ${fontFamily()}`;
     ctx.textAlign = 'center';
-    ctx.fillText('“', bcx + bw / 2 - 24, top + fontSize * 0.75);
-    ctx.fillText('”', bcx - bw / 2 + 24, top + blockH + pad - 12);
+    ctx.fillText('“', cx + bw / 2 - 24, top + fontSize * 0.75);
+    ctx.fillText('”', cx - bw / 2 + 24, top + blockH + pad - 12);
     ctx.restore();
   }
 
@@ -604,7 +603,7 @@ function draw() {
     const lr = lineRanges[li];
     ctx.save();
     const lw = lineWidth(line);
-    const lcx = alignCx(lw); // this line's own anchor for the alignment
+    const lcx = alignCx(lw, maxLw); // this line's own anchor for the alignment
     if (hasSel) {
       const a = Math.max(selStart, lr.start);
       const b = Math.min(selEnd, lr.end);
@@ -629,7 +628,7 @@ function draw() {
   if (state.caret && document.activeElement === textInput && !hasSel) {
     const last = lines[lines.length - 1] || '';
     const lw = lineWidth(last);
-    const lcx = alignCx(lw);
+    const lcx = alignCx(lw, maxLw);
     const caretY = h / 2 - blockH / 2 + (lines.length - 1) * lineHeight;
     const caretX = isRTLText(last) ? lcx - lw / 2 - 15 : lcx + lw / 2 + 8;
     ctx.save();
@@ -645,7 +644,7 @@ function draw() {
   // device space, after the rotation transform is restored.
   if (state.style === 'pixel') {
     const cell = sp('pixelSize');
-    const px = Math.max(0, bcx - maxLw / 2 - 40);
+    const px = Math.max(0, cx - maxLw / 2 - 40);
     const py = Math.max(0, h / 2 - blockH / 2 - 40);
     const pw = Math.min(w - px, maxLw + 80);
     const ph = Math.min(h - py, blockH + 80);
@@ -660,7 +659,7 @@ function draw() {
     ctx.imageSmoothingEnabled = true;
   }
 
-  syncEditorLayout(fontSize, lineHeight, blockH, bcx);
+  syncEditorLayout(fontSize, lineHeight, blockH, maxLw);
 }
 
 // Keep the (invisible) editor's text laid out exactly where the canvas
@@ -670,7 +669,7 @@ function draw() {
 // and caret geometry matter. The canvas text area is 920 of the 1080
 // canvas pixels wide (80px margins), centred; the same transform as the
 // canvas rotation is applied around the block centre.
-function syncEditorLayout(fontSize, lineHeight, blockH, bcx) {
+function syncEditorLayout(fontSize, lineHeight, blockH, maxLw) {
   if (!canvas.clientWidth) return;
   const scale = canvas.clientWidth / 1080;
   const fs = fontSize * scale;
@@ -695,11 +694,20 @@ function syncEditorLayout(fontSize, lineHeight, blockH, bcx) {
   s.letterSpacing = `${state.letterSpacing * scale}px`;
   s.wordSpacing = `${state.wordSpacing * scale}px`;
   s.textAlign = state.align;
+  // The editor's lines must sit where the canvas draws them: the block
+  // is centred, so for راست‌چین/چپ‌چین the content box is padded in
+  // from the 80px margin to the block's edge (460 - maxLw/2, in canvas
+  // px) — otherwise taps and selection handles would land on the wrong
+  // characters for multi-line aligned text. The padding never makes the
+  // content box narrower than the widest line, so wrapping can't diverge
+  // from the canvas either.
+  const alignPad = Math.max(0, 460 - maxLw / 2) * scale;
+  s.paddingLeft = state.align === 'left' ? `${alignPad}px` : '0px';
+  s.paddingRight = state.align === 'right' ? `${alignPad}px` : '0px';
   const cosY = Math.cos((state.rotY * Math.PI) / 180);
   const cosX = Math.cos((state.rotX * Math.PI) / 180);
   s.transform = `scale(${cosY}, ${cosX})`;
-  // Rotation pivots on the block centre, which moves with the alignment.
-  s.transformOrigin = `${bcx * scale - 80 * scale}px ${canvas.clientHeight / 2}px`;
+  s.transformOrigin = `${canvas.clientWidth / 2 - 80 * scale}px ${canvas.clientHeight / 2}px`;
 }
 
 function redraw() {
