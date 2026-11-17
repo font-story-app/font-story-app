@@ -2,7 +2,7 @@ import { db, EndpointError } from 'sdk';
 import { designs } from '../schema.js';
 import { ensureUser } from '../lib/users.js';
 
-const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmatn', 'Lalezar', 'Estedad', 'Parastoo', 'Amiri', 'Shabnam', 'Sahel', 'Samim', 'Gandom', 'SGKara', 'MolsaqArabic', 'Poppins', 'Montserrat', 'BebasNeue', 'Anton', 'Oswald', 'PlayfairDisplay', 'DancingScript', 'Lobster', 'Pacifico', 'Caveat', 'ArchivoBlack', 'Rubik'];
+const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmatn', 'Lalezar', 'Estedad', 'Parastoo', 'Amiri', 'Shabnam', 'Sahel', 'Samim', 'Gandom', 'SGKara', 'MolsaqArabic', 'Dastkhat', 'Poppins', 'Montserrat', 'BebasNeue', 'Anton', 'Oswald', 'PlayfairDisplay', 'DancingScript', 'Lobster', 'Pacifico', 'Caveat', 'ArchivoBlack', 'Rubik'];
 // Imported fonts use ids like `custom-<8 hex>` (SHA-256 of the file
 // bytes) — accept that shape as well as the built-in list, so designs
 // saved with a user's own font keep their font id. The file itself
