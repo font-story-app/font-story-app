@@ -1551,16 +1551,26 @@ document.addEventListener('pointerdown', (e) => {
 // horizontal scrollers with a hidden scrollbar — on touch you swipe them,
 // but on a PC a mouse wheel does nothing and there's no scrollbar to drag,
 // so only the first ~5 cards were reachable. Convert the wheel into a
-// horizontal scroll; when the row is already at the edge in that
-// direction, let the wheel fall through to the sheet's vertical scroll.
+// horizontal scroll.
+// RTL gotcha (found by the failed first verification): the page is
+// dir="rtl", so in Chrome scrollLeft starts at 0 and goes NEGATIVE toward
+// the list's end — adding a positive delta clamps straight back to 0 and
+// the row never moves. Wheel-down must therefore DECREASE scrollLeft in
+// RTL (a horizontal deltaX keeps its native mapping and is not flipped).
+// The move is attempted first and preventDefault only runs if scrollLeft
+// actually changed — at the edge the wheel falls through to the sheet's
+// vertical scroll instead of being swallowed. This is also immune to the
+// Safari RTL model (scrollLeft starts at max and decreases to 0), where
+// the same decrease-toward-the-end holds.
 function onRowWheel(e) {
   const row = e.target.closest ? e.target.closest('.card-row') : null;
   if (!row || row.scrollWidth <= row.clientWidth) return;
-  const d = e.deltaX + e.deltaY;
-  if (d > 0 && row.scrollLeft + row.clientWidth >= row.scrollWidth - 1) return;
-  if (d < 0 && row.scrollLeft <= 0) return;
+  if (!e.deltaX && !e.deltaY) return;
+  const rtl = getComputedStyle(row).direction === 'rtl';
+  const before = row.scrollLeft;
+  row.scrollLeft += e.deltaX + (rtl ? -e.deltaY : e.deltaY);
+  if (row.scrollLeft === before) return; // at the edge: let the wheel fall through
   e.preventDefault();
-  row.scrollLeft += d;
 }
 document.addEventListener('wheel', onRowWheel, { passive: false });
 
