@@ -290,6 +290,14 @@ body.editing .sheet, body.editing .tabbar { display: none; }
   scrollbar-width: none;
 }
 .card-row::-webkit-scrollbar { display: none; }
+/* On a PC (fine pointer) the hidden scrollbar leaves the rows with no
+   visible way to scroll — show a thin one so the rest is reachable. */
+@media (pointer: fine) {
+  .card-row { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.35) transparent; }
+  .card-row::-webkit-scrollbar { display: block; height: 6px; }
+  .card-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 999px; }
+  .card-row::-webkit-scrollbar-track { background: transparent; }
+}
 .pick-card {
   flex: 0 0 auto;
   width: 100px;
