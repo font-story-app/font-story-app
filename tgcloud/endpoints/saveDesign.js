@@ -16,6 +16,7 @@ const ALLOWED_STYLES = [
   'sticker',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
+const ALLOWED_ALIGNS = ['center', 'right', 'left'];
 const ALLOWED_WEIGHTS = [400, 500, 600, 700, 800, 900];
 
 // Per-style extra parameters (mirror of STYLE_CONTROLS in web/app.js):
@@ -92,6 +93,7 @@ export default async function (input, ctx) {
     ? input.color
     : '#FFFFFF';
   const aspect = ALLOWED_ASPECTS.includes(input?.aspect) ? input.aspect : '1:1';
+  const align = ALLOWED_ALIGNS.includes(input?.align) ? input.align : 'center';
   const weight = ALLOWED_WEIGHTS.includes(Number(input?.weight)) ? Number(input.weight) : 800;
   const styleColor = typeof input?.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.styleColor)
     ? input.styleColor
@@ -101,7 +103,7 @@ export default async function (input, ctx) {
   const [row] = await db
     .insert(designs)
     .values({
-      userId: user.id, text, font, style, color, aspect, weight, styleColor,
+      userId: user.id, text, font, style, color, aspect, align, weight, styleColor,
       letterSpacing: clampNum(input?.letterSpacing, 0, 40, 0),
       wordSpacing: clampNum(input?.wordSpacing, 0, 60, 0),
       lineHeight: clampNum(input?.lineHeight, 1, 2, 1.4),
