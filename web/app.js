@@ -531,6 +531,10 @@ function alignCx(lw, maxLw) {
   return w / 2;
 }
 
+// The text block's rect from the last draw (canvas px): centre, half-size
+// and the rotation scales — used by tap-to-dismiss below.
+let lastBlock = null;
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -552,6 +556,11 @@ function draw() {
   let y = h / 2 - blockH / 2 + lineHeight / 2;
   const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
   const cx = w / 2; // the block stays centred; only lines move within it
+  lastBlock = {
+    cx, cy: h / 2, hw: maxLw / 2, hh: blockH / 2,
+    cosY: Math.cos((state.rotY * Math.PI) / 180),
+    cosX: Math.cos((state.rotX * Math.PI) / 180),
+  };
 
   // The native selection highlight is hidden (see styles.css) — the
   // canvas draws it instead, so it lands exactly on the visible glyphs.
@@ -1511,6 +1520,32 @@ function updateEditingLayout() {
 }
 if (window.visualViewport) window.visualViewport.addEventListener('resize', updateEditingLayout);
 window.addEventListener('resize', updateEditingLayout);
+
+// Tap-to-dismiss (2026-11-17): while the keyboard is open, a tap anywhere
+// except the keyboard closes it and the panels come back (blur does that:
+// it clears fullViewportH and updateEditingLayout drops body.editing).
+// The transparent editor covers the whole canvas, so a tap on the canvas
+// IS a tap on the editor — only taps on the text block itself keep
+// editing (caret placement); taps on empty canvas dismiss. The clear
+// button is excluded: it re-focuses the editor after clearing.
+function tapInsideTextBlock(e) {
+  if (!lastBlock) return false;
+  const r = canvas.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (canvas.width / r.width);
+  const y = (e.clientY - r.top) * (canvas.height / r.height);
+  // Undo the rotation scale around the block centre (cos >= 0.7, the
+  // sliders cap rotation at 45 degrees).
+  const dx = (x - lastBlock.cx) / Math.max(0.5, lastBlock.cosY);
+  const dy = (y - lastBlock.cy) / Math.max(0.5, lastBlock.cosX);
+  const MARGIN = 40; // slack so taps just beside the glyphs still edit
+  return Math.abs(dx) <= lastBlock.hw + MARGIN && Math.abs(dy) <= lastBlock.hh + MARGIN;
+}
+document.addEventListener('pointerdown', (e) => {
+  if (document.activeElement !== textInput) return;
+  if (e.target === textInput && tapInsideTextBlock(e)) return;
+  if (e.target.closest && e.target.closest('#clearBtn')) return;
+  textInput.blur();
+});
 
 // Test hook: ?editing=1 previews the keyboard-open layout (bottom sheet
 // hidden) without a mobile keyboard. Real focus/blur behaviour takes
