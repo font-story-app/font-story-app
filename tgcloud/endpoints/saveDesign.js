@@ -3,6 +3,12 @@ import { designs } from '../schema.js';
 import { ensureUser } from '../lib/users.js';
 
 const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmatn', 'Lalezar', 'Estedad', 'Parastoo', 'Amiri', 'Shabnam', 'Sahel', 'Samim', 'Gandom', 'SGKara', 'MolsaqArabic', 'Poppins', 'Montserrat', 'BebasNeue', 'Anton', 'Oswald', 'PlayfairDisplay', 'DancingScript', 'Lobster', 'Pacifico', 'Caveat', 'ArchivoBlack', 'Rubik'];
+// Imported fonts use ids like `custom-<8 hex>` (SHA-256 of the file
+// bytes) — accept that shape as well as the built-in list, so designs
+// saved with a user's own font keep their font id. The file itself
+// never reaches the server (it lives in the user's IndexedDB), so the
+// id is just an opaque reference here.
+const CUSTOM_FONT_RE = /^custom-[0-9a-f]{8}$/;
 const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
@@ -80,7 +86,7 @@ export default async function (input, ctx) {
   if (text.length > 500) {
     throw new EndpointError('Text must be under 500 characters', { code: 'TEXT_TOO_LONG' });
   }
-  const font = ALLOWED_FONTS.includes(input?.font) ? input.font : 'Vazir';
+  const font = (ALLOWED_FONTS.includes(input?.font) || CUSTOM_FONT_RE.test(input?.font || '')) ? input.font : 'Vazir';
   const style = ALLOWED_STYLES.includes(input?.style) ? input.style : 'bold';
   const color = typeof input?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.color)
     ? input.color
