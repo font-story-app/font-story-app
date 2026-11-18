@@ -16,7 +16,7 @@ const ALLOWED_STYLES = [
   'sticker',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
-const ALLOWED_ALIGNS = ['center', 'right', 'left'];
+const ALLOWED_ALIGNS = ['center', 'right', 'left', 'justify'];
 const ALLOWED_WEIGHTS = [400, 500, 600, 700, 800, 900];
 
 // Per-style extra parameters (mirror of STYLE_CONTROLS in web/app.js):
