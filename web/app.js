@@ -337,12 +337,13 @@ function wrapLineRanges(text, maxWidth) {
 
 // Width of the first n characters of a line, measured the same way the
 // line is drawn (word by word, with the word gaps). Used to place the
-// canvas-drawn selection highlight.
-function prefixWidth(line, n) {
+// canvas-drawn selection highlight. extraGap is the justify stretch
+// for this line (0 unless the line is justified — see justifyGap).
+function prefixWidth(line, n, extraGap = 0) {
   n = Math.max(0, Math.min(n, line.length));
   if (n === 0) return 0;
   const words = line.split(' ').filter((w) => w !== '');
-  const gap = spaceWidth() + state.wordSpacing;
+  const gap = spaceWidth() + state.wordSpacing + extraGap;
   let x = 0, off = 0;
   for (const w of words) {
     if (n <= off) return x;
@@ -367,8 +368,11 @@ function drawWords(line, cx, y, dx = 0, dy = 0, mode = 'fill') {
   if (!words.length) return;
   const lw = lineWidth(line);
   const rtl = isRTLText(line);
-  const gap = spaceWidth() + state.wordSpacing;
-  let x = rtl ? cx + lw / 2 : cx - lw / 2;
+  const gap = spaceWidth() + state.wordSpacing + lineJustifyGap;
+  // A justified line is wider than its natural width: the extra gap
+  // per word gap stretches it to the block's full width.
+  const visW = lw + lineJustifyGap * (words.length - 1);
+  let x = rtl ? cx + visW / 2 : cx - visW / 2;
   ctx.textAlign = rtl ? 'right' : 'left';
   for (const word of words) {
     if (mode === 'stroke') ctx.strokeText(word, x + dx, y + dy);
@@ -524,12 +528,36 @@ const STYLE_PAINT = {
 // Text alignment happens INSIDE the text block, which stays centred on
 // the canvas: وسط‌چین centres each line; راست‌چین lines every line's
 // right edge up with the widest line's right edge, چپ‌چین every line's
-// left edge with the widest line's left edge. A single line never moves.
-function alignCx(lw, maxLw) {
+// left edge with the widest line's left edge. هم‌تراز (justify) stretches
+// every line except the last line of a paragraph to the block's full
+// width (gap > 0 means this line is stretched, so its centre is the
+// block centre); the last line stays natural and anchors to the start
+// side (right for RTL, left for LTR), like Word. A single line never moves.
+function alignCx(lw, maxLw, line = '', gap = 0) {
   const w = canvas.width || 1080;
   if (state.align === 'right') return w / 2 + maxLw / 2 - lw / 2;
   if (state.align === 'left') return w / 2 - maxLw / 2 + lw / 2;
+  if (state.align === 'justify') {
+    if (gap > 0) return w / 2;
+    return isRTLText(line) ? w / 2 + maxLw / 2 - lw / 2 : w / 2 - maxLw / 2 + lw / 2;
+  }
   return w / 2;
+}
+
+// Extra px added to each word gap when the alignment is justify: the
+// line is stretched to the block's full width. The last line of a
+// paragraph and single-word lines stay natural — stretching them would
+// leave absurd gaps between a few words. lineJustifyGap is the same
+// value for the line currently being painted (drawWords reads it,
+// because the style paint functions take no gap argument).
+let lineJustifyGap = 0;
+function justifyGap(line, lw, maxLw, isLast) {
+  if (state.align !== 'justify' || isLast) return 0;
+  const words = line.split(' ').filter((w) => w !== '');
+  if (words.length < 2) return 0;
+  const extra = maxLw - lw;
+  if (extra <= 0) return 0;
+  return extra / (words.length - 1);
 }
 
 // The text block's rect from the last draw (canvas px): centre, half-size
@@ -542,7 +570,7 @@ let lastBlock = null;
 // on the visible glyphs. A p in a gap (the space/newline between two
 // lines) lands at the end of the upper line; p at a line's start lands
 // at the start of that line.
-function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h) {
+function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps = null) {
   let li = 0;
   for (let i = 0; i < lineRanges.length; i++) {
     if (lineRanges[i].start <= p) li = i; else break;
@@ -551,9 +579,11 @@ function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h) {
   const line = lines[li];
   const n = Math.max(0, Math.min(p - lr.start, line.length));
   const lw = lineWidth(line);
-  const lcx = alignCx(lw, maxLw);
+  const gap = gaps ? gaps[li] || 0 : 0;
+  const lcx = alignCx(lw, maxLw, line, gap);
   const y = h / 2 - blockH / 2 + lineHeight / 2 + li * lineHeight;
-  const x = isRTLText(line) ? lcx + lw / 2 - prefixWidth(line, n) : lcx - lw / 2 + prefixWidth(line, n);
+  const visW = lw + gap * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+  const x = isRTLText(line) ? lcx + visW / 2 - prefixWidth(line, n, gap) : lcx - visW / 2 + prefixWidth(line, n, gap);
   return { x, y, li, n };
 }
 
@@ -577,6 +607,15 @@ function draw() {
   const blockH = lines.length * lineHeight;
   let y = h / 2 - blockH / 2 + lineHeight / 2;
   const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+  // Per-line justify stretch (extra px per word gap). A line is the
+  // last of its paragraph when it is the final line, or the text
+  // between it and the next line holds a hard newline.
+  const fullText = state.text || '…';
+  const gaps = lineRanges.map((lr, li) => {
+    const isLast = li === lineRanges.length - 1
+      || fullText.slice(lr.end, lineRanges[li + 1].start).includes('\n');
+    return justifyGap(lines[li], lineWidth(lines[li]), maxLw, isLast);
+  });
   const cx = w / 2; // the block stays centred; only lines move within it
   lastBlock = {
     cx, cy: h / 2, hw: maxLw / 2, hh: blockH / 2,
@@ -634,21 +673,24 @@ function draw() {
     const lr = lineRanges[li];
     ctx.save();
     const lw = lineWidth(line);
-    const lcx = alignCx(lw, maxLw); // this line's own anchor for the alignment
+    const lcx = alignCx(lw, maxLw, line, gaps[li]); // this line's own anchor for the alignment
+    // A justified line's visible width is the block's full width.
+    const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+    lineJustifyGap = gaps[li];
     if (hasSel) {
       const a = Math.max(selStart, lr.start);
       const b = Math.min(selEnd, lr.end);
       if (b > a) {
         const rtl = isRTLText(line);
-        const xa = rtl ? lcx + lw / 2 - prefixWidth(line, a - lr.start) : lcx - lw / 2 + prefixWidth(line, a - lr.start);
-        const xb = rtl ? lcx + lw / 2 - prefixWidth(line, b - lr.start) : lcx - lw / 2 + prefixWidth(line, b - lr.start);
+        const xa = rtl ? lcx + visLw / 2 - prefixWidth(line, a - lr.start, gaps[li]) : lcx - visLw / 2 + prefixWidth(line, a - lr.start, gaps[li]);
+        const xb = rtl ? lcx + visLw / 2 - prefixWidth(line, b - lr.start, gaps[li]) : lcx - visLw / 2 + prefixWidth(line, b - lr.start, gaps[li]);
         ctx.fillStyle = 'rgba(80, 140, 255, 0.45)';
         const x0 = Math.min(xa, xb) - 6;
         ctx.fillRect(x0, y - lineHeight / 2 + 3, Math.abs(xb - xa) + 12, lineHeight - 6);
       }
     }
     const paint = STYLE_PAINT[state.style] || STYLE_PAINT.bold;
-    paint(line, lcx, y, lw, fontSize);
+    paint(line, lcx, y, visLw, fontSize);
     ctx.restore();
     y += lineHeight;
   }
@@ -659,7 +701,7 @@ function draw() {
   // the selection instead. (The native textarea caret is transparent
   // by design; the canvas draws the only visible caret.)
   if (state.caret && document.activeElement === textInput && !hasSel) {
-    const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h);
+    const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps);
     ctx.save();
     ctx.fillStyle = state.color;
     ctx.fillRect(g.x - 3.5, g.y - fontSize * 0.55, 7, fontSize * 1.1);
@@ -1096,6 +1138,7 @@ function paintStickerSamples() {
         setFont(fs);
         const maxW = W * 0.82;
         while (fs > 10 && lineWidth('متن شما') > maxW) { fs -= 1; setFont(fs); }
+        lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
         STYLE_PAINT.sticker('متن شما', W / 2, H / 2 + fs * 0.06, lineWidth('متن شما'), fs);
       } finally {
         ctx = prevCtx;
@@ -1648,13 +1691,14 @@ $('bgBtn').addEventListener('click', () => {
   applyDefaultTextColor();
 });
 // Text alignment button (right edge of the stage): one tap cycles
-// وسط‌چین → راست‌چین → چپ‌چین. The icon always shows the current state.
-const ALIGN_ORDER = ['center', 'right', 'left'];
-const ALIGN_LABELS = { center: 'وسط‌چین', right: 'راست‌چین', left: 'چپ‌چین' };
+// وسط‌چین → راست‌چین → چپ‌چین → هم‌تراز. The icon always shows the current state.
+const ALIGN_ORDER = ['center', 'right', 'left', 'justify'];
+const ALIGN_LABELS = { center: 'وسط‌چین', right: 'راست‌چین', left: 'چپ‌چین', justify: 'هم‌تراز' };
 const ALIGN_ICONS = {
   center: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>',
   right: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>',
   left: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>',
+  justify: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>',
 };
 function setAlign(a) {
   state.align = a;
