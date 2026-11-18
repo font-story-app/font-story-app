@@ -529,10 +529,10 @@ const STYLE_PAINT = {
 // the canvas: وسط‌چین centres each line; راست‌چین lines every line's
 // right edge up with the widest line's right edge, چپ‌چین every line's
 // left edge with the widest line's left edge. هم‌تراز (justify) stretches
-// every line except the last line of a paragraph to the block's full
-// width (gap > 0 means this line is stretched, so its centre is the
-// block centre); the last line stays natural and anchors to the start
-// side (right for RTL, left for LTR), like Word. A single line never moves.
+// every line that already covers at least 60% of the block to the
+// block's full width (gap > 0 means this line is stretched, so its
+// centre is the block centre); a shorter line stays natural and anchors
+// to the start side (right for RTL, left for LTR). A single line never moves.
 function alignCx(lw, maxLw, line = '', gap = 0) {
   const w = canvas.width || 1080;
   if (state.align === 'right') return w / 2 + maxLw / 2 - lw / 2;
@@ -545,16 +545,19 @@ function alignCx(lw, maxLw, line = '', gap = 0) {
 }
 
 // Extra px added to each word gap when the alignment is justify: the
-// line is stretched to the block's full width. The last line of a
-// paragraph and single-word lines stay natural — stretching them would
-// leave absurd gaps between a few words. lineJustifyGap is the same
-// value for the line currently being painted (drawWords reads it,
-// because the style paint functions take no gap argument).
+// line is stretched to the block's full width. A line is only stretched
+// when it already covers at least 60% of the block — stretching a much
+// shorter line would leave absurd gaps between its few words (e.g. a
+// two-word last line «می کنم»). Single-word lines have no gap to
+// stretch. The last line of a paragraph stretches too when it is long
+// enough — that is the point of justify here: two Enter-separated
+// lines of similar length end up the same length.
 let lineJustifyGap = 0;
-function justifyGap(line, lw, maxLw, isLast) {
-  if (state.align !== 'justify' || isLast) return 0;
+function justifyGap(line, lw, maxLw) {
+  if (state.align !== 'justify') return 0;
   const words = line.split(' ').filter((w) => w !== '');
   if (words.length < 2) return 0;
+  if (lw < maxLw * 0.6) return 0;
   const extra = maxLw - lw;
   if (extra <= 0) return 0;
   return extra / (words.length - 1);
@@ -607,15 +610,8 @@ function draw() {
   const blockH = lines.length * lineHeight;
   let y = h / 2 - blockH / 2 + lineHeight / 2;
   const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
-  // Per-line justify stretch (extra px per word gap). A line is the
-  // last of its paragraph when it is the final line, or the text
-  // between it and the next line holds a hard newline.
-  const fullText = state.text || '…';
-  const gaps = lineRanges.map((lr, li) => {
-    const isLast = li === lineRanges.length - 1
-      || fullText.slice(lr.end, lineRanges[li + 1].start).includes('\n');
-    return justifyGap(lines[li], lineWidth(lines[li]), maxLw, isLast);
-  });
+  // Per-line justify stretch (extra px per word gap).
+  const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
   const cx = w / 2; // the block stays centred; only lines move within it
   lastBlock = {
     cx, cy: h / 2, hw: maxLw / 2, hh: blockH / 2,
