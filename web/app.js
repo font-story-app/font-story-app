@@ -536,6 +536,27 @@ function alignCx(lw, maxLw) {
 // and the rotation scales — used by tap-to-dismiss below.
 let lastBlock = null;
 
+// Caret position for a text offset p: which visual line it is on, the
+// x of the char boundary and the line's centre y. Follows the same
+// ranges/widths the selection highlight uses, so the caret always sits
+// on the visible glyphs. A p in a gap (the space/newline between two
+// lines) lands at the end of the upper line; p at a line's start lands
+// at the start of that line.
+function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h) {
+  let li = 0;
+  for (let i = 0; i < lineRanges.length; i++) {
+    if (lineRanges[i].start <= p) li = i; else break;
+  }
+  const lr = lineRanges[li];
+  const line = lines[li];
+  const n = Math.max(0, Math.min(p - lr.start, line.length));
+  const lw = lineWidth(line);
+  const lcx = alignCx(lw, maxLw);
+  const y = h / 2 - blockH / 2 + lineHeight / 2 + li * lineHeight;
+  const x = isRTLText(line) ? lcx + lw / 2 - prefixWidth(line, n) : lcx - lw / 2 + prefixWidth(line, n);
+  return { x, y, li, n };
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -632,18 +653,16 @@ function draw() {
     y += lineHeight;
   }
 
-  // Blinking caret at the end of the text while the input is focused
-  // (left end for RTL text, right end for LTR). Hidden while a
-  // selection is active — the highlight shows the selection instead.
+  // Blinking caret at the text cursor while the input is focused — it
+  // follows selectionStart, so tapping the middle of the text moves it
+  // there. Hidden while a selection is active — the highlight shows
+  // the selection instead. (The native textarea caret is transparent
+  // by design; the canvas draws the only visible caret.)
   if (state.caret && document.activeElement === textInput && !hasSel) {
-    const last = lines[lines.length - 1] || '';
-    const lw = lineWidth(last);
-    const lcx = alignCx(lw, maxLw);
-    const caretY = h / 2 - blockH / 2 + (lines.length - 1) * lineHeight;
-    const caretX = isRTLText(last) ? lcx - lw / 2 - 15 : lcx + lw / 2 + 8;
+    const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h);
     ctx.save();
     ctx.fillStyle = state.color;
-    ctx.fillRect(caretX, caretY - fontSize * 0.55, 7, fontSize * 1.1);
+    ctx.fillRect(g.x - 3.5, g.y - fontSize * 0.55, 7, fontSize * 1.1);
     ctx.restore();
   }
 
