@@ -132,6 +132,16 @@ const STYLE_CONTROLS = {
     { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
     { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
   ],
+  // Tweet: everything is editable — name, handle, like/reply counts,
+  // card colour, and the avatar (its own row below, in
+  // renderStyleControls). The defaults are the FontStory brand.
+  tweet: [
+    { key: 'tweetName', label: 'نام', type: 'text', def: 'FontStory', max: 30 },
+    { key: 'tweetHandle', label: 'هندل', type: 'text', def: '@fontstory', max: 30 },
+    { key: 'tweetLikes', label: 'لایک‌ها', type: 'text', def: '4.1k', max: 12 },
+    { key: 'tweetReplies', label: 'ریپلای‌ها', type: 'text', def: '18', max: 12 },
+    { key: 'tweetCard', label: 'رنگ کارت', type: 'color', def: '#000000' },
+  ],
 };
 
 // Flat key -> control map, for defaults and sanitising.
@@ -159,6 +169,12 @@ function sanitizeStyleParams(input) {
     const v = raw[key];
     if (c.type === 'color') {
       if (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) out[key] = v;
+    } else if (c.type === 'text') {
+      // Free text (tweet header/footer): trimmed, capped, empty = unset.
+      if (typeof v === 'string') {
+        const t = v.trim().slice(0, c.max || 30);
+        if (t) out[key] = t;
+      }
     } else {
       const n = Number(v);
       if (Number.isFinite(n)) out[key] = Math.min(c.max, Math.max(c.min, n));
@@ -526,7 +542,11 @@ const STYLE_PAINT = {
   },
   // Tweet card: the text itself is grey (the black card + header +
   // footer are painted block-level in draw(), like glass/quotes).
-  tweet: (line, cx, y) => { ctx.fillStyle = '#A1A1AA'; drawWords(line, cx, y); },
+  tweet: (line, cx, y) => {
+    // Grey by default (the mockup); a colour picked in the رنگ tab wins.
+    ctx.fillStyle = state.colorTouched ? state.color : '#A1A1AA';
+    drawWords(line, cx, y);
+  },
 };
 
 // Text alignment happens INSIDE the text block, which stays centred on
@@ -635,51 +655,64 @@ const X_LOGO_PATH = 'M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6
 let xLogoPath = null;
 try { xLogoPath = new Path2D(X_LOGO_PATH); } catch { xLogoPath = null; }
 
-// Paint the tweet card chrome: black rounded card, gradient avatar with
-// «STORY FONT», name + handle, the X logo, and the likes/replies footer.
-// The user's text itself is painted per line by STYLE_PAINT.tweet
-// (grey). The header/footer are the fixed StoryFont template from the
-// reference mockup — the name/handle are not the user's own (the app
-// never asks for an X handle).
+// Paint the tweet card chrome: rounded card, avatar, name + handle, the
+// X logo, and the likes/replies footer. Everything is editable in the
+// settings sheet (name, handle, counts, card colour, avatar); the values
+// below are the FontStory defaults. The user's text itself is painted
+// per line by STYLE_PAINT.tweet.
 function paintTweetCard(l, fs) {
+  const name = (sp('tweetName') || '').trim() || 'FontStory';
+  let handle = (sp('tweetHandle') || '').trim() || '@fontstory';
+  if (!handle.startsWith('@')) handle = '@' + handle;
+  const likes = (sp('tweetLikes') || '').trim() || '4.1k';
+  const replies = (sp('tweetReplies') || '').trim() || '18';
+  const card = sp('tweetCard') || '#000000';
   ctx.save();
   // All chrome strings are Latin — force LTR, or the page's RTL
   // direction mirrors the handle («storyfont@» instead of «@storyfont»).
   // Restored by the save/restore below; the main text is untouched.
   ctx.direction = 'ltr';
-  // Card (a hairline border keeps it visible on the black background).
+  // Card (a hairline border keeps it visible on any background).
   roundRect(l.x, l.y, l.w, l.h, l.r);
-  ctx.fillStyle = '#000000';
+  ctx.fillStyle = card;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.strokeStyle = hexAlpha(contrastText(card), 0.15);
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  // Avatar: pink -> magenta gradient circle with STORY / FONT.
-  const g = ctx.createLinearGradient(l.avatarX - l.av / 2, l.avatarY - l.av / 2, l.avatarX + l.av / 2, l.avatarY + l.av / 2);
-  g.addColorStop(0, '#F472B6');
-  g.addColorStop(0.55, '#EC4899');
-  g.addColorStop(1, '#BE185D');
+  // Avatar: the FontStory logo by default (web/logo-avatar.webp), or
+  // the user's own image when they picked one. Drawn cover-fit into
+  // the circle; while the image is still loading, a gradient + «F»
+  // stands in.
   ctx.save();
   ctx.beginPath();
   ctx.arc(l.avatarX, l.avatarY, l.av / 2, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = g;
-  ctx.fillRect(l.avatarX - l.av / 2, l.avatarY - l.av / 2, l.av, l.av);
+  if (tweetAvatarImg && tweetAvatarImg.complete && tweetAvatarImg.naturalWidth > 0) {
+    const iw = tweetAvatarImg.naturalWidth, ih = tweetAvatarImg.naturalHeight;
+    const s = Math.max(l.av / iw, l.av / ih);
+    ctx.drawImage(tweetAvatarImg, l.avatarX - (iw * s) / 2, l.avatarY - (ih * s) / 2, iw * s, ih * s);
+  } else {
+    const g = ctx.createLinearGradient(l.avatarX - l.av / 2, l.avatarY - l.av / 2, l.avatarX + l.av / 2, l.avatarY + l.av / 2);
+    g.addColorStop(0, '#F472B6');
+    g.addColorStop(0.55, '#EC4899');
+    g.addColorStop(1, '#BE185D');
+    ctx.fillStyle = g;
+    ctx.fillRect(l.avatarX - l.av / 2, l.avatarY - l.av / 2, l.av, l.av);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `800 ${l.av * 0.55}px 'Vazir', system-ui, sans-serif`;
+    ctx.fillText('F', l.avatarX, l.avatarY);
+  }
   ctx.restore();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `800 ${l.av * 0.24}px 'Vazir', system-ui, sans-serif`;
-  ctx.fillText('STORY', l.avatarX, l.avatarY - l.av * 0.14);
-  ctx.fillText('FONT', l.avatarX, l.avatarY + l.av * 0.14);
   // Name + handle, left-aligned, centred on the avatar.
   ctx.textAlign = 'left';
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `700 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
-  ctx.fillText('StoryFont', l.nameX, l.nameY);
+  ctx.fillText(name, l.nameX, l.nameY);
   ctx.fillStyle = '#71717A';
   ctx.font = `400 ${fs * 0.34}px 'Vazir', system-ui, sans-serif`;
-  ctx.fillText('@storyfont', l.nameX, l.handleY);
+  ctx.fillText(handle, l.nameX, l.handleY);
   // X logo, right side, centred on the avatar.
   ctx.fillStyle = '#FFFFFF';
   if (xLogoPath) {
@@ -697,7 +730,7 @@ function paintTweetCard(l, fs) {
   ctx.textAlign = 'left';
   ctx.fillStyle = '#A1A1AA';
   ctx.font = `400 ${fs * 0.32}px 'Vazir', system-ui, sans-serif`;
-  ctx.fillText('4.1k likes  18 replies', l.statsX, l.statsY);
+  ctx.fillText(`${likes} likes  ${replies} replies`, l.statsX, l.statsY);
   ctx.restore();
 }
 
@@ -1010,28 +1043,41 @@ async function hashFontId(buf) {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
-// Tiny IndexedDB wrapper (one store, keyed by font id).
+// Tiny IndexedDB wrapper (one store, keyed by font id). Version 2 adds
+// the tweetAvatar store; the upgrade guard matters — onupgradeneeded
+// also runs for existing v1 users, where 'fonts' already exists.
 let fontDbPromise = null;
 function openFontDb() {
   if (!fontDbPromise) {
     fontDbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open('fontstory', 1);
-      req.onupgradeneeded = () => { req.result.createObjectStore('fonts', { keyPath: 'id' }); };
+      const req = indexedDB.open('fontstory', 2);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('fonts')) db.createObjectStore('fonts', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('tweetAvatar')) db.createObjectStore('tweetAvatar', { keyPath: 'id' });
+      };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
   }
   return fontDbPromise;
 }
-function idbFonts(mode, run) {
+function idbStore(storeName, mode, run) {
   return openFontDb().then((db) => new Promise((resolve, reject) => {
-    const tx = db.transaction('fonts', mode);
-    const store = tx.objectStore('fonts');
+    const tx = db.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
     let out;
     try { out = run(store); } catch (e) { reject(e); return; }
     tx.oncomplete = () => resolve(out && out.result !== undefined ? out.result : undefined);
     tx.onerror = () => reject(tx.error);
   }));
+}
+function idbFonts(mode, run) {
+  return idbStore('fonts', mode, run);
+}
+// The tweet avatar is a single row ({ id: 'avatar', dataUrl }).
+function idbAvatar(mode, run) {
+  return idbStore('tweetAvatar', mode, run);
 }
 async function loadImportedFonts() {
   let rows = [];
@@ -1111,6 +1157,91 @@ async function removeImportedFont(id) {
   syncCustomFilter();
   buildFontPicker();
   setStatus('فونت حذف شد.');
+}
+
+// --- Tweet avatar (customisable, device-local like imported fonts) ---
+// Default: the FontStory logo (web/logo-avatar.webp). The user can pick
+// their own image in the settings sheet; it is downscaled to 512px and
+// kept in IndexedDB ('tweetAvatar'), so it survives reloads on this
+// device. Saved designs keep only the text fields (name/handle/counts/
+// card colour) — the avatar is per-device, not per-design.
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+let tweetAvatarImg = null;
+let tweetAvatarCustom = false;
+
+function setTweetAvatarImage(src) {
+  tweetAvatarImg = new Image();
+  tweetAvatarImg.onload = () => { if (state.style === 'tweet') redraw(); };
+  tweetAvatarImg.onerror = () => { tweetAvatarImg = null; if (state.style === 'tweet') redraw(); };
+  tweetAvatarImg.src = src;
+}
+
+async function initTweetAvatar() {
+  let custom = null;
+  try { custom = await idbAvatar('readonly', (s) => s.get('avatar')); } catch (e) { /* no IndexedDB — default logo */ }
+  if (custom && custom.dataUrl) {
+    tweetAvatarCustom = true;
+    setTweetAvatarImage(custom.dataUrl);
+  } else {
+    setTweetAvatarImage('logo-avatar.webp');
+  }
+}
+initTweetAvatar();
+
+// Downscale an image file to a PNG data URL (max side 512px) so the
+// stored avatar stays small; PNG keeps transparency.
+function downscaleImageFile(file, maxSide) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(img.naturalWidth * s));
+        cv.height = Math.max(1, Math.round(img.naturalHeight * s));
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        resolve(cv.toDataURL('image/png'));
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+
+async function importTweetAvatar(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { setStatus('فایل عکس معتبر نیست — یک عکس انتخاب کن.'); return; }
+  if (file.size > MAX_AVATAR_BYTES) { setStatus('این عکس خیلی بزرگه (حداکثر ۵ مگابایت).'); return; }
+  setStatus('در حال اضافه کردن آواتار…');
+  try {
+    const dataUrl = await downscaleImageFile(file, 512);
+    // Persist, then read back and verify it actually landed (same
+    // pattern as the font import — never report success for a row that
+    // won't survive reload).
+    let persisted = false;
+    try {
+      await idbAvatar('readwrite', (s) => s.put({ id: 'avatar', dataUrl }));
+      const row = await idbAvatar('readonly', (s) => s.get('avatar'));
+      persisted = !!(row && row.dataUrl);
+    } catch (e) { /* no IndexedDB — the avatar works for this session only */ }
+    tweetAvatarCustom = true;
+    setTweetAvatarImage(dataUrl);
+    renderStyleControls();
+    redraw();
+    setStatus(persisted ? 'آواتار عوض شد.' : 'آواتار عوض شد، ولی ذخیره نشد.');
+  } catch (e) {
+    setStatus('این فایل عکس معتبر نیست.');
+  }
+}
+
+async function resetTweetAvatar() {
+  try { await idbAvatar('readwrite', (s) => s.delete('avatar')); } catch (e) {}
+  tweetAvatarCustom = false;
+  setTweetAvatarImage('logo-avatar.webp');
+  renderStyleControls();
+  redraw();
 }
 
 // The import card: a dashed "+" card at the end of the font row. The
@@ -1308,6 +1439,22 @@ function renderStyleControls() {
         redraw();
       });
       row.appendChild(input);
+    } else if (c.type === 'text') {
+      // Free text (tweet header/footer): updates live as you type.
+      value.textContent = '';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'style-text-input';
+      input.dir = 'auto';
+      input.maxLength = c.max || 30;
+      input.value = val;
+      input.placeholder = c.def;
+      input.setAttribute('aria-label', c.label);
+      input.addEventListener('input', (e) => {
+        state.styleParams[c.key] = e.target.value;
+        redraw();
+      });
+      row.appendChild(input);
     } else {
       value.textContent = String(val).toUpperCase();
       const input = document.createElement('input');
@@ -1324,6 +1471,51 @@ function renderStyleControls() {
       });
       row.appendChild(input);
     }
+    wrap.appendChild(row);
+  }
+
+  // Tweet avatar: a preview circle, a «تغییر آواتار» button with the
+  // real file input transparently on top of it (same pattern as the
+  // font import — a hidden input + .click() is ignored by iOS WebKit),
+  // and a reset back to the FontStory logo when a custom one is set.
+  if (state.style === 'tweet') {
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    const head = document.createElement('div');
+    head.className = 'slider-head';
+    const label = document.createElement('span');
+    label.textContent = 'آواتار';
+    head.appendChild(label);
+    row.appendChild(head);
+    const box = document.createElement('div');
+    box.className = 'avatar-row';
+    const img = document.createElement('img');
+    img.className = 'avatar-preview';
+    img.alt = '';
+    img.src = tweetAvatarImg ? tweetAvatarImg.src : 'logo-avatar.webp';
+    const pick = document.createElement('span');
+    pick.className = 'avatar-pick';
+    pick.textContent = 'تغییر آواتار';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.setAttribute('aria-label', 'تغییر آواتار');
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      fileInput.value = '';
+      if (f) importTweetAvatar(f);
+    });
+    pick.appendChild(fileInput);
+    box.append(img, pick);
+    if (tweetAvatarCustom) {
+      const reset = document.createElement('button');
+      reset.type = 'button';
+      reset.className = 'avatar-reset';
+      reset.textContent = 'بازنشانی';
+      reset.addEventListener('click', resetTweetAvatar);
+      box.appendChild(reset);
+    }
+    row.appendChild(box);
     wrap.appendChild(row);
   }
 }
@@ -1390,7 +1582,7 @@ function applyDesign(d) {
   // colour deliberately picked, so the box styles keep using it.
   state.colorTouched = typeof d.color === 'string' && d.color.toUpperCase() !== '#FFFFFF';
   state.aspect = d.aspect || '9:16';
-  state.align = ['center', 'right', 'left'].includes(d.align) ? d.align : 'center';
+  state.align = ['center', 'right', 'left', 'justify'].includes(d.align) ? d.align : 'center';
   state.weight = [400, 500, 600, 700, 800, 900].includes(Number(d.weight)) ? Number(d.weight) : 800;
   state.letterSpacing = clampNum(d.letterSpacing, 0, 40, 0);
   state.wordSpacing = clampNum(d.wordSpacing, 0, 60, 0);
