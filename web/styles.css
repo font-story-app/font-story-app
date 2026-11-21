@@ -415,6 +415,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
   border: 2px solid transparent;
   cursor: pointer;
   padding: 0;
+  flex: none;
 }
 .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.5); }
 .swatch.rainbow {
