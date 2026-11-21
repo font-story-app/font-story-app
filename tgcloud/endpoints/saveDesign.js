@@ -104,7 +104,7 @@ export default async function (input, ctx) {
   }
   const font = (ALLOWED_FONTS.includes(input?.font) || CUSTOM_FONT_RE.test(input?.font || '')) ? input.font : 'Vazir';
   const style = ALLOWED_STYLES.includes(input?.style) ? input.style : 'bold';
-  const color = typeof input?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.color)
+  const color = typeof input?.color === 'string' && (/^#[0-9a-fA-F]{6}$/.test(input.color) || /^g:#[0-9a-fA-F]{6}:#[0-9a-fA-F]{6}:(0|45|90|135|180|225|270|315)$/.test(input.color))
     ? input.color
     : '#FFFFFF';
   const aspect = ALLOWED_ASPECTS.includes(input?.aspect) ? input.aspect : '1:1';
