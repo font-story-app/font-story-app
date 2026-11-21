@@ -141,6 +141,7 @@ const STYLE_CONTROLS = {
     { key: 'tweetCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'tweetName', label: 'نام', type: 'text', def: 'FontStory', max: 30 },
     { key: 'tweetHandle', label: 'هندل', type: 'text', def: '@fontstory', max: 30 },
+    { key: 'tweetNameGap', label: 'فاصله نام و آیدی', type: 'range', min: 0, max: 60, step: 2, def: 10, unit: 'px' },
     { key: 'tweetLikes', label: 'لایک‌ها', type: 'text', def: '4.1k', max: 12 },
     { key: 'tweetReplies', label: 'ریپلای‌ها', type: 'text', def: '18', max: 12 },
     { key: 'tweetCard', label: 'رنگ کارت', type: 'color', def: '#000000' },
@@ -690,12 +691,17 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   cardBottom += extraH / 2;
   const avatarX = rtl ? cardX + padX + av / 2 : cardX + cardW - padX - av / 2;
   const avatarY = cardTop + padTop + av / 2;
+  // Name + handle, centred on the avatar: the gap between the two
+  // lines is the old 0.38x size plus the adjustable «فاصله نام و آیدی»
+  // (Reza, 2026-11-21: the two lines were touching — the default 10px
+  // opens a visible gap; 0 is the old tight look).
+  const nameGap = fs * 0.38 + sp('tweetNameGap');
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
     padX, av, avatarX, avatarY,
     nameX: rtl ? avatarX + av / 2 + 16 : avatarX - av / 2 - 16,
-    nameY: avatarY - fs * 0.16,
-    handleY: avatarY + fs * 0.22,
+    nameY: avatarY - nameGap / 2,
+    handleY: avatarY + nameGap / 2,
     logoSize: fs * 0.5,
     logoX: rtl ? cardX + cardW - padX - fs * 0.25 : cardX + padX + fs * 0.25,
     logoY: avatarY,
