@@ -408,7 +408,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-tweet { background: #000; color: #a1a1aa; border-radius: 8px; padding: 0 6px; }
 
 .colors { display: flex; align-items: center; gap: 12px; padding: 4px 0 8px; }
-.swatches { display: flex; gap: 12px; }
+.swatches { display: flex; gap: 12px; overflow-x: auto; min-width: 0; flex: 1; scrollbar-width: none; }
 .swatch {
   width: 34px; height: 34px;
   border-radius: 50%;
