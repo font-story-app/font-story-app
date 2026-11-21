@@ -620,6 +620,47 @@ input[type="color"].style-color-input::-webkit-color-swatch-wrapper { padding: 0
 input[type="color"].style-color-input::-webkit-color-swatch { border: none; border-radius: 8px; }
 input[type="color"].style-color-input::-moz-color-swatch { border: none; border-radius: 8px; }
 
+/* Text inputs for per-style text knobs (tweet header/footer). */
+.style-text-input {
+  width: 100%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+}
+.style-text-input:focus { border-color: rgba(255,255,255,0.5); }
+
+/* Tweet avatar row in the settings sheet. */
+.avatar-row { display: flex; align-items: center; gap: 10px; }
+.avatar-preview {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #000;
+  flex: none;
+}
+.avatar-pick {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.14);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+}
+.avatar-pick input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.avatar-reset {
+  background: none; border: none;
+  color: rgba(255,255,255,0.75);
+  font-family: inherit; font-size: 14px;
+  cursor: pointer; padding: 8px;
+}
+
 /* --- Toast --- */
 .toast {
   position: fixed;
