@@ -48,6 +48,7 @@ const STYLE_PARAMS = {
   stickerShadow: { min: 0, max: 40 },
   tweetName: { text: true, max: 30 },
   tweetHandle: { text: true, max: 30 },
+  tweetNameGap: { min: 0, max: 60 },
   tweetLikes: { text: true, max: 12 },
   tweetReplies: { text: true, max: 12 },
   tweetCard: { color: true },
