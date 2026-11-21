@@ -137,6 +137,8 @@ const STYLE_CONTROLS = {
   // renderStyleControls). The defaults are the FontStory brand.
   tweet: [
     { key: 'tweetTextSize', label: 'اندازه فونت متن', type: 'range', min: 50, max: 150, step: 5, def: 100, unit: '٪' },
+    { key: 'tweetPadX', label: 'فاصله کناری کارت', type: 'range', min: 24, max: 120, step: 4, def: 72, unit: 'px' },
+    { key: 'tweetPadY', label: 'فاصله عمودی کارت', type: 'range', min: 0, max: 120, step: 4, def: 24, unit: 'px' },
     { key: 'tweetName', label: 'نام', type: 'text', def: 'FontStory', max: 30 },
     { key: 'tweetHandle', label: 'هندل', type: 'text', def: '@fontstory', max: 30 },
     { key: 'tweetLikes', label: 'لایک‌ها', type: 'text', def: '4.1k', max: 12 },
@@ -635,7 +637,7 @@ function tweetMinSize(fs) {
   ctx.font = `400 ${fs * 0.32}px 'Vazir', system-ui, sans-serif`;
   const footerW = ctx.measureText(`${likes} likes  ${replies} replies`).width;
   ctx.font = prevFont;
-  const av = fs * 0.8, logoSize = fs * 0.5, padX = 56; // same as tweetLayout
+  const av = fs * 0.8, logoSize = fs * 0.5, padX = sp('tweetPadX'); // same as tweetLayout
   return {
     minW: Math.max(padX * 2 + av + 16 + Math.max(nameW, handleW) + 24 + logoSize, padX * 2 + footerW),
     minBlockH: fs * state.lineHeight,
@@ -654,12 +656,15 @@ function tweetMinSize(fs) {
 // right for RTL, its left edge under the logo on the left for LTR; zero
 // when the card is exactly as wide as the text.
 function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0, rtl = true) {
-  const padX = 56;                    // card padding left/right
-  const padTop = fs * 0.45;           // card top edge -> avatar top
-  const padBottom = fs * 0.45;        // stats line -> card bottom edge
+  // Card padding (Reza, 2026-11-21: the defaults were cramped): the
+  // side padding sets the card width, the vertical padding adds air
+  // above and below; both are adjustable in the style sheet.
+  const padX = sp('tweetPadX');           // card padding left/right
+  const padTop = fs * 0.55 + sp('tweetPadY'); // card top edge -> avatar top
+  const padBottom = fs * 0.55 + sp('tweetPadY'); // stats line -> card bottom edge
   const av = fs * 0.8;                // avatar diameter
-  const gapHeaderText = fs * 0.35;    // avatar bottom -> first line top
-  const gapTextStats = fs * 0.4;      // last line bottom -> stats line
+  const gapHeaderText = fs * 0.45;    // avatar bottom -> first line top
+  const gapTextStats = fs * 0.5;      // last line bottom -> stats line
   const statsH = fs * 0.32;           // stats line height
   const bodyH = Math.max(blockH, minBlockH);
   const cardW = Math.max(maxLw + padX * 2, minW);
