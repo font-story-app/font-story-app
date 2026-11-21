@@ -558,15 +558,14 @@ const STYLE_PAINT = {
 // block's full width (gap > 0 means this line is stretched, so its
 // centre is the block centre); a shorter line stays natural and anchors
 // to the start side (right for RTL, left for LTR). A single line never moves.
-function alignCx(lw, maxLw, line = '', gap = 0) {
-  const w = canvas.width || 1080;
-  if (state.align === 'right') return w / 2 + maxLw / 2 - lw / 2;
-  if (state.align === 'left') return w / 2 - maxLw / 2 + lw / 2;
+function alignCx(lw, maxLw, line = '', gap = 0, cx = (canvas.width || 1080) / 2) {
+  if (state.align === 'right') return cx + maxLw / 2 - lw / 2;
+  if (state.align === 'left') return cx - maxLw / 2 + lw / 2;
   if (state.align === 'justify') {
-    if (gap > 0) return w / 2;
-    return isRTLText(line) ? w / 2 + maxLw / 2 - lw / 2 : w / 2 - maxLw / 2 + lw / 2;
+    if (gap > 0) return cx;
+    return isRTLText(line) ? cx + maxLw / 2 - lw / 2 : cx - maxLw / 2 + lw / 2;
   }
-  return w / 2;
+  return cx;
 }
 
 // Extra px added to each word gap when the alignment is justify: the
@@ -598,7 +597,7 @@ let lastBlock = null;
 // on the visible glyphs. A p in a gap (the space/newline between two
 // lines) lands at the end of the upper line; p at a line's start lands
 // at the start of that line.
-function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps = null) {
+function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps = null, cx = (canvas.width || 1080) / 2) {
   let li = 0;
   for (let i = 0; i < lineRanges.length; i++) {
     if (lineRanges[i].start <= p) li = i; else break;
@@ -608,7 +607,7 @@ function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps 
   const n = Math.max(0, Math.min(p - lr.start, line.length));
   const lw = lineWidth(line);
   const gap = gaps ? gaps[li] || 0 : 0;
-  const lcx = alignCx(lw, maxLw, line, gap);
+  const lcx = alignCx(lw, maxLw, line, gap, cx);
   const y = h / 2 - blockH / 2 + lineHeight / 2 + li * lineHeight;
   const visW = lw + gap * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
   const x = isRTLText(line) ? lcx + visW / 2 - prefixWidth(line, n, gap) : lcx - visW / 2 + prefixWidth(line, n, gap);
@@ -648,7 +647,13 @@ function tweetMinSize(fs) {
 // with the font size, so the card keeps its proportions at any size.
 // cx is the block centre x, h the canvas height. minW/minBlockH (from
 // tweetMinSize) keep a small body text from collapsing the card.
-function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0) {
+// rtl mirrors the header with the text direction (Reza, 2026-11-21):
+// RTL text -> avatar left, X logo right; LTR text -> avatar right, X
+// logo left. blockShift moves the text block so its start edge sits
+// exactly under the logo — the block's right edge under the logo on the
+// right for RTL, its left edge under the logo on the left for LTR; zero
+// when the card is exactly as wide as the text.
+function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0, rtl = true) {
   const padX = 56;                    // card padding left/right
   const padTop = fs * 0.45;           // card top edge -> avatar top
   const padBottom = fs * 0.45;        // stats line -> card bottom edge
@@ -659,24 +664,27 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   const bodyH = Math.max(blockH, minBlockH);
   const cardW = Math.max(maxLw + padX * 2, minW);
   const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = rtl ? slack : -slack;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   const cardTop = textTop - gapHeaderText - padTop - av;
   const cardBottom = textBottom + gapTextStats + statsH + padBottom;
-  const avatarX = cardX + padX + av / 2;
+  const avatarX = rtl ? cardX + padX + av / 2 : cardX + cardW - padX - av / 2;
   const avatarY = cardTop + padTop + av / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
     padX, av, avatarX, avatarY,
-    nameX: avatarX + av / 2 + 16,
+    nameX: rtl ? avatarX + av / 2 + 16 : avatarX - av / 2 - 16,
     nameY: avatarY - fs * 0.16,
     handleY: avatarY + fs * 0.22,
     logoSize: fs * 0.5,
-    logoX: cardX + cardW - padX - fs * 0.25,
+    logoX: rtl ? cardX + cardW - padX - fs * 0.25 : cardX + padX + fs * 0.25,
     logoY: avatarY,
     statsX: cardX + padX,
     statsY: textBottom + gapTextStats + statsH / 2,
     statsH,
+    blockShift, rtl,
   };
 }
 
@@ -736,8 +744,9 @@ function paintTweetCard(l, fs) {
     ctx.fillText('F', l.avatarX, l.avatarY);
   }
   ctx.restore();
-  // Name + handle, left-aligned, centred on the avatar.
-  ctx.textAlign = 'left';
+  // Name + handle, next to the avatar: left-aligned for RTL (avatar
+  // left), right-aligned for LTR (avatar right, nameX is the right edge).
+  ctx.textAlign = l.rtl ? 'left' : 'right';
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `700 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
   ctx.fillText(name, l.nameX, l.nameY);
@@ -795,9 +804,16 @@ function draw() {
   const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
   const cx = w / 2; // the block stays centred; only lines move within it
   // The tweet card wraps the whole block (header + footer included),
-  // so taps on the card count as taps on the text.
+  // so taps on the card count as taps on the text. The card mirrors
+  // with the text direction (Reza, 2026-11-21): RTL text -> the block's
+  // right edge sits under the X logo on the right; LTR text -> the
+  // block's left edge sits under the logo on the left. blockCx is the
+  // text block's centre for the line anchors, the caret and the editor
+  // overlay; the card itself stays centred on the canvas.
+  const tweetRTL = state.style === 'tweet' ? isRTLText(lines[0] || '') : true;
   const tweetMin = state.style === 'tweet' ? tweetMinSize(fontSize) : { minW: 0, minBlockH: 0 };
-  const tweetL = state.style === 'tweet' ? tweetLayout(fontSize, maxLw, blockH, lineHeight, h, cx, tweetMin.minW, tweetMin.minBlockH) : null;
+  const tweetL = state.style === 'tweet' ? tweetLayout(fontSize, maxLw, blockH, lineHeight, h, cx, tweetMin.minW, tweetMin.minBlockH, tweetRTL) : null;
+  const blockCx = tweetL ? cx + tweetL.blockShift : cx;
   lastBlock = {
     cx, cy: tweetL ? tweetL.y + tweetL.h / 2 : h / 2,
     hw: tweetL ? tweetL.w / 2 : maxLw / 2, hh: tweetL ? tweetL.h / 2 : blockH / 2,
@@ -860,7 +876,7 @@ function draw() {
     const lr = lineRanges[li];
     ctx.save();
     const lw = lineWidth(line);
-    const lcx = alignCx(lw, maxLw, line, gaps[li]); // this line's own anchor for the alignment
+    const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx); // this line's own anchor for the alignment
     // A justified line's visible width is the block's full width.
     const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
     lineJustifyGap = gaps[li];
@@ -888,7 +904,7 @@ function draw() {
   // the selection instead. (The native textarea caret is transparent
   // by design; the canvas draws the only visible caret.)
   if (state.caret && document.activeElement === textInput && !hasSel) {
-    const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps);
+    const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps, blockCx);
     ctx.save();
     ctx.fillStyle = state.color;
     ctx.fillRect(g.x - 3.5, g.y - textFs * 0.55, 7, textFs * 1.1);
@@ -917,7 +933,7 @@ function draw() {
     ctx.imageSmoothingEnabled = true;
   }
 
-  syncEditorLayout(textFs, lineHeight, blockH, maxLw);
+  syncEditorLayout(textFs, lineHeight, blockH, maxLw, tweetL ? tweetL.blockShift : 0);
 }
 
 // Keep the (invisible) editor's text laid out exactly where the canvas
@@ -927,7 +943,7 @@ function draw() {
 // and caret geometry matter. The canvas text area is 920 of the 1080
 // canvas pixels wide (80px margins), centred; the same transform as the
 // canvas rotation is applied around the block centre.
-function syncEditorLayout(fontSize, lineHeight, blockH, maxLw) {
+function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
   if (!canvas.clientWidth) return;
   const scale = canvas.clientWidth / 1080;
   const fs = fontSize * scale;
@@ -936,7 +952,10 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw) {
   const s = textInput.style;
   s.boxSizing = 'border-box';
   s.top = `${canvas.offsetTop}px`;
-  s.left = `${canvas.offsetLeft + 80 * scale}px`;
+  // shift moves the editor with the text block (tweet style: the block
+  // sits under the X logo, off the canvas centre) so taps and the
+  // selection land on the visible glyphs.
+  s.left = `${canvas.offsetLeft + (80 + shift) * scale}px`;
   s.right = 'auto';
   s.bottom = 'auto';
   s.width = `${920 * scale}px`;
