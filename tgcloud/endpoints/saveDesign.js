@@ -51,6 +51,8 @@ const STYLE_PARAMS = {
   tweetLikes: { text: true, max: 12 },
   tweetReplies: { text: true, max: 12 },
   tweetCard: { color: true },
+  tweetPadX: { min: 24, max: 120 },
+  tweetPadY: { min: 0, max: 120 },
   tweetTextSize: { min: 50, max: 150 },
 };
 
