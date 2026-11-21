@@ -20,7 +20,8 @@ const ALLOWED_ALIGNS = ['center', 'right', 'left', 'justify'];
 const ALLOWED_WEIGHTS = [400, 500, 600, 700, 800, 900];
 
 // Per-style extra parameters (mirror of STYLE_CONTROLS in web/app.js):
-// range keys are clamped to [min, max], color keys must be #RRGGBB.
+// range keys are clamped to [min, max], color keys must be #RRGGBB,
+// text keys are trimmed and capped at max (empty = dropped).
 // Unknown keys are dropped.
 const STYLE_PARAMS = {
   neonGlow: { min: 0, max: 80 },
@@ -45,6 +46,11 @@ const STYLE_PARAMS = {
   pixelSize: { min: 2, max: 12 },
   stickerOutline: { min: 5, max: 20 },
   stickerShadow: { min: 0, max: 40 },
+  tweetName: { text: true, max: 30 },
+  tweetHandle: { text: true, max: 30 },
+  tweetLikes: { text: true, max: 12 },
+  tweetReplies: { text: true, max: 12 },
+  tweetCard: { color: true },
 };
 
 function sanitizeStyleParams(input) {
@@ -58,6 +64,11 @@ function sanitizeStyleParams(input) {
     const v = raw[key];
     if (rule.color) {
       if (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) out[key] = v;
+    } else if (rule.text) {
+      if (typeof v === 'string') {
+        const t = v.trim().slice(0, rule.max || 30);
+        if (t) out[key] = t;
+      }
     } else {
       const n = Number(v);
       if (Number.isFinite(n)) out[key] = Math.min(rule.max, Math.max(rule.min, n));
