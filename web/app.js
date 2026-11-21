@@ -136,6 +136,7 @@ const STYLE_CONTROLS = {
   // card colour, and the avatar (its own row below, in
   // renderStyleControls). The defaults are the FontStory brand.
   tweet: [
+    { key: 'tweetTextSize', label: 'اندازه فونت متن', type: 'range', min: 50, max: 150, step: 5, def: 100, unit: '٪' },
     { key: 'tweetName', label: 'نام', type: 'text', def: 'FontStory', max: 30 },
     { key: 'tweetHandle', label: 'هندل', type: 'text', def: '@fontstory', max: 30 },
     { key: 'tweetLikes', label: 'لایک‌ها', type: 'text', def: '4.1k', max: 12 },
@@ -743,14 +744,20 @@ function draw() {
   ctx.textBaseline = 'middle';
 
   const fontSize = state.size;
-  ctx.font = `${state.weight} ${fontSize}px ${fontFamily()}`;
+  // Tweet: the body text can be smaller/larger than the main size
+  // (tweetTextSize %, default 100). The card chrome (avatar, name,
+  // handle, X logo, footer) keeps scaling with the main size; only the
+  // body text uses the scaled size — wrapping, line height, caret and
+  // the editor overlay all follow it.
+  const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : fontSize;
+  ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
   // Native letter spacing where the WebView supports it (Chrome 99+,
   // Safari 17+); word spacing is applied manually in drawWords.
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
   const maxWidth = w - 160;
   const lineRanges = wrapLineRanges(state.text || '…', maxWidth);
   const lines = lineRanges.map((r) => r.text);
-  const lineHeight = fontSize * state.lineHeight;
+  const lineHeight = textFs * state.lineHeight;
   const blockH = lines.length * lineHeight;
   let y = h / 2 - blockH / 2 + lineHeight / 2;
   const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
@@ -839,7 +846,7 @@ function draw() {
       }
     }
     const paint = STYLE_PAINT[state.style] || STYLE_PAINT.bold;
-    paint(line, lcx, y, visLw, fontSize);
+    paint(line, lcx, y, visLw, textFs);
     ctx.restore();
     y += lineHeight;
   }
@@ -853,7 +860,7 @@ function draw() {
     const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps);
     ctx.save();
     ctx.fillStyle = state.color;
-    ctx.fillRect(g.x - 3.5, g.y - fontSize * 0.55, 7, fontSize * 1.1);
+    ctx.fillRect(g.x - 3.5, g.y - textFs * 0.55, 7, textFs * 1.1);
     ctx.restore();
   }
 
@@ -879,7 +886,7 @@ function draw() {
     ctx.imageSmoothingEnabled = true;
   }
 
-  syncEditorLayout(fontSize, lineHeight, blockH, maxLw);
+  syncEditorLayout(textFs, lineHeight, blockH, maxLw);
 }
 
 // Keep the (invisible) editor's text laid out exactly where the canvas
