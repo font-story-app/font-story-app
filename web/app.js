@@ -616,6 +616,12 @@ function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps 
   return { x, y, li, n };
 }
 
+// The tweet card's chrome (avatar, name, handle, X logo, footer) is
+// fixed at the default main size (110) — it does NOT follow the side
+// size rail. Only the body text follows the rail (Reza, 2026-11-21:
+// the rail used to scale the whole card and mess up the layout).
+const TWEET_CHROME_FS = 110;
+
 // Minimum size of the tweet card: at least as wide as its chrome — the
 // header row (avatar + name/handle + X logo) and the footer line,
 // measured at their own font sizes — and at least as tall as one
@@ -795,12 +801,14 @@ function draw() {
   ctx.textBaseline = 'middle';
 
   const fontSize = state.size;
-  // Tweet: the body text can be smaller/larger than the main size
-  // (tweetTextSize %, default 100). The card chrome (avatar, name,
-  // handle, X logo, footer) keeps scaling with the main size; only the
-  // body text uses the scaled size — wrapping, line height, caret and
-  // the editor overlay all follow it.
+  // Tweet: the body text follows the side size rail (times the
+  // tweetTextSize %), but the card chrome stays fixed at
+  // TWEET_CHROME_FS — so moving the rail changes ONLY the body text
+  // size, never the card or its header/footer (Reza, 2026-11-21).
+  // Wrapping, line height, caret and the editor overlay all follow
+  // the body size.
   const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : fontSize;
+  const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : fontSize;
   ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
   // Native letter spacing where the WebView supports it (Chrome 99+,
   // Safari 17+); word spacing is applied manually in drawWords.
@@ -823,8 +831,8 @@ function draw() {
   // text block's centre for the line anchors, the caret and the editor
   // overlay; the card itself stays centred on the canvas.
   const tweetRTL = state.style === 'tweet' ? isRTLText(lines[0] || '') : true;
-  const tweetMin = state.style === 'tweet' ? tweetMinSize(fontSize) : { minW: 0, minBlockH: 0 };
-  const tweetL = state.style === 'tweet' ? tweetLayout(fontSize, maxLw, blockH, lineHeight, h, cx, tweetMin.minW, tweetMin.minBlockH, tweetRTL) : null;
+  const tweetMin = state.style === 'tweet' ? tweetMinSize(chromeFs) : { minW: 0, minBlockH: 0 };
+  const tweetL = state.style === 'tweet' ? tweetLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, tweetMin.minW, tweetMin.minBlockH, tweetRTL) : null;
   const blockCx = tweetL ? cx + tweetL.blockShift : cx;
   lastBlock = {
     cx, cy: tweetL ? tweetL.y + tweetL.h / 2 : h / 2,
@@ -881,7 +889,7 @@ function draw() {
   // Tweet style: black card with the X-post header and the
   // likes/replies footer around the whole text block (the text itself
   // is painted per-line below, in grey).
-  if (tweetL) paintTweetCard(tweetL, fontSize);
+  if (tweetL) paintTweetCard(tweetL, chromeFs);
 
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
