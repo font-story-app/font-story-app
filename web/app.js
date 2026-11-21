@@ -1570,7 +1570,6 @@ function renderStyleControls() {
     p.className = 'sheet-note';
     p.textContent = 'برای این استایل تنظیم جداگانه‌ای نیست.';
     wrap.appendChild(p);
-    return;
   }
   for (const c of controls) {
     const row = document.createElement('div');
@@ -1676,6 +1675,69 @@ function renderStyleControls() {
     row.appendChild(box);
     wrap.appendChild(row);
   }
+
+  // The «استایل» section moved here from the text settings (gear) sheet
+  // (Reza, 2026-11-21): the style colour and the corner radius live
+  // with the style's own knobs now. They are global state — not
+  // per-style params — so they show for every style, even one with no
+  // separate knobs of its own. Same ids and wiring as before, so the
+  // saved-design restore (applyDesign) needs no change.
+  const sub = document.createElement('div');
+  sub.className = 'settings-sub';
+  sub.textContent = 'استایل';
+  wrap.appendChild(sub);
+  const colorRow = document.createElement('div');
+  colorRow.className = 'slider-row';
+  const colorHead = document.createElement('div');
+  colorHead.className = 'slider-head';
+  const colorLabel = document.createElement('span');
+  colorLabel.textContent = 'رنگ استایل';
+  const colorValue = document.createElement('span');
+  colorValue.className = 'slider-value';
+  colorValue.id = 'styleColorValue';
+  colorValue.textContent = state.styleColor.toUpperCase();
+  colorHead.append(colorLabel, colorValue);
+  colorRow.appendChild(colorHead);
+  const colorInput = document.createElement('input');
+  colorInput.type = 'color';
+  colorInput.className = 'style-color-input';
+  colorInput.id = 'styleColorInput';
+  colorInput.value = state.styleColor;
+  colorInput.style.background = state.styleColor;
+  colorInput.setAttribute('aria-label', 'رنگ استایل');
+  colorInput.addEventListener('input', (e) => {
+    state.styleColor = e.target.value;
+    colorInput.style.background = state.styleColor;
+    colorValue.textContent = state.styleColor.toUpperCase();
+    redraw();
+  });
+  colorRow.appendChild(colorInput);
+  wrap.appendChild(colorRow);
+  const radiusRow = document.createElement('div');
+  radiusRow.className = 'slider-row';
+  const radiusHead = document.createElement('div');
+  radiusHead.className = 'slider-head';
+  const radiusLabel = document.createElement('span');
+  radiusLabel.textContent = 'گردی کادر';
+  const radiusValue = document.createElement('span');
+  radiusValue.className = 'slider-value';
+  radiusValue.id = 'radiusValue';
+  radiusValue.textContent = state.borderRadius + 'px';
+  radiusHead.append(radiusLabel, radiusValue);
+  radiusRow.appendChild(radiusHead);
+  const radiusInput = document.createElement('input');
+  radiusInput.type = 'range';
+  radiusInput.id = 'radiusRange';
+  radiusInput.min = 0; radiusInput.max = 40; radiusInput.step = 1;
+  radiusInput.value = state.borderRadius;
+  radiusInput.setAttribute('aria-label', 'گردی کادر');
+  radiusInput.addEventListener('input', (e) => {
+    state.borderRadius = Number(e.target.value);
+    radiusValue.textContent = state.borderRadius + 'px';
+    redraw();
+  });
+  radiusRow.appendChild(radiusInput);
+  wrap.appendChild(radiusRow);
 }
 
 // The default text colour follows the background — white text on dark
@@ -1784,11 +1846,6 @@ function syncSettingsUI() {
   $('rotXValue').textContent = state.rotX + '°';
   $('rotYRange').value = state.rotY;
   $('rotYValue').textContent = state.rotY + '°';
-  $('styleColorInput').value = state.styleColor;
-  $('styleColorInput').style.background = state.styleColor;
-  $('styleColorValue').textContent = state.styleColor.toUpperCase();
-  $('radiusRange').value = state.borderRadius;
-  $('radiusValue').textContent = state.borderRadius + 'px';
 }
 
 // Trash icon for the per-item delete button (standard Feather trash-2).
@@ -2222,15 +2279,6 @@ bindSetting('wordRange', 'wordValue', (v) => v + 'px', (v) => { state.wordSpacin
 bindSetting('lineRange', 'lineValue', (v) => v.toFixed(1), (v) => { state.lineHeight = v; });
 bindSetting('rotXRange', 'rotXValue', (v) => v + '°', (v) => { state.rotX = v; });
 bindSetting('rotYRange', 'rotYValue', (v) => v + '°', (v) => { state.rotY = v; });
-bindSetting('radiusRange', 'radiusValue', (v) => v + 'px', (v) => { state.borderRadius = v; });
-// Style colour: a real, visible <input type="color"> the user taps
-// directly (never a hidden input + .click() — WebKit ignores that).
-$('styleColorInput').addEventListener('input', (e) => {
-  state.styleColor = e.target.value;
-  $('styleColorInput').style.background = state.styleColor;
-  $('styleColorValue').textContent = state.styleColor.toUpperCase();
-  redraw();
-});
 
 buildFontPicker();
 buildStylePicker();
