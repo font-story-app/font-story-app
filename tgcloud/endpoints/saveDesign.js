@@ -51,6 +51,7 @@ const STYLE_PARAMS = {
   tweetLikes: { text: true, max: 12 },
   tweetReplies: { text: true, max: 12 },
   tweetCard: { color: true },
+  tweetTextSize: { min: 50, max: 150 },
 };
 
 function sanitizeStyleParams(input) {
