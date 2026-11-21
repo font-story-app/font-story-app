@@ -643,6 +643,10 @@ try { xLogoPath = new Path2D(X_LOGO_PATH); } catch { xLogoPath = null; }
 // never asks for an X handle).
 function paintTweetCard(l, fs) {
   ctx.save();
+  // All chrome strings are Latin — force LTR, or the page's RTL
+  // direction mirrors the handle («storyfont@» instead of «@storyfont»).
+  // Restored by the save/restore below; the main text is untouched.
+  ctx.direction = 'ltr';
   // Card (a hairline border keeps it visible on the black background).
   roundRect(l.x, l.y, l.w, l.h, l.r);
   ctx.fillStyle = '#000000';
