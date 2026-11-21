@@ -2087,6 +2087,7 @@ $('styleColorInput').addEventListener('input', (e) => {
 buildFontPicker();
 buildStylePicker();
 buildSwatches();
+renderStyleControls(); // sets the floating panel's title for the default style too
 updateDoneBtn();
 redraw();
 
