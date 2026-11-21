@@ -69,6 +69,7 @@ const STYLES = [
   { id: 'winter', label: 'زمستانی' },
   { id: 'rosseta', label: 'رُزتا' },
   { id: 'sticker', label: 'استیکر' },
+  { id: 'tweet', label: 'توییت' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1'];
@@ -523,6 +524,9 @@ const STYLE_PAINT = {
     ctx.fillStyle = '#FFC531';
     drawWords(line, cx, y);
   },
+  // Tweet card: the text itself is grey (the black card + header +
+  // footer are painted block-level in draw(), like glass/quotes).
+  tweet: (line, cx, y) => { ctx.fillStyle = '#A1A1AA'; drawWords(line, cx, y); },
 };
 
 // Text alignment happens INSIDE the text block, which stays centred on
@@ -590,6 +594,109 @@ function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps 
   return { x, y, li, n };
 }
 
+// Geometry of the tweet card (black rounded card with an X-post header
+// and a likes/replies footer) around the text block. All chrome scales
+// with the font size, so the card keeps its proportions at any size.
+// cx is the block centre x, h the canvas height.
+function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx) {
+  const padX = 56;                    // card padding left/right
+  const padTop = fs * 0.45;           // card top edge -> avatar top
+  const padBottom = fs * 0.45;        // stats line -> card bottom edge
+  const av = fs * 0.8;                // avatar diameter
+  const gapHeaderText = fs * 0.35;    // avatar bottom -> first line top
+  const gapTextStats = fs * 0.4;      // last line bottom -> stats line
+  const statsH = fs * 0.32;           // stats line height
+  const cardW = maxLw + padX * 2;
+  const cardX = cx - cardW / 2;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  const cardTop = textTop - gapHeaderText - padTop - av;
+  const cardBottom = textBottom + gapTextStats + statsH + padBottom;
+  const avatarX = cardX + padX + av / 2;
+  const avatarY = cardTop + padTop + av / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
+    padX, av, avatarX, avatarY,
+    nameX: avatarX + av / 2 + 16,
+    nameY: avatarY - fs * 0.16,
+    handleY: avatarY + fs * 0.22,
+    logoSize: fs * 0.5,
+    logoX: cardX + cardW - padX - fs * 0.25,
+    logoY: avatarY,
+    statsX: cardX + padX,
+    statsY: textBottom + gapTextStats + statsH / 2,
+    statsH,
+  };
+}
+
+// The X logo (Simple Icons path, 24x24 viewBox), drawn once at module
+// load; a bold «X» letter is the fallback if Path2D is unavailable.
+const X_LOGO_PATH = 'M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z';
+let xLogoPath = null;
+try { xLogoPath = new Path2D(X_LOGO_PATH); } catch { xLogoPath = null; }
+
+// Paint the tweet card chrome: black rounded card, gradient avatar with
+// «STORY FONT», name + handle, the X logo, and the likes/replies footer.
+// The user's text itself is painted per line by STYLE_PAINT.tweet
+// (grey). The header/footer are the fixed StoryFont template from the
+// reference mockup — the name/handle are not the user's own (the app
+// never asks for an X handle).
+function paintTweetCard(l, fs) {
+  ctx.save();
+  // Card (a hairline border keeps it visible on the black background).
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = '#000000';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Avatar: pink -> magenta gradient circle with STORY / FONT.
+  const g = ctx.createLinearGradient(l.avatarX - l.av / 2, l.avatarY - l.av / 2, l.avatarX + l.av / 2, l.avatarY + l.av / 2);
+  g.addColorStop(0, '#F472B6');
+  g.addColorStop(0.55, '#EC4899');
+  g.addColorStop(1, '#BE185D');
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(l.avatarX, l.avatarY, l.av / 2, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = g;
+  ctx.fillRect(l.avatarX - l.av / 2, l.avatarY - l.av / 2, l.av, l.av);
+  ctx.restore();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `800 ${l.av * 0.24}px 'Vazir', system-ui, sans-serif`;
+  ctx.fillText('STORY', l.avatarX, l.avatarY - l.av * 0.14);
+  ctx.fillText('FONT', l.avatarX, l.avatarY + l.av * 0.14);
+  // Name + handle, left-aligned, centred on the avatar.
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `700 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  ctx.fillText('StoryFont', l.nameX, l.nameY);
+  ctx.fillStyle = '#71717A';
+  ctx.font = `400 ${fs * 0.34}px 'Vazir', system-ui, sans-serif`;
+  ctx.fillText('@storyfont', l.nameX, l.handleY);
+  // X logo, right side, centred on the avatar.
+  ctx.fillStyle = '#FFFFFF';
+  if (xLogoPath) {
+    ctx.save();
+    ctx.translate(l.logoX - l.logoSize / 2, l.logoY - l.logoSize / 2);
+    ctx.scale(l.logoSize / 24, l.logoSize / 24);
+    ctx.fill(xLogoPath);
+    ctx.restore();
+  } else {
+    ctx.font = `800 ${l.logoSize}px 'Vazir', system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('X', l.logoX, l.logoY);
+  }
+  // Footer: likes + replies.
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#A1A1AA';
+  ctx.font = `400 ${fs * 0.32}px 'Vazir', system-ui, sans-serif`;
+  ctx.fillText('4.1k likes  18 replies', l.statsX, l.statsY);
+  ctx.restore();
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -613,8 +720,12 @@ function draw() {
   // Per-line justify stretch (extra px per word gap).
   const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
   const cx = w / 2; // the block stays centred; only lines move within it
+  // The tweet card wraps the whole block (header + footer included),
+  // so taps on the card count as taps on the text.
+  const tweetL = state.style === 'tweet' ? tweetLayout(fontSize, maxLw, blockH, lineHeight, h, cx) : null;
   lastBlock = {
-    cx, cy: h / 2, hw: maxLw / 2, hh: blockH / 2,
+    cx, cy: tweetL ? tweetL.y + tweetL.h / 2 : h / 2,
+    hw: tweetL ? tweetL.w / 2 : maxLw / 2, hh: tweetL ? tweetL.h / 2 : blockH / 2,
     cosY: Math.cos((state.rotY * Math.PI) / 180),
     cosX: Math.cos((state.rotX * Math.PI) / 180),
   };
@@ -663,6 +774,11 @@ function draw() {
     ctx.fillText('”', cx - bw / 2 + 24, top + blockH + pad - 12);
     ctx.restore();
   }
+
+  // Tweet style: black card with the X-post header and the
+  // likes/replies footer around the whole text block (the text itself
+  // is painted per-line below, in grey).
+  if (tweetL) paintTweetCard(tweetL, fontSize);
 
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
