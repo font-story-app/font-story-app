@@ -615,11 +615,40 @@ function caretGeometry(p, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps 
   return { x, y, li, n };
 }
 
+// Minimum size of the tweet card: at least as wide as its chrome — the
+// header row (avatar + name/handle + X logo) and the footer line,
+// measured at their own font sizes — and at least as tall as one
+// full-size body line. Without it, a small body text (tweetTextSize <
+// 100%) shrinks the card until the name runs into the X logo and the
+// footer is clipped (Reza's screenshot, 2026-11-21). The caller's
+// ctx.font is restored.
+function tweetMinSize(fs) {
+  const name = (sp('tweetName') || '').trim() || 'FontStory';
+  let handle = (sp('tweetHandle') || '').trim() || '@fontstory';
+  if (!handle.startsWith('@')) handle = '@' + handle;
+  const likes = (sp('tweetLikes') || '').trim() || '4.1k';
+  const replies = (sp('tweetReplies') || '').trim() || '18';
+  const prevFont = ctx.font;
+  ctx.font = `700 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  const nameW = ctx.measureText(name).width;
+  ctx.font = `400 ${fs * 0.34}px 'Vazir', system-ui, sans-serif`;
+  const handleW = ctx.measureText(handle).width;
+  ctx.font = `400 ${fs * 0.32}px 'Vazir', system-ui, sans-serif`;
+  const footerW = ctx.measureText(`${likes} likes  ${replies} replies`).width;
+  ctx.font = prevFont;
+  const av = fs * 0.8, logoSize = fs * 0.5, padX = 56; // same as tweetLayout
+  return {
+    minW: Math.max(padX * 2 + av + 16 + Math.max(nameW, handleW) + 24 + logoSize, padX * 2 + footerW),
+    minBlockH: fs * state.lineHeight,
+  };
+}
+
 // Geometry of the tweet card (black rounded card with an X-post header
 // and a likes/replies footer) around the text block. All chrome scales
 // with the font size, so the card keeps its proportions at any size.
-// cx is the block centre x, h the canvas height.
-function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx) {
+// cx is the block centre x, h the canvas height. minW/minBlockH (from
+// tweetMinSize) keep a small body text from collapsing the card.
+function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0) {
   const padX = 56;                    // card padding left/right
   const padTop = fs * 0.45;           // card top edge -> avatar top
   const padBottom = fs * 0.45;        // stats line -> card bottom edge
@@ -627,10 +656,11 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx) {
   const gapHeaderText = fs * 0.35;    // avatar bottom -> first line top
   const gapTextStats = fs * 0.4;      // last line bottom -> stats line
   const statsH = fs * 0.32;           // stats line height
-  const cardW = maxLw + padX * 2;
+  const bodyH = Math.max(blockH, minBlockH);
+  const cardW = Math.max(maxLw + padX * 2, minW);
   const cardX = cx - cardW / 2;
-  const textTop = h / 2 - blockH / 2;
-  const textBottom = h / 2 + blockH / 2;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
   const cardTop = textTop - gapHeaderText - padTop - av;
   const cardBottom = textBottom + gapTextStats + statsH + padBottom;
   const avatarX = cardX + padX + av / 2;
@@ -766,7 +796,8 @@ function draw() {
   const cx = w / 2; // the block stays centred; only lines move within it
   // The tweet card wraps the whole block (header + footer included),
   // so taps on the card count as taps on the text.
-  const tweetL = state.style === 'tweet' ? tweetLayout(fontSize, maxLw, blockH, lineHeight, h, cx) : null;
+  const tweetMin = state.style === 'tweet' ? tweetMinSize(fontSize) : { minW: 0, minBlockH: 0 };
+  const tweetL = state.style === 'tweet' ? tweetLayout(fontSize, maxLw, blockH, lineHeight, h, cx, tweetMin.minW, tweetMin.minBlockH) : null;
   lastBlock = {
     cx, cy: tweetL ? tweetL.y + tweetL.h / 2 : h / 2,
     hw: tweetL ? tweetL.w / 2 : maxLw / 2, hh: tweetL ? tweetL.h / 2 : blockH / 2,
