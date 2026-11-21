@@ -1570,7 +1570,10 @@ function renderStyleControls() {
   $('styleSheetTitle').textContent = STYLES.find((s) => s.id === state.style)?.label || 'تنظیمات استایل';
   wrap.innerHTML = '';
   const controls = STYLE_CONTROLS[state.style] || [];
-  if (!controls.length) {
+  // The note only makes sense when the sheet would otherwise be empty:
+  // a box style shows its «استایل» section below, so the note above it
+  // would read as if there were no settings at all.
+  if (!controls.length && !BOX_STYLES.includes(state.style)) {
     const p = document.createElement('p');
     p.className = 'sheet-note';
     p.textContent = 'برای این استایل تنظیم جداگانه‌ای نیست.';
