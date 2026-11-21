@@ -1557,6 +1557,11 @@ function paintTweetSamples() {
   }
 }
 
+// The four box styles that paint with the style colour and the corner
+// radius — the «استایل» section in the per-style sheet only shows for
+// these (Reza, 2026-11-21); the other styles never read styleColor or
+// borderRadius, so the knobs would do nothing there.
+const BOX_STYLES = ['highlight', 'brush', 'quotes', 'glass'];
 // Build the «تنظیمات این استایل» controls for the current style.
 // Rebuilt on style change, on opening the sheet, and on applying a
 // saved design — so the sheet always shows the current style's knobs.
@@ -1679,65 +1684,69 @@ function renderStyleControls() {
   // The «استایل» section moved here from the text settings (gear) sheet
   // (Reza, 2026-11-21): the style colour and the corner radius live
   // with the style's own knobs now. They are global state — not
-  // per-style params — so they show for every style, even one with no
-  // separate knobs of its own. Same ids and wiring as before, so the
-  // saved-design restore (applyDesign) needs no change.
-  const sub = document.createElement('div');
-  sub.className = 'settings-sub';
-  sub.textContent = 'استایل';
-  wrap.appendChild(sub);
-  const colorRow = document.createElement('div');
-  colorRow.className = 'slider-row';
-  const colorHead = document.createElement('div');
-  colorHead.className = 'slider-head';
-  const colorLabel = document.createElement('span');
-  colorLabel.textContent = 'رنگ استایل';
-  const colorValue = document.createElement('span');
-  colorValue.className = 'slider-value';
-  colorValue.id = 'styleColorValue';
-  colorValue.textContent = state.styleColor.toUpperCase();
-  colorHead.append(colorLabel, colorValue);
-  colorRow.appendChild(colorHead);
-  const colorInput = document.createElement('input');
-  colorInput.type = 'color';
-  colorInput.className = 'style-color-input';
-  colorInput.id = 'styleColorInput';
-  colorInput.value = state.styleColor;
-  colorInput.style.background = state.styleColor;
-  colorInput.setAttribute('aria-label', 'رنگ استایل');
-  colorInput.addEventListener('input', (e) => {
-    state.styleColor = e.target.value;
-    colorInput.style.background = state.styleColor;
+  // per-style params — and they only show for the four box styles that
+  // actually paint with them (highlight, brush, quotes, glass); for
+  // every other style the section is not shown at all. Same ids and
+  // wiring as before, so the saved-design restore (applyDesign) needs
+  // no change.
+  if (BOX_STYLES.includes(state.style)) {
+    const sub = document.createElement('div');
+    sub.className = 'settings-sub';
+    sub.textContent = 'استایل';
+    wrap.appendChild(sub);
+    const colorRow = document.createElement('div');
+    colorRow.className = 'slider-row';
+    const colorHead = document.createElement('div');
+    colorHead.className = 'slider-head';
+    const colorLabel = document.createElement('span');
+    colorLabel.textContent = 'رنگ استایل';
+    const colorValue = document.createElement('span');
+    colorValue.className = 'slider-value';
+    colorValue.id = 'styleColorValue';
     colorValue.textContent = state.styleColor.toUpperCase();
-    redraw();
-  });
-  colorRow.appendChild(colorInput);
-  wrap.appendChild(colorRow);
-  const radiusRow = document.createElement('div');
-  radiusRow.className = 'slider-row';
-  const radiusHead = document.createElement('div');
-  radiusHead.className = 'slider-head';
-  const radiusLabel = document.createElement('span');
-  radiusLabel.textContent = 'گردی کادر';
-  const radiusValue = document.createElement('span');
-  radiusValue.className = 'slider-value';
-  radiusValue.id = 'radiusValue';
-  radiusValue.textContent = state.borderRadius + 'px';
-  radiusHead.append(radiusLabel, radiusValue);
-  radiusRow.appendChild(radiusHead);
-  const radiusInput = document.createElement('input');
-  radiusInput.type = 'range';
-  radiusInput.id = 'radiusRange';
-  radiusInput.min = 0; radiusInput.max = 40; radiusInput.step = 1;
-  radiusInput.value = state.borderRadius;
-  radiusInput.setAttribute('aria-label', 'گردی کادر');
-  radiusInput.addEventListener('input', (e) => {
-    state.borderRadius = Number(e.target.value);
+    colorHead.append(colorLabel, colorValue);
+    colorRow.appendChild(colorHead);
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.className = 'style-color-input';
+    colorInput.id = 'styleColorInput';
+    colorInput.value = state.styleColor;
+    colorInput.style.background = state.styleColor;
+    colorInput.setAttribute('aria-label', 'رنگ استایل');
+    colorInput.addEventListener('input', (e) => {
+      state.styleColor = e.target.value;
+      colorInput.style.background = state.styleColor;
+      colorValue.textContent = state.styleColor.toUpperCase();
+      redraw();
+    });
+    colorRow.appendChild(colorInput);
+    wrap.appendChild(colorRow);
+    const radiusRow = document.createElement('div');
+    radiusRow.className = 'slider-row';
+    const radiusHead = document.createElement('div');
+    radiusHead.className = 'slider-head';
+    const radiusLabel = document.createElement('span');
+    radiusLabel.textContent = 'گردی کادر';
+    const radiusValue = document.createElement('span');
+    radiusValue.className = 'slider-value';
+    radiusValue.id = 'radiusValue';
     radiusValue.textContent = state.borderRadius + 'px';
-    redraw();
-  });
-  radiusRow.appendChild(radiusInput);
-  wrap.appendChild(radiusRow);
+    radiusHead.append(radiusLabel, radiusValue);
+    radiusRow.appendChild(radiusHead);
+    const radiusInput = document.createElement('input');
+    radiusInput.type = 'range';
+    radiusInput.id = 'radiusRange';
+    radiusInput.min = 0; radiusInput.max = 40; radiusInput.step = 1;
+    radiusInput.value = state.borderRadius;
+    radiusInput.setAttribute('aria-label', 'گردی کادر');
+    radiusInput.addEventListener('input', (e) => {
+      state.borderRadius = Number(e.target.value);
+      radiusValue.textContent = state.borderRadius + 'px';
+      redraw();
+    });
+    radiusRow.appendChild(radiusInput);
+    wrap.appendChild(radiusRow);
+  }
 }
 
 // The default text colour follows the background — white text on dark
