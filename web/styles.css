@@ -350,6 +350,12 @@ body.editing .sheet, body.editing .tabbar { display: none; }
   width: 100%;
   height: 27px;
 }
+/* Tweet card preview: a miniature of the real card (190x120 backing,
+   same 760:480 aspect), so the header, text and footer stay readable
+   as a tweet — taller than the text samples by design. */
+.pick-card .sample canvas.sample-canvas-tweet {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -397,7 +403,8 @@ body.editing .sheet, body.editing .tabbar { display: none; }
     4px 4px 0 #fff, -4px 4px 0 #fff, 4px -4px 0 #fff, -4px -4px 0 #fff,
     -6px 9px 0 #5c1220;
 }
-/* Tweet card preview: grey text on the black card. */
+/* Tweet card preview fallback (used only if the canvas paint fails):
+   grey text on the black card. */
 .sample-tweet { background: #000; color: #a1a1aa; border-radius: 8px; padding: 0 6px; }
 
 .colors { display: flex; align-items: center; gap: 12px; padding: 4px 0 8px; }
