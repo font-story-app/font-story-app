@@ -232,9 +232,10 @@ const state = {
 const $ = (id) => document.getElementById(id);
 const canvas = $('preview');
 let ctx = canvas.getContext('2d');
-// NOTE: `ctx` is `let`, not `const` — paintStickerSamples() temporarily
-// swaps it to a card's small canvas so the sticker preview is painted
-// with the real sticker code (restored in a finally).
+// NOTE: `ctx` is `let`, not `const` — paintStickerSamples() and
+// paintTweetSamples() temporarily swap it to a card's small canvas so
+// the previews are painted with the real style code (restored in a
+// finally).
 const statusEl = $('status');
 const textInput = $('textInput');
 let toastTimer = null;
@@ -1016,10 +1017,11 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintTweetSamples(); });
   }
   draw();
   paintStickerSamples();
+  paintTweetSamples();
 }
 
 // Caret blink.
@@ -1435,13 +1437,16 @@ function fontCard(item, favs) {
 
 function buildStylePicker() {
   buildCardPicker($('stylePicker'), STYLES, state.style, (id) => { state.style = id; renderStyleControls(); redraw(); },
-    (item) => item.id === 'sticker'
-      // The sticker card is a real canvas (see paintStickerSamples):
-      // a CSS text-shadow approximation can never match the output —
-      // the white ring wraps the maroon extrusion, which text-shadow
-      // cannot express — so the old preview looked like a blob.
-      ? '<canvas class="sample-canvas" width="184" height="54"></canvas>'
-      : `<span class="sample-${item.id}">متن شما</span>`);
+    (item) => {
+      // Sticker and tweet are real canvases (see paintStickerSamples /
+      // paintTweetSamples): a CSS approximation can never match the
+      // output — the white ring wraps the maroon extrusion, which
+      // text-shadow cannot express (sticker), and the old tweet black
+      // box with grey text did not read as a tweet card at all.
+      if (item.id === 'sticker') return '<canvas class="sample-canvas" width="184" height="54"></canvas>';
+      if (item.id === 'tweet') return '<canvas class="sample-canvas sample-canvas-tweet" width="190" height="120"></canvas>';
+      return `<span class="sample-${item.id}">متن شما</span>`;
+    });
 }
 
 // Paint every sticker card preview with the REAL sticker code
@@ -1477,6 +1482,75 @@ function paintStickerSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sticker';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the tweet card preview with the REAL tweet code (tweetLayout
+// + paintTweetCard + the body text) on its small canvas — a miniature
+// of the actual card, so the preview always matches the canvas. The
+// whole 1080-space card is scaled to fit the sample canvas, so the
+// preview follows the card size, the name/handle/avatar/colour
+// settings and the current font. Called from redraw(), like the
+// sticker samples. If painting fails, fall back to the CSS box.
+function paintTweetSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-tweet')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail (times the text-size %), the
+        // chrome stays fixed at TWEET_CHROME_FS.
+        const textFs = state.size * (sp('tweetTextSize') / 100);
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight;
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const tweetRTL = isRTLText(lines[0] || '');
+        const tweetMin = tweetMinSize(TWEET_CHROME_FS);
+        const tweetL = tweetLayout(TWEET_CHROME_FS, maxLw, blockH, lineHeight, 1080, 540, tweetMin.minW, tweetMin.minBlockH, tweetRTL);
+        const blockCx = 540 + tweetL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / tweetL.w, H / tweetL.h);
+        const cardCx = tweetL.x + tweetL.w / 2, cardCy = tweetL.y + tweetL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintTweetCard(tweetL, TWEET_CHROME_FS);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.tweet(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-tweet';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
