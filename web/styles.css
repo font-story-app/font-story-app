@@ -253,6 +253,42 @@ body.dark-bg .size-rail { background: rgba(255,255,255,0.16); }
 /* On the black background the dark circle is invisible — same light
    treatment as the size-rail chip there. */
 body.dark-bg .align-btn { background: rgba(255,255,255,0.16); }
+
+/* Floating per-style settings, anchored under the align button on the
+   stage's right edge. Shown while the style tab is open (see
+   updateStylePanel in app.js); the × closes it until another style is
+   picked. Same rows as the settings sheet (dark background). */
+.style-panel {
+  position: absolute;
+  right: var(--edge-inset);
+  top: calc(50% + 29px); /* align button (38px) half-height + 10px gap */
+  width: min(272px, calc(100% - 2 * var(--edge-inset)));
+  max-height: calc(50% - 37px);
+  overflow-y: auto;
+  background: rgba(20, 20, 20, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 16px;
+  padding: 8px 12px 12px;
+  z-index: 3;
+  color: #fff;
+}
+.style-panel[hidden] { display: none; }
+.style-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+.style-panel-close {
+  background: none; border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer; padding: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.style-panel-close .icon { width: 18px; height: 18px; }
 .size-mark { font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 .size-value { font-size: 14px; font-weight: 800; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 #sizeRange {
