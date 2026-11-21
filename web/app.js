@@ -1351,7 +1351,10 @@ function fontCard(item, favs) {
 }
 
 function buildStylePicker() {
-  buildCardPicker($('stylePicker'), STYLES, state.style, (id) => { state.style = id; renderStyleControls(); redraw(); },
+  buildCardPicker($('stylePicker'), STYLES, state.style, (id) => {
+    if (id !== state.style) { state.style = id; stylePanelDismissed = false; }
+    renderStyleControls(); updateStylePanel(); redraw();
+  },
     (item) => item.id === 'sticker'
       // The sticker card is a real canvas (see paintStickerSamples):
       // a CSS text-shadow approximation can never match the output —
@@ -1404,7 +1407,8 @@ function paintStickerSamples() {
 // Rebuilt on style change, on opening the sheet, and on applying a
 // saved design — so the sheet always shows the current style's knobs.
 function renderStyleControls() {
-  const wrap = $('styleControls');
+  const wrap = $('stylePanelControls');
+  $('stylePanelTitle').textContent = STYLES.find((s) => s.id === state.style)?.label || 'تنظیمات استایل';
   wrap.innerHTML = '';
   const controls = STYLE_CONTROLS[state.style] || [];
   if (!controls.length) {
@@ -1553,10 +1557,25 @@ function buildSwatches() {
 }
 
 // --- Tabs / sheets ---
+// The per-style settings live in the floating panel under the align
+// button — visible only while the style tab is open, until the user
+// closes it with × (picking another style brings it back).
+let currentTab = 'font'; // panel-font is the visible panel on load
+let stylePanelDismissed = false;
+function updateStylePanel() {
+  $('stylePanel').hidden = !(currentTab === 'style' && !stylePanelDismissed);
+}
+$('stylePanelClose').addEventListener('click', () => {
+  stylePanelDismissed = true;
+  updateStylePanel();
+});
+
 function switchTab(tab) {
+  currentTab = tab;
   document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.sheet-panel').forEach((p) => { p.hidden = p.id !== `panel-${tab}`; });
   if (tab === 'template') loadRecents();
+  updateStylePanel();
 }
 document.querySelectorAll('.tab').forEach((b) => {
   b.addEventListener('click', () => switchTab(b.dataset.tab));
