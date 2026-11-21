@@ -72,7 +72,48 @@ const STYLES = [
   { id: 'tweet', label: 'توییت' },
 ];
 
-const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1'];
+const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
+  // Sampled from the StoryFont colour list (Reza's screenshots, 2026-11-21):
+  '#FEC93D', '#FF3251', '#B300C0', '#FE0000', '#FD7F8D', '#FED0D2', '#FEDAA8',
+  '#FFBF75', '#D98B38', '#5855D6', '#007AFF', '#FFCC00', '#81007F', '#482122', '#004B24',
+  '#262626', '#363636', '#555555', '#737373', '#B2B2B2', '#DBDBDB', '#EFEFEF',
+  '#EFE6DF', '#1E3942'];
+
+// Gradient text colours, sampled the same way: [first stop, second stop,
+// CSS angle in degrees]. A gradient colour is stored as the string
+// 'g:#C1:#C2:ANGLE' (see gradientValue) so it survives save/load.
+const GRADIENTS = [
+  ['#7A48D1', '#BD46B1', 180], ['#EE5F61', '#C94361', 135],
+  ['#40BBDD', '#509BE2', 180], ['#F8A217', '#FDC505', 90],
+  ['#BF4D99', '#7B56CC', 135], ['#19AA8A', '#2FDD7F', 90],
+  ['#FBB89B', '#CD6172', 90], ['#C3395D', '#75397F', 180],
+  ['#705BB8', '#6A6DD3', 225], ['#EEB5A2', '#EF769F', 90],
+  ['#9875D3', '#CB68A5', 135], ['#F64442', '#E63061', 180],
+  ['#47E5E8', '#16C4FB', 225], ['#556EE5', '#7F5AE8', 90],
+  ['#7D2F69', '#4E2A6D', 180], ['#FAAC31', '#F58E32', 135],
+  ['#2DACCF', '#4863AA', 90], ['#FC7400', '#F94E00', 180],
+  ['#644848', '#BFB3B3', 90], ['#DDBCA2', '#796674', 90],
+  ['#EED2C4', '#C68581', 90], ['#DBC9B5', '#A08E7A', 90],
+  ['#E9E5DC', '#AEB7A9', 90], ['#A97A66', '#886255', 90],
+  ['#9C5055', '#E16B54', 135], ['#E34829', '#F78B39', 135],
+  ['#96AB88', '#525836', 90], ['#147468', '#D1DEBC', 90],
+];
+
+// Gradient text colours: the stored value, its parts, and the flat
+// fallbacks for places that only take a single colour (caret, glow,
+// the native colour picker).
+const GRADIENT_COLOR_RE = /^g:(#[0-9a-fA-F]{6}):(#[0-9a-fA-F]{6}):(0|45|90|135|180|225|270|315)$/;
+function isGradientColor(c) { return typeof c === 'string' && c.startsWith('g:'); }
+function gradientValue(g) { return `g:${g[0]}:${g[1]}:${g[2]}`; }
+function parseGradientColor(c) {
+  const m = GRADIENT_COLOR_RE.exec(c || '');
+  return m ? { c1: m[1], c2: m[2], angle: Number(m[3]) } : null;
+}
+function flatColor(c) { const g = isGradientColor(c) ? parseGradientColor(c) : null; return g ? g.c1 : c; }
+function gradientCss(c) {
+  const g = parseGradientColor(c);
+  return g ? `linear-gradient(${g.angle}deg, ${g.c1}, ${g.c2})` : c;
+}
 
 // Per-style extra controls, shown in the settings sheet under
 // «تنظیمات این استایل» for the currently selected style.
@@ -394,6 +435,13 @@ function drawWords(line, cx, y, dx = 0, dy = 0, mode = 'fill') {
   // A justified line is wider than its natural width: the extra gap
   // per word gap stretches it to the block's full width.
   const visW = lw + lineJustifyGap * (words.length - 1);
+  // A gradient text colour paints each line with the full gradient
+  // across that line's glyph box. Only in fill mode, and only for
+  // styles whose text fill is the text colour — 'gradient' and
+  // 'sticker' paint their own fill and ignore the text colour.
+  if (mode === 'fill' && !['gradient', 'sticker'].includes(state.style) && isGradientColor(state.color)) {
+    ctx.fillStyle = textColorFill(line, cx, y, visW);
+  }
   let x = rtl ? cx + visW / 2 : cx - visW / 2;
   ctx.textAlign = rtl ? 'right' : 'left';
   for (const word of words) {
@@ -435,6 +483,35 @@ function textGradient(cx, lw, stops) {
   return g;
 }
 
+// The fill for a line of text: a plain colour, or a gradient colour
+// spanning the line's glyph box at the recorded angle (gradient text
+// colours, Reza 2026-11-21).
+function textColorFill(line, cx, y, visW) {
+  if (!isGradientColor(state.color)) return state.color;
+  const g = parseGradientColor(state.color);
+  if (!g) return state.color;
+  const m = ctx.measureText(line);
+  const x0 = cx - visW / 2, x1 = cx + visW / 2;
+  const yTop = y - (m.actualBoundingBoxAscent || 0);
+  const yBot = y + (m.actualBoundingBoxDescent || 0);
+  let sx, sy, ex, ey;
+  switch (g.angle) {
+    case 0: sx = cx; sy = yBot; ex = cx; ey = yTop; break;
+    case 90: sx = x0; sy = y; ex = x1; ey = y; break;
+    case 180: sx = cx; sy = yTop; ex = cx; ey = yBot; break;
+    case 270: sx = x1; sy = y; ex = x0; ey = y; break;
+    case 45: sx = x0; sy = yBot; ex = x1; ey = yTop; break;
+    case 135: sx = x0; sy = yTop; ex = x1; ey = yBot; break;
+    case 225: sx = x1; sy = yTop; ex = x0; ey = yBot; break;
+    case 315: sx = x1; sy = yBot; ex = x0; ey = yTop; break;
+    default: sx = x0; sy = y; ex = x1; ey = y;
+  }
+  const grad = ctx.createLinearGradient(sx, sy, ex, ey);
+  grad.addColorStop(0, g.c1);
+  grad.addColorStop(1, g.c2);
+  return grad;
+}
+
 function strokeWords(line, cx, y, color, width, dx = 0, dy = 0) {
   ctx.save();
   ctx.strokeStyle = color;
@@ -453,11 +530,11 @@ const STYLE_PAINT = {
     ctx.fillStyle = state.colorTouched ? state.color : contrastText(state.styleColor); drawWords(line, cx, y);
   },
   neon: (line, cx, y) => {
-    ctx.shadowColor = state.color; ctx.shadowBlur = sp('neonGlow'); ctx.fillStyle = state.color;
+    ctx.shadowColor = flatColor(state.color); ctx.shadowBlur = sp('neonGlow'); ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   glow: (line, cx, y) => {
-    ctx.shadowColor = state.color; ctx.shadowBlur = sp('glowGlow'); ctx.fillStyle = state.color;
+    ctx.shadowColor = flatColor(state.color); ctx.shadowBlur = sp('glowGlow'); ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   glass: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
@@ -508,7 +585,7 @@ const STYLE_PAINT = {
   pixel: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   quotes: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   winter: (line, cx, y) => {
-    ctx.shadowColor = state.color; ctx.shadowBlur = sp('winterGlow'); ctx.fillStyle = state.color;
+    ctx.shadowColor = flatColor(state.color); ctx.shadowBlur = sp('winterGlow'); ctx.fillStyle = state.color;
     drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
   },
   rosseta: (line, cx, y, lw, fs) => {
@@ -933,7 +1010,7 @@ function draw() {
   if (state.caret && document.activeElement === textInput && !hasSel) {
     const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps, blockCx);
     ctx.save();
-    ctx.fillStyle = state.color;
+    ctx.fillStyle = flatColor(state.color);
     ctx.fillRect(g.x - 3.5, g.y - textFs * 0.55, 7, textFs * 1.1);
     ctx.restore();
   }
@@ -1758,7 +1835,7 @@ function renderStyleControls() {
 function applyDefaultTextColor() {
   if (state.colorTouched) return;
   state.color = BACKGROUNDS[state.bg] === '#FFFFFF' ? '#1F2421' : '#FFFFFF';
-  $('colorPicker').value = state.color;
+  $('colorPicker').value = flatColor(state.color);
   buildSwatches();
   redraw();
 }
@@ -1766,22 +1843,24 @@ function applyDefaultTextColor() {
 function buildSwatches() {
   const wrap = $('swatches');
   wrap.innerHTML = '';
-  for (const c of COLORS) {
+  const addSwatch = (value, background) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'swatch' + (c === state.color ? ' active' : '');
-    b.style.background = c;
-    b.setAttribute('aria-label', c);
+    b.className = 'swatch' + (value === state.color ? ' active' : '');
+    b.style.background = background;
+    b.setAttribute('aria-label', value);
     b.addEventListener('click', () => {
-      state.color = c;
+      state.color = value;
       state.colorTouched = true;
-      $('colorPicker').value = c;
+      $('colorPicker').value = flatColor(value);
       wrap.querySelectorAll('.swatch').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
       redraw();
     });
     wrap.appendChild(b);
-  }
+  };
+  for (const c of COLORS) addSwatch(c, c);
+  for (const g of GRADIENTS) { const v = gradientValue(g); addSwatch(v, gradientCss(v)); }
 }
 
 // --- Tabs / sheets ---
@@ -1825,7 +1904,7 @@ function applyDesign(d) {
   state.borderRadius = clampNum(d.borderRadius, 0, 40, 18);
   state.styleParams = sanitizeStyleParams(d.styleParams);
   textInput.value = state.text;
-  $('colorPicker').value = state.color;
+  $('colorPicker').value = flatColor(state.color);
   syncSettingsUI();
   fontFilter = fontLang(state.font); // show the applied font's group
   buildFontPicker();
@@ -2161,7 +2240,7 @@ document.addEventListener('pointerdown', (e) => {
 // Safari RTL model (scrollLeft starts at max and decreases to 0), where
 // the same decrease-toward-the-end holds.
 function onRowWheel(e) {
-  const row = e.target.closest ? e.target.closest('.card-row') : null;
+  const row = e.target.closest ? e.target.closest('.card-row, .swatches') : null;
   if (!row || row.scrollWidth <= row.clientWidth) return;
   if (!e.deltaX && !e.deltaY) return;
   const rtl = getComputedStyle(row).direction === 'rtl';
