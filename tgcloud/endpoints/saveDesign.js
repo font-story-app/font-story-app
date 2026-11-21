@@ -13,7 +13,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
   'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
-  'sticker',
+  'sticker', 'tweet',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
 const ALLOWED_ALIGNS = ['center', 'right', 'left', 'justify'];
