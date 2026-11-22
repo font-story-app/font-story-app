@@ -190,7 +190,6 @@ const STYLE_CONTROLS = {
   violet: [
     { key: 'violetOutline', label: 'ضخامت خط دور', type: 'range', min: 1, max: 8, step: 1, def: 3, unit: '٪' },
     { key: 'violetShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 20, step: 1, def: 10, unit: '٪' },
-    { key: 'violetTrack', label: 'فشردگی حروف', type: 'range', min: -30, max: 0, step: 1, def: -17, unit: '٪' },
   ],
   bubble: [
     { key: 'bubbleOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
@@ -248,19 +247,6 @@ function sp(key) {
   const v = state.styleParams[key];
   return v === undefined ? STYLE_PARAM_DEFS[key]?.def : v;
 }
-
-// Extra per-style letter tracking (px) for the current style, as a %
-// of the font size. Violet's reference is set very tight (StoryFont
-// packs the letters close together); every other style uses 0, so
-// their tracking is just the global فاصله حروف setting.
-function styleTrackPx(fs) {
-  if (state.style !== 'violet') return 0;
-  return fs * (sp('violetTrack') / 100);
-}
-// The tracking in effect for the current draw() pass (set there, read
-// by prefixWidth and syncEditorLayout, which have no font size of
-// their own when the caret/selection is computed).
-let curTrackPx = 0;
 
 // Keep only known keys, clamped/validated (input may be an object or a
 // JSON string, e.g. a saved design from the server).
@@ -476,7 +462,7 @@ function prefixWidth(line, n, extraGap = 0) {
       // The boundary after k chars of a word sits one letter-spacing
       // past the measured k-char prefix (the spacing before the next
       // char), except at the word's edges.
-      const extra = (k > 0 && k < w.length && 'letterSpacing' in ctx) ? state.letterSpacing + curTrackPx : 0;
+      const extra = (k > 0 && k < w.length && 'letterSpacing' in ctx) ? state.letterSpacing : 0;
       return x + ctx.measureText(w.slice(0, k)).width + extra;
     }
     x += ctx.measureText(w).width + gap;
@@ -1029,11 +1015,10 @@ function draw() {
   // the body size.
   const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : fontSize;
   const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : fontSize;
-  curTrackPx = styleTrackPx(textFs);
   ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
   // Native letter spacing where the WebView supports it (Chrome 99+,
   // Safari 17+); word spacing is applied manually in drawWords.
-  if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing + curTrackPx}px`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
   const maxWidth = w - 160;
   const lineRanges = wrapLineRanges(state.text || '…', maxWidth);
   const lines = lineRanges.map((r) => r.text);
@@ -1233,7 +1218,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
   s.lineHeight = `${lh}px`;
   s.fontFamily = fontFamily();
   s.fontWeight = String(state.weight);
-  s.letterSpacing = `${(state.letterSpacing + curTrackPx) * scale}px`;
+  s.letterSpacing = `${state.letterSpacing * scale}px`;
   s.wordSpacing = `${state.wordSpacing * scale}px`;
   s.textAlign = state.align;
   // The editor's lines must sit where the canvas draws them: the block
