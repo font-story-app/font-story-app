@@ -188,8 +188,8 @@ const STYLE_CONTROLS = {
   // StoryFont styles (Reza, 2026-11-22): knobs for the eight new looks.
   // Colours are the sampled defaults from his screenshots.
   violet: [
-    { key: 'violetOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 8, unit: '٪' },
-    { key: 'violetShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 30, step: 1, def: 18, unit: '٪' },
+    { key: 'violetOutline', label: 'ضخامت خط دور', type: 'range', min: 1, max: 8, step: 1, def: 3, unit: '٪' },
+    { key: 'violetShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 20, step: 1, def: 10, unit: '٪' },
   ],
   bubble: [
     { key: 'bubbleOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
@@ -675,13 +675,14 @@ const STYLE_PAINT = {
   // screenshots. Each one's fill follows the رنگ tab once the user picks
   // a colour, else the signature colour from the reference.
   violet: (line, cx, y, lw, fs) => {
-    // Purple fill, white outline, crisp dark-purple offset shadow.
-    const dx = fs * (sp('violetShadow') / 100) * 0.6;
+    // Purple fill, thin white outline, crisp dark-purple shadow straight
+    // below (measured from the reference 2026-11-22: outline ~3% of the
+    // font size, shadow offset ~10% straight down, no sideways shift).
     const dy = fs * (sp('violetShadow') / 100);
     ctx.save();
-    ctx.shadowColor = '#4B0098'; ctx.shadowBlur = 0; ctx.shadowOffsetX = dx; ctx.shadowOffsetY = dy;
+    ctx.shadowColor = '#4B0098'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = dy;
     strokeWords(line, cx, y, '#ffffff', fs * (sp('violetOutline') / 100));
-    ctx.fillStyle = state.colorTouched ? state.color : '#7A01FF';
+    ctx.fillStyle = state.colorTouched ? state.color : '#7700FF';
     drawWords(line, cx, y);
     ctx.restore();
   },
