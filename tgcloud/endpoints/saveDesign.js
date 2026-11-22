@@ -59,8 +59,8 @@ const STYLE_PARAMS = {
   tweetCardH: { min: 300, max: 800 },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
-  violetOutline: { min: 4, max: 16 },
-  violetShadow: { min: 0, max: 30 },
+  violetOutline: { min: 1, max: 8 },
+  violetShadow: { min: 0, max: 20 },
   bubbleOutline: { min: 4, max: 16 },
   bubbleShadow: { min: 0, max: 40 },
   roundlineC: { color: true },
