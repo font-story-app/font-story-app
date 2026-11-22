@@ -314,6 +314,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
   scrollbar-width: none;
 }
 .card-row::-webkit-scrollbar { display: none; }
+/* Infinite-scroll sentinel at the font row's end: a narrow spacer the
+   observer watches — when it nears the visible area the next batch of
+   font cards is appended before it. */
+.font-more-sentinel { width: 24px; flex: none; }
 /* On a PC (fine pointer) the hidden scrollbar leaves the rows with no
    visible way to scroll — show a thin one so the rest is reachable. */
 @media (pointer: fine) {
