@@ -82,6 +82,7 @@ const STYLES = [
   { id: 'shadowline', label: 'خط سایه‌دار' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
+  { id: 'message', label: 'پیام' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -291,6 +292,17 @@ const STYLE_CONTROLS = {
     { key: 'noteCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
     { key: 'noteCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'noteC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E4D0D9' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // iPhone Messages notification (Reza, 2026-11-22): a white header
+  // band with the green Messages icon + Messages / Now, and the text
+  // in black on the light-pink content area below. Colours sampled
+  // from his screenshot.
+  message: [
+    { key: 'messageCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'messageCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'messageC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#EDBCD2' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -839,6 +851,16 @@ const STYLE_PAINT = {
       : c.toUpperCase() === '#E4D0D9' ? '#595355' : contrastText(c);
     drawWords(line, cx, y);
   },
+  // Messages frame: black text on the light-pink content area (the
+  // card + green Messages header are painted block-level in draw()).
+  // A colour picked in the رنگ tab wins; if the content colour is
+  // changed, contrastText keeps the text readable on it.
+  message: (line, cx, y) => {
+    const c = sp('messageC') || '#EDBCD2';
+    ctx.fillStyle = state.colorTouched ? state.color
+      : c.toUpperCase() === '#EDBCD2' ? '#000000' : contrastText(c);
+    drawWords(line, cx, y);
+  },
 };
 
 // Text alignment happens INSIDE the text block, which stays centred on
@@ -1226,6 +1248,118 @@ function paintNoteCard(l, fs) {
   ctx.restore();
 }
 
+// at MESSAGE_CHROME_FS while the body text follows the side size rail.
+const MESSAGE_CHROME_FS = 110;
+const MESSAGE_GREY = '#8B8B8D';
+
+// Minimum size of the message card: at least as wide as its header
+// row (Messages icon + Messages + Now), measured at its own font
+// size, and at least as tall as one body line.
+function messageMinSize(fs) {
+  const prevFont = ctx.font;
+  ctx.font = `400 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  const messagesW = ctx.measureText('Messages').width;
+  const nowW = ctx.measureText('Now').width;
+  ctx.font = prevFont;
+  const padX = 56; // same as messageLayout
+  // padX + icon + gap + Messages + gap + Now + padX.
+  const headerW = padX * 2 + fs * 0.68 + fs * 0.12 + messagesW + fs * 0.28 + nowW;
+  return { minW: headerW, minBlockH: fs * state.lineHeight };
+}
+
+// Geometry of the message card around the text block. The card's SIZE
+// is adjustable (messageCardW/messageCardH, same defaults as the
+// tweet/note cards: a 760x480 floor the content can grow past). The
+// body block's position follows the alignment buttons, same rule as
+// the tweet/note cards: right hugs the inner right edge, left the
+// inner left edge, centre sits in the middle; justify keeps the
+// direction-based anchor.
+function messageLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0, rtl = true) {
+  const padX = 56;                    // card padding left/right
+  const headerH = fs * 1.1;           // white header band height
+  const gapHeaderText = fs * 0.35;    // header bottom -> first line top
+  const padBottom = fs * 0.45;        // last line bottom -> card bottom
+  const bodyH = Math.max(blockH, minBlockH);
+  const cardW = Math.max(maxLw + padX * 2, minW, sp('messageCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - gapHeaderText - headerH;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('messageCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
+    padX, headerH, blockShift, rtl,
+  };
+}
+
+// Paint the message card chrome: light-pink card with a white header
+// band and the iOS Messages header (green app icon + Messages on the
+// left, Now on the right, LTR like the screenshot). The user's text
+// itself is painted per line by STYLE_PAINT.message.
+function paintMessageCard(l, fs) {
+  const content = sp('messageC') || '#EDBCD2';
+  ctx.save();
+  // Card body (pink) + white header band (clipped to the rounded top).
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = content;
+  ctx.fill();
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.clip();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(l.x, l.y, l.w, l.headerH);
+  ctx.restore();
+  // Grey header, LTR.
+  ctx.textBaseline = 'middle';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const hy = l.y + l.headerH / 2;
+  const headFont = `400 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  ctx.font = headFont;
+  // Green Messages app icon, left (vertical gradient like the real
+  // icon: bright lime at the top, deeper green at the bottom).
+  const iconS = fs * 0.68;
+  const iconX = l.x + l.padX, iconY = hy - iconS / 2;
+  const iconGrad = ctx.createLinearGradient(iconX, iconY, iconX, iconY + iconS);
+  iconGrad.addColorStop(0, '#8BD94F');
+  iconGrad.addColorStop(1, '#3ABA29');
+  roundRect(iconX, iconY, iconS, iconS, iconS * 0.22);
+  ctx.fillStyle = iconGrad;
+  ctx.fill();
+  // White speech bubble inside the icon: an ellipse with a tail at
+  // the bottom-left.
+  const bx = iconX + iconS / 2, by = iconY + iconS * 0.47;
+  const bw = iconS * 0.32, bh = iconS * 0.24;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.ellipse(bx, by, bw, bh, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(bx - bw * 0.55, by + bh * 0.55);
+  ctx.lineTo(bx - bw * 0.15, by + bh * 0.55);
+  ctx.lineTo(bx - bw * 0.75, by + bh * 1.15);
+  ctx.closePath();
+  ctx.fill();
+  // «Messages», left of the icon.
+  ctx.fillStyle = MESSAGE_GREY;
+  ctx.textAlign = 'left';
+  ctx.fillText('Messages', iconX + iconS + fs * 0.12, hy);
+  // «Now», right.
+  ctx.textAlign = 'right';
+  ctx.fillText('Now', l.x + l.w - l.padX, hy);
+  ctx.restore();
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -1239,11 +1373,12 @@ function draw() {
   // tweetTextSize %), but the card chrome stays fixed at
   // TWEET_CHROME_FS — so moving the rail changes ONLY the body text
   // size, never the card or its header/footer (Reza, 2026-11-21).
-  // The note card works the same way (NOTE_CHROME_FS).
+  // The note card works the same way (NOTE_CHROME_FS), and the
+  // message card too (MESSAGE_CHROME_FS).
   // Wrapping, line height, caret and the editor overlay all follow
   // the body size.
   const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : fontSize;
-  const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : state.style === 'note' ? NOTE_CHROME_FS : fontSize;
+  const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : state.style === 'note' ? NOTE_CHROME_FS : state.style === 'message' ? MESSAGE_CHROME_FS : fontSize;
   ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
   // Native letter spacing where the WebView supports it (Chrome 99+,
   // Safari 17+); word spacing is applied manually in drawWords.
@@ -1273,7 +1408,12 @@ function draw() {
   const noteRTL = state.style === 'note' ? isRTLText(lines[0] || '') : true;
   const noteMin = state.style === 'note' ? noteMinSize(chromeFs) : { minW: 0, minBlockH: 0 };
   const noteL = state.style === 'note' ? noteLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, noteMin.minW, noteMin.minBlockH, noteRTL) : null;
-  const frameL = tweetL || noteL;
+  // The message card wraps the block the same way (its header is fixed
+  // LTR, but the body block still follows the alignment buttons).
+  const messageRTL = state.style === 'message' ? isRTLText(lines[0] || '') : true;
+  const messageMin = state.style === 'message' ? messageMinSize(chromeFs) : { minW: 0, minBlockH: 0 };
+  const messageL = state.style === 'message' ? messageLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, messageMin.minW, messageMin.minBlockH, messageRTL) : null;
+  const frameL = tweetL || noteL || messageL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -1360,6 +1500,11 @@ function draw() {
   // whole text block (the text itself is painted per-line below, in
   // dark grey on pink).
   if (noteL) paintNoteCard(noteL, chromeFs);
+
+  // Messages style: white header band with the green Messages icon
+  // around the whole text block (the text itself is painted per-line
+  // below, in black on pink).
+  if (messageL) paintMessageCard(messageL, chromeFs);
 
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
@@ -1480,13 +1625,14 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); });
   }
   draw();
   paintStickerSamples();
   paintUnderlineSamples();
   paintTweetSamples();
   paintNoteSamples();
+  paintMessageSamples();
 }
 
 // Caret blink.
@@ -1912,6 +2058,7 @@ function buildStylePicker() {
       if (item.id === 'underline') return '<canvas class="sample-canvas sample-canvas-underline" width="184" height="54"></canvas>';
       if (item.id === 'tweet') return '<canvas class="sample-canvas sample-canvas-tweet" width="190" height="120"></canvas>';
       if (item.id === 'note') return '<canvas class="sample-canvas sample-canvas-note" width="190" height="120"></canvas>';
+      if (item.id === 'message') return '<canvas class="sample-canvas sample-canvas-message" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -2128,6 +2275,73 @@ function paintNoteSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-note';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the message card preview with the REAL message code
+// (messageLayout + paintMessageCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the note
+// preview. Called from redraw(), like the sticker/tweet/note samples.
+// If painting fails, fall back to the CSS box.
+function paintMessageSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-message')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the chrome stays fixed at
+        // MESSAGE_CHROME_FS.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const messageRTL = isRTLText(lines[0] || '');
+        const messageMin = messageMinSize(MESSAGE_CHROME_FS);
+        const messageL = messageLayout(MESSAGE_CHROME_FS, maxLw, blockH, lineHeight, 1080, 540, messageMin.minW, messageMin.minBlockH, messageRTL);
+        const blockCx = 540 + messageL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / messageL.w, H / messageL.h);
+        const cardCx = messageL.x + messageL.w / 2, cardCy = messageL.y + messageL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintMessageCard(messageL, MESSAGE_CHROME_FS);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.message(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-message';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

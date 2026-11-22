@@ -360,6 +360,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-note {
   height: 60px;
 }
+/* Messages card preview: same miniature treatment as the note card. */
+.pick-card .sample canvas.sample-canvas-message {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -421,6 +425,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 /* Notes card preview fallback (used only if the canvas paint fails):
    white header band over the dusty-pink content area. */
 .sample-note { background: linear-gradient(180deg, #fff 0 35%, #e4d0d9 35%); color: #595355; border-radius: 8px; padding: 0 6px; }
+.sample-message { background: linear-gradient(180deg, #fff 0 25%, #edbcd2 25%); color: #000; border-radius: 8px; padding: 0 6px; }
 
 .colors { display: flex; align-items: center; gap: 12px; padding: 4px 0 8px; }
 .swatches { display: flex; gap: 12px; overflow-x: auto; min-width: 0; flex: 1; scrollbar-width: none; }
