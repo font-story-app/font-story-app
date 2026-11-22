@@ -1480,10 +1480,11 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintTweetSamples(); paintNoteSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); });
   }
   draw();
   paintStickerSamples();
+  paintUnderlineSamples();
   paintTweetSamples();
   paintNoteSamples();
 }
@@ -1908,6 +1909,7 @@ function buildStylePicker() {
       // text-shadow cannot express (sticker), and the old tweet black
       // box with grey text did not read as a tweet card at all.
       if (item.id === 'sticker') return '<canvas class="sample-canvas" width="184" height="54"></canvas>';
+      if (item.id === 'underline') return '<canvas class="sample-canvas sample-canvas-underline" width="184" height="54"></canvas>';
       if (item.id === 'tweet') return '<canvas class="sample-canvas sample-canvas-tweet" width="190" height="120"></canvas>';
       if (item.id === 'note') return '<canvas class="sample-canvas sample-canvas-note" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
@@ -1947,6 +1949,49 @@ function paintStickerSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sticker';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the underline card preview with the REAL underline code on
+// its small canvas — the text sitting on its violet bar, exactly like
+// the main canvas. A CSS approximation cannot express it: the bar is
+// a band at the baseline, not a full box behind the text (the old CSS
+// sample filled the whole card violet). Called from redraw(), like the
+// sticker samples. If painting fails, fall back to the CSS box.
+function paintUnderlineSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-underline')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // Fit «متن شما» into the canvas, leaving room for the bar
+        // (0.7x fs below the line centre) and its shadow.
+        let fs = Math.floor(H * 0.5);
+        const setFont = (s) => {
+          ctx.font = `${state.weight} ${s}px ${fontFamily()}`;
+          if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        };
+        setFont(fs);
+        const maxW = W * 0.82;
+        while (fs > 10 && lineWidth('متن شما') > maxW) { fs -= 1; setFont(fs); }
+        lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
+        // The line centre sits slightly above the canvas centre so the
+        // bar + its shadow fit below without clipping.
+        STYLE_PAINT.underline('متن شما', W / 2, H * 0.45, lineWidth('متن شما'), fs);
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-underline';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
