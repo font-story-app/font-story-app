@@ -81,6 +81,7 @@ const STYLES = [
   { id: 'lightbox', label: 'باکس سفید' },
   { id: 'shadowline', label: 'خط سایه‌دار' },
   { id: 'tweet', label: 'توییت' },
+  { id: 'note', label: 'یادداشت' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -130,86 +131,142 @@ function gradientCss(c) {
 // «تنظیمات این استایل» for the currently selected style.
 // type 'range': { min, max, step, def, unit } — type 'color': { def }.
 const STYLE_CONTROLS = {
+  bold: [
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  highlight: [
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  quotes: [
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
   neon: [
     { key: 'neonGlow', label: 'شدت درخشش', type: 'range', min: 0, max: 80, step: 1, def: 45, unit: '' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   glow: [
     { key: 'glowGlow', label: 'شدت درخشش', type: 'range', min: 0, max: 80, step: 1, def: 35, unit: '' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   winter: [
     { key: 'winterGlow', label: 'شدت درخشش', type: 'range', min: 0, max: 60, step: 1, def: 30, unit: '' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   glass: [
     { key: 'glassOpacity', label: 'غلظت شیشه', type: 'range', min: 5, max: 50, step: 1, def: 16, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   retro: [
     { key: 'retroOffset', label: 'فاصله لایه‌ها', type: 'range', min: 0, max: 30, step: 1, def: 10, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   shadow: [
     { key: 'shadowBlur', label: 'میزان سایه', type: 'range', min: 0, max: 40, step: 1, def: 22, unit: 'px' },
     { key: 'shadowOffset', label: 'فاصله سایه', type: 'range', min: 0, max: 30, step: 1, def: 12, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   gradient: [
     { key: 'gradientC1', label: 'رنگ اول گرادیان', type: 'color', def: '#FF2E88' },
     { key: 'gradientC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#F4D93E' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   arcadia: [
     { key: 'arcadiaC1', label: 'رنگ اول گرادیان', type: 'color', def: '#FF7A18' },
     { key: 'arcadiaC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#FF2E63' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   stroke: [
     { key: 'strokeWidth', label: 'ضخامت خط دور', type: 'range', min: 5, max: 25, step: 1, def: 14, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   pastille: [
     { key: 'pastilleStroke', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 10, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   round: [
     { key: 'roundStroke', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 8, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   rosseta: [
     { key: 'rossetaStroke', label: 'ضخامت خط دور', type: 'range', min: 1, max: 8, step: 0.5, def: 2.5, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   brush: [
     { key: 'brushTilt', label: 'کجی قلم‌مو', type: 'range', min: -10, max: 10, step: 1, def: -2, unit: '°' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   underline: [
     { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 2, max: 40, step: 1, def: 8, unit: 'px' },
     { key: 'underlineC1', label: 'رنگ اول خط زیر', type: 'color', def: '#7C3AED' },
     { key: 'underlineC2', label: 'رنگ دوم خط زیر', type: 'color', def: '#2563EB' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   pixel: [
     { key: 'pixelSize', label: 'اندازه پیکسل', type: 'range', min: 2, max: 12, step: 1, def: 6, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   sticker: [
     { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
     { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   // StoryFont styles (Reza, 2026-11-22): knobs for the new looks.
   // Colours are the sampled defaults from his screenshots.
   roundline: [
     { key: 'roundlineC', label: 'رنگ خط', type: 'color', def: '#FF5152' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   pastille3d: [
     { key: 'pastille3dOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
     { key: 'pastille3dShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   gradline: [
     { key: 'gradlineC1', label: 'رنگ اول گرادیان', type: 'color', def: '#AE37F1' },
     { key: 'gradlineC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#E23C6E' },
     { key: 'gradlineC3', label: 'رنگ سوم گرادیان', type: 'color', def: '#FC732F' },
     { key: 'gradlineR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 36, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   squarebox: [
     { key: 'squareboxC', label: 'رنگ باکس', type: 'color', def: '#000000' },
     { key: 'squareboxR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 8, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   lightbox: [
     { key: 'lightboxC', label: 'رنگ باکس', type: 'color', def: '#FFFFFF' },
     { key: 'lightboxR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 24, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   shadowline: [
     { key: 'shadowlineC', label: 'رنگ خط', type: 'color', def: '#FFFFFF' },
     { key: 'shadowlineR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 4, unit: 'px' },
+    { key: 'shadowlineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 60, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   // Tweet: everything is editable — name, handle, like/reply counts,
   // card colour, and the avatar (its own row below, in
@@ -224,6 +281,18 @@ const STYLE_CONTROLS = {
     { key: 'tweetLikes', label: 'لایک‌ها', type: 'text', def: '4.1k', max: 12 },
     { key: 'tweetReplies', label: 'ریپلای‌ها', type: 'text', def: '18', max: 12 },
     { key: 'tweetCard', label: 'رنگ کارت', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // iPhone Notes frame (Reza, 2026-11-22): a white card with the gold
+  // Notes header (‹ Notes / ... / share / Done) and the text in the
+  // dusty-pink content area below. Colours sampled from his screenshot.
+  note: [
+    { key: 'noteCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'noteCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'noteC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E4D0D9' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
 };
 
@@ -234,9 +303,26 @@ for (const list of Object.values(STYLE_CONTROLS)) {
 }
 
 // Read one per-style parameter, falling back to its default.
+// 'wordSpacing' is the exception: it is the shared global word
+// spacing (the same value as the «فاصله کلمات» slider in the text
+// settings), stored in state.wordSpacing rather than in styleParams
+// (Reza, 2026-11-22) — so the knob in every style's sheet and the
+// gear slider always show the same value.
 function sp(key) {
+  if (key === 'wordSpacing') return state.wordSpacing;
   const v = state.styleParams[key];
   return v === undefined ? STYLE_PARAM_DEFS[key]?.def : v;
+}
+
+// Extra vertical space (px) between lines. Shadowline keeps its own
+// knob (shadowlineGap, default 60) because its bar is 1.84x the font
+// size while the line slot is only 1.4x — without it the bars of two
+// lines overlap (Reza, 2026-11-22). Every other style shares one
+// 'lineGap' knob (default 0, so nothing changes until the user moves
+// it); the value follows the user across styles.
+function styleLineGapPx(fs) {
+  if (state.style === 'shadowline') return fs * (sp('shadowlineGap') / 100);
+  return fs * (sp('lineGap') / 100);
 }
 
 // Keep only known keys, clamped/validated (input may be an object or a
@@ -721,6 +807,16 @@ const STYLE_PAINT = {
     ctx.fillStyle = state.colorTouched ? state.color : '#A1A1AA';
     drawWords(line, cx, y);
   },
+  // Notes frame: dark grey text on the dusty-pink content area (the
+  // card + gold header are painted block-level in draw()). A colour
+  // picked in the رنگ tab wins; if the content colour is changed,
+  // contrastText keeps the text readable on it.
+  note: (line, cx, y) => {
+    const c = sp('noteC') || '#E4D0D9';
+    ctx.fillStyle = state.colorTouched ? state.color
+      : c.toUpperCase() === '#E4D0D9' ? '#595355' : contrastText(c);
+    drawWords(line, cx, y);
+  },
 };
 
 // Text alignment happens INSIDE the text block, which stays centred on
@@ -849,7 +945,17 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   const cardW = Math.max(maxLw + padX * 2, minW, sp('tweetCardW'));
   const cardX = cx - cardW / 2;
   const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = rtl ? slack : -slack;
+  // The body block's position inside the card follows the alignment
+  // buttons (Reza, 2026-11-22): right hugs the card's inner right
+  // edge, left hugs the inner left edge, centre sits in the middle.
+  // Justify keeps the old direction-based anchor (RTL under the logo
+  // on the right, LTR on the left) and stretches the lines instead.
+  // Note: the chrome (avatar/logo) still mirrors by text direction —
+  // only the body text follows the alignment buttons.
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - gapHeaderText - padTop - av;
@@ -968,6 +1074,136 @@ function paintTweetCard(l, fs) {
   ctx.restore();
 }
 
+// iPhone Notes frame (Reza, 2026-11-22): a white card with the gold
+// Notes header and the text in the dusty-pink content area below.
+// Colours sampled from his screenshot: gold #D9AA1E, content
+// #E4D0D9, text #595355. Like the tweet card, the chrome stays fixed
+// at NOTE_CHROME_FS while the body text follows the side size rail.
+const NOTE_CHROME_FS = 110;
+const NOTE_GOLD = '#D9AA1E';
+
+// Minimum size of the note card: at least as wide as its gold header
+// row (chevron + Notes + ... + share + Done), measured at its own
+// font size, and at least as tall as one body line.
+function noteMinSize(fs) {
+  const prevFont = ctx.font;
+  ctx.font = `500 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  const notesW = ctx.measureText('Notes').width;
+  const doneW = ctx.measureText('Done').width;
+  ctx.font = prevFont;
+  const padX = 56; // same as noteLayout
+  // padX + chevron + gap + Notes + gap + dots circle + gap + share +
+  // gap + Done + padX.
+  const headerW = padX * 2 + fs * 0.28 + fs * 0.12 + notesW + fs * 0.28 + fs * 0.5 + fs * 0.28 + fs * 0.42 + fs * 0.28 + doneW;
+  return { minW: headerW, minBlockH: fs * state.lineHeight };
+}
+
+// Geometry of the note card around the text block. The card's SIZE is
+// adjustable (noteCardW/noteCardH, same defaults as the tweet card: a
+// 760x480 floor the content can grow past). The body block's position
+// follows the alignment buttons, same rule as the tweet card: right
+// hugs the inner right edge, left the inner left edge, centre sits in
+// the middle; justify keeps the direction-based anchor.
+function noteLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0, rtl = true) {
+  const padX = 56;                    // card padding left/right
+  const headerH = fs * 0.9;           // white header band height
+  const gapHeaderText = fs * 0.35;    // header bottom -> first line top
+  const padBottom = fs * 0.45;        // last line bottom -> card bottom
+  const bodyH = Math.max(blockH, minBlockH);
+  const cardW = Math.max(maxLw + padX * 2, minW, sp('noteCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - gapHeaderText - headerH;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('noteCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
+    padX, headerH, blockShift, rtl,
+  };
+}
+
+// Paint the note card chrome: dusty-pink card with a white header band
+// and the gold iOS Notes header (‹ Notes on the left, ... / share /
+// Done on the right, LTR like the screenshot). The user's text itself
+// is painted per line by STYLE_PAINT.note.
+function paintNoteCard(l, fs) {
+  const content = sp('noteC') || '#E4D0D9';
+  ctx.save();
+  // Card body (pink) + white header band (clipped to the rounded top).
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = content;
+  ctx.fill();
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.clip();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(l.x, l.y, l.w, l.headerH);
+  ctx.restore();
+  // Gold header, LTR.
+  ctx.fillStyle = NOTE_GOLD;
+  ctx.strokeStyle = NOTE_GOLD;
+  ctx.textBaseline = 'middle';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const hy = l.y + l.headerH / 2;
+  const headFont = `500 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  ctx.font = headFont;
+  // Chevron «‹» + Notes, left.
+  const chevX = l.x + l.padX, chevS = fs * 0.28;
+  ctx.lineWidth = fs * 0.045;
+  ctx.beginPath();
+  ctx.moveTo(chevX + chevS * 0.7, hy - chevS / 2);
+  ctx.lineTo(chevX, hy);
+  ctx.lineTo(chevX + chevS * 0.7, hy + chevS / 2);
+  ctx.stroke();
+  ctx.textAlign = 'left';
+  ctx.fillText('Notes', chevX + chevS + fs * 0.12, hy);
+  // Done, right.
+  ctx.textAlign = 'right';
+  ctx.fillText('Done', l.x + l.w - l.padX, hy);
+  const doneW = ctx.measureText('Done').width;
+  // Share icon (a U-shaped box with an up arrow), left of Done.
+  const shS = fs * 0.42;
+  const shRight = l.x + l.w - l.padX - doneW - fs * 0.28;
+  const shX = shRight - shS, shCy = hy;
+  ctx.lineWidth = fs * 0.035;
+  ctx.beginPath();
+  ctx.moveTo(shX, shCy - shS * 0.1);
+  ctx.lineTo(shX, shCy + shS * 0.35);
+  ctx.lineTo(shX + shS, shCy + shS * 0.35);
+  ctx.lineTo(shX + shS, shCy - shS * 0.1);
+  ctx.moveTo(shX + shS / 2, shCy + shS * 0.15);
+  ctx.lineTo(shX + shS / 2, shCy - shS * 0.45);
+  ctx.moveTo(shX + shS / 2 - shS * 0.18, shCy - shS * 0.25);
+  ctx.lineTo(shX + shS / 2, shCy - shS * 0.45);
+  ctx.lineTo(shX + shS / 2 + shS * 0.18, shCy - shS * 0.25);
+  ctx.stroke();
+  // «...» in a circle, left of the share icon.
+  const dotR = fs * 0.25;
+  const dotCx = shX - fs * 0.28 - dotR;
+  ctx.lineWidth = fs * 0.03;
+  ctx.beginPath();
+  ctx.arc(dotCx, hy, dotR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  for (const dx of [-fs * 0.09, 0, fs * 0.09]) {
+    ctx.moveTo(dotCx + dx + fs * 0.03, hy);
+    ctx.arc(dotCx + dx, hy, fs * 0.03, 0, Math.PI * 2);
+  }
+  ctx.fill();
+  ctx.restore();
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -981,10 +1217,11 @@ function draw() {
   // tweetTextSize %), but the card chrome stays fixed at
   // TWEET_CHROME_FS — so moving the rail changes ONLY the body text
   // size, never the card or its header/footer (Reza, 2026-11-21).
+  // The note card works the same way (NOTE_CHROME_FS).
   // Wrapping, line height, caret and the editor overlay all follow
   // the body size.
   const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : fontSize;
-  const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : fontSize;
+  const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : state.style === 'note' ? NOTE_CHROME_FS : fontSize;
   ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
   // Native letter spacing where the WebView supports it (Chrome 99+,
   // Safari 17+); word spacing is applied manually in drawWords.
@@ -992,7 +1229,7 @@ function draw() {
   const maxWidth = w - 160;
   const lineRanges = wrapLineRanges(state.text || '…', maxWidth);
   const lines = lineRanges.map((r) => r.text);
-  const lineHeight = textFs * state.lineHeight;
+  const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
   const blockH = lines.length * lineHeight;
   let y = h / 2 - blockH / 2 + lineHeight / 2;
   const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
@@ -1009,10 +1246,16 @@ function draw() {
   const tweetRTL = state.style === 'tweet' ? isRTLText(lines[0] || '') : true;
   const tweetMin = state.style === 'tweet' ? tweetMinSize(chromeFs) : { minW: 0, minBlockH: 0 };
   const tweetL = state.style === 'tweet' ? tweetLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, tweetMin.minW, tweetMin.minBlockH, tweetRTL) : null;
-  const blockCx = tweetL ? cx + tweetL.blockShift : cx;
+  // The note card wraps the block the same way (its header is fixed
+  // LTR, but the body block still follows the alignment buttons).
+  const noteRTL = state.style === 'note' ? isRTLText(lines[0] || '') : true;
+  const noteMin = state.style === 'note' ? noteMinSize(chromeFs) : { minW: 0, minBlockH: 0 };
+  const noteL = state.style === 'note' ? noteLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, noteMin.minW, noteMin.minBlockH, noteRTL) : null;
+  const frameL = tweetL || noteL;
+  const blockCx = frameL ? cx + frameL.blockShift : cx;
   lastBlock = {
-    cx, cy: tweetL ? tweetL.y + tweetL.h / 2 : h / 2,
-    hw: tweetL ? tweetL.w / 2 : maxLw / 2, hh: tweetL ? tweetL.h / 2 : blockH / 2,
+    cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
+    hw: frameL ? frameL.w / 2 : maxLw / 2, hh: frameL ? frameL.h / 2 : blockH / 2,
     cosY: Math.cos((state.rotY * Math.PI) / 180),
     cosX: Math.cos((state.rotX * Math.PI) / 180),
   };
@@ -1091,6 +1334,11 @@ function draw() {
   // is painted per-line below, in grey).
   if (tweetL) paintTweetCard(tweetL, chromeFs);
 
+  // Notes style: white card with the gold Notes header around the
+  // whole text block (the text itself is painted per-line below, in
+  // dark grey on pink).
+  if (noteL) paintNoteCard(noteL, chromeFs);
+
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
     const lr = lineRanges[li];
@@ -1153,7 +1401,7 @@ function draw() {
     ctx.imageSmoothingEnabled = true;
   }
 
-  syncEditorLayout(textFs, lineHeight, blockH, maxLw, tweetL ? tweetL.blockShift : 0);
+  syncEditorLayout(textFs, lineHeight, blockH, maxLw, frameL ? frameL.blockShift : 0);
 }
 
 // Keep the (invisible) editor's text laid out exactly where the canvas
@@ -1210,11 +1458,12 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintTweetSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintTweetSamples(); paintNoteSamples(); });
   }
   draw();
   paintStickerSamples();
   paintTweetSamples();
+  paintNoteSamples();
 }
 
 // Caret blink.
@@ -1638,6 +1887,7 @@ function buildStylePicker() {
       // box with grey text did not read as a tweet card at all.
       if (item.id === 'sticker') return '<canvas class="sample-canvas" width="184" height="54"></canvas>';
       if (item.id === 'tweet') return '<canvas class="sample-canvas sample-canvas-tweet" width="190" height="120"></canvas>';
+      if (item.id === 'note') return '<canvas class="sample-canvas sample-canvas-note" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -1706,7 +1956,7 @@ function paintTweetSamples() {
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
         const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
-        const lineHeight = textFs * state.lineHeight;
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
         const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
         const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
@@ -1744,6 +1994,73 @@ function paintTweetSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-tweet';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the note card preview with the REAL note code (noteLayout +
+// paintNoteCard + the body text) on its small canvas — a miniature of
+// the actual card, same pattern as the tweet preview. Called from
+// redraw(), like the sticker/tweet samples. If painting fails, fall
+// back to the CSS box.
+function paintNoteSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-note')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the chrome stays fixed at
+        // NOTE_CHROME_FS.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const noteRTL = isRTLText(lines[0] || '');
+        const noteMin = noteMinSize(NOTE_CHROME_FS);
+        const noteL = noteLayout(NOTE_CHROME_FS, maxLw, blockH, lineHeight, 1080, 540, noteMin.minW, noteMin.minBlockH, noteRTL);
+        const blockCx = 540 + noteL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / noteL.w, H / noteL.h);
+        const cardCx = noteL.x + noteL.w / 2, cardCy = noteL.y + noteL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintNoteCard(noteL, NOTE_CHROME_FS);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.note(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-note';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
@@ -1792,7 +2109,10 @@ function renderStyleControls() {
       input.setAttribute('aria-label', c.label);
       input.addEventListener('input', (e) => {
         const v = Number(e.target.value);
-        state.styleParams[c.key] = v;
+        // 'wordSpacing' writes the shared global (see sp()), not a
+        // per-style parameter.
+        if (c.key === 'wordSpacing') state.wordSpacing = v;
+        else state.styleParams[c.key] = v;
         value.textContent = v + (c.unit || '');
         redraw();
       });
@@ -2457,8 +2777,11 @@ $('saveGallery').addEventListener('click', () => {
 });
 $('saveBtn').addEventListener('click', saveDesign);
 
-// --- Text settings sheet ---
-function openSettings() { $('settingsSheet').hidden = false; }
+// Text settings sheet: sync the sliders from the live state every
+// time it opens, so a value changed elsewhere (e.g. «فاصله کلمات»
+// from a style's own sheet) shows its current value instead of the
+// stale one from page load.
+function openSettings() { syncSettingsUI(); $('settingsSheet').hidden = false; }
 function closeSettings() { $('settingsSheet').hidden = true; }
 $('settingsBtn').addEventListener('click', openSettings);
 $('settingsClose').addEventListener('click', closeSettings);

@@ -13,7 +13,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
   'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
-  'sticker', 'tweet',
+  'sticker', 'tweet', 'note',
   // StoryFont styles (Reza, 2026-11-22).
   'roundline', 'pastille3d', 'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -57,6 +57,9 @@ const STYLE_PARAMS = {
   tweetCard: { color: true },
   tweetCardW: { min: 400, max: 900 },
   tweetCardH: { min: 300, max: 800 },
+  noteC: { color: true },
+  noteCardW: { min: 400, max: 900 },
+  noteCardH: { min: 300, max: 800 },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
   roundlineC: { color: true },
@@ -72,6 +75,9 @@ const STYLE_PARAMS = {
   lightboxR: { min: 0, max: 60 },
   shadowlineC: { color: true },
   shadowlineR: { min: 0, max: 60 },
+  shadowlineGap: { min: 0, max: 80 },
+  lineGap: { min: 0, max: 80 },
+  wordSpacing: { min: 0, max: 60 },
 };
 
 function sanitizeStyleParams(input) {
