@@ -874,15 +874,20 @@ const STYLE_PAINT = {
       : c.toUpperCase() === '#E5E5EA' ? '#000000' : contrastText(c);
     drawWords(line, cx, y);
   },
-  // Halo: white text on a solid red box (the box is painted
-  // block-level in draw()). The shadow is two passes in the dark
-  // maroon: (A) a soft halo hugging the letters — the shadow-colour
-  // text at the line position with a big blur, no offset; (B) a
-  // sharper copy offset down-right. Both use textFill=false so a
-  // gradient text colour cannot leak into the shadow layers. The
-  // white text on top covers the solid shadow glyphs, leaving the
-  // halo and the offset shadow visible around them.
+  // Halo: white text on a solid red box — ONE box per line (Reza,
+  // 2026-11-22: two lines must not share a single box), each hugging
+  // its own line's width. The box is painted here per line via bgBox
+  // (sharp corners, side pads ~0.29x of fs, height 1.34x of fs so two
+  // boxes never overlap at the default line height — the gap between
+  // them is 0.06x of fs, and «فاصله خطوط» widens it). Then the shadow
+  // is two passes in the dark maroon: (A) a soft halo hugging the
+  // letters — the shadow-colour text at the line position with a big
+  // blur, no offset; (B) a sharper copy offset down-right. Both use
+  // textFill=false so a gradient text colour cannot leak into the
+  // shadow layers. The white text on top covers the solid shadow
+  // glyphs, leaving the halo and the offset shadow visible around them.
   halo: (line, cx, y, lw, fs) => {
+    bgBox(cx, y, lw, fs, { fill: sp('haloBoxC'), radius: 0, padX: fs * 0.29, padY: fs * 0.1 });
     const sh = sp('haloShadowC');
     const off = fs * sp('haloOffset') / 100;
     const blur = fs * sp('haloBlur') / 100;
@@ -1529,23 +1534,6 @@ function draw() {
       ctx.fillStyle = state.style === 'squarebox' ? sp('squareboxC') : sp('lightboxC');
     }
     roundRect(cx - bw / 2, top, bw, blockH + pad, r);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Halo (Reza, 2026-11-22): a solid red box with SHARP corners
-  // behind the whole text block — tighter padding than the other
-  // box styles, matching the reference (side pads ~0.29x and
-  // vertical pads ~0.28x of the font size). The text + shadow are
-  // painted per-line below.
-  if (state.style === 'halo') {
-    const padX = textFs * 0.29;
-    const padY = textFs * 0.28;
-    const bw = Math.max(...lines.map((l) => lineWidth(l))) + padX * 2;
-    const top = y - lineHeight / 2 - padY;
-    ctx.save();
-    ctx.fillStyle = sp('haloBoxC');
-    roundRect(cx - bw / 2, top, bw, blockH + padY * 2, 0);
     ctx.fill();
     ctx.restore();
   }
