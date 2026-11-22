@@ -60,7 +60,7 @@ const STYLES = [
   { id: 'gradient', label: 'گرادیان' },
   { id: 'stroke', label: 'استروک' },
   { id: 'brush', label: 'قلم‌مو' },
-  { id: 'pastille', label: 'پاستیل' },
+  { id: 'pastille', label: 'دور بنفش' },
   { id: 'round', label: 'راوند' },
   { id: 'arcadia', label: 'آرکادیا' },
   { id: 'underline', label: 'خط زیر' },
@@ -69,6 +69,18 @@ const STYLES = [
   { id: 'winter', label: 'زمستانی' },
   { id: 'rosseta', label: 'رُزتا' },
   { id: 'sticker', label: 'استیکر' },
+  // StoryFont styles (Reza, 2026-11-22): the eight canvas looks from his
+  // screenshots, colours sampled from the shots. 'pastille' above used to
+  // be labelled «پاستیل» — it is only a purple outline, so it is now
+  // «دور بنفش» and the real Pastille lives below as 'pastille3d'.
+  { id: 'violet', label: 'ویولت' },
+  { id: 'bubble', label: 'بابل' },
+  { id: 'roundline', label: 'خط گرد' },
+  { id: 'pastille3d', label: 'پاستیل' },
+  { id: 'gradline', label: 'خط گرادینت' },
+  { id: 'squarebox', label: 'باکس مشکی' },
+  { id: 'lightbox', label: 'باکس سفید' },
+  { id: 'shadowline', label: 'خط سایه‌دار' },
   { id: 'tweet', label: 'توییت' },
 ];
 
@@ -172,6 +184,41 @@ const STYLE_CONTROLS = {
   sticker: [
     { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
     { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
+  ],
+  // StoryFont styles (Reza, 2026-11-22): knobs for the eight new looks.
+  // Colours are the sampled defaults from his screenshots.
+  violet: [
+    { key: 'violetOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 8, unit: '٪' },
+    { key: 'violetShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 30, step: 1, def: 18, unit: '٪' },
+  ],
+  bubble: [
+    { key: 'bubbleOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
+    { key: 'bubbleShadow', label: 'میزان سایه', type: 'range', min: 0, max: 40, step: 1, def: 15, unit: '٪' },
+  ],
+  roundline: [
+    { key: 'roundlineC', label: 'رنگ خط', type: 'color', def: '#FF5152' },
+  ],
+  pastille3d: [
+    { key: 'pastille3dOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
+    { key: 'pastille3dShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
+  ],
+  gradline: [
+    { key: 'gradlineC1', label: 'رنگ اول گرادیان', type: 'color', def: '#AE37F1' },
+    { key: 'gradlineC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#E23C6E' },
+    { key: 'gradlineC3', label: 'رنگ سوم گرادیان', type: 'color', def: '#FC732F' },
+    { key: 'gradlineR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 36, unit: 'px' },
+  ],
+  squarebox: [
+    { key: 'squareboxC', label: 'رنگ باکس', type: 'color', def: '#000000' },
+    { key: 'squareboxR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 8, unit: 'px' },
+  ],
+  lightbox: [
+    { key: 'lightboxC', label: 'رنگ باکس', type: 'color', def: '#FFFFFF' },
+    { key: 'lightboxR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 24, unit: 'px' },
+  ],
+  shadowline: [
+    { key: 'shadowlineC', label: 'رنگ خط', type: 'color', def: '#FFFFFF' },
+    { key: 'shadowlineR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 4, unit: 'px' },
   ],
   // Tweet: everything is editable — name, handle, like/reply counts,
   // card colour, and the avatar (its own row below, in
@@ -426,7 +473,7 @@ function prefixWidth(line, n, extraGap = 0) {
 
 // Draw one line word by word (word spacing has no canvas API, so the
 // words are positioned manually). RTL text runs right-to-left.
-function drawWords(line, cx, y, dx = 0, dy = 0, mode = 'fill') {
+function drawWords(line, cx, y, dx = 0, dy = 0, mode = 'fill', textFill = true) {
   const words = line.split(' ').filter((w) => w !== '');
   if (!words.length) return;
   const lw = lineWidth(line);
@@ -439,7 +486,9 @@ function drawWords(line, cx, y, dx = 0, dy = 0, mode = 'fill') {
   // across that line's glyph box. Only in fill mode, and only for
   // styles whose text fill is the text colour — 'gradient' and
   // 'sticker' paint their own fill and ignore the text colour.
-  if (mode === 'fill' && !['gradient', 'sticker'].includes(state.style) && isGradientColor(state.color)) {
+  // `textFill` is false for calls that paint a SHADOW layer in a fixed
+  // colour (pastille3d's extrusion): the gradient must not leak into it.
+  if (mode === 'fill' && textFill && !['gradient', 'sticker'].includes(state.style) && isGradientColor(state.color)) {
     ctx.fillStyle = textColorFill(line, cx, y, visW);
   }
   let x = rtl ? cx + visW / 2 : cx - visW / 2;
@@ -466,8 +515,8 @@ function roundRect(x, y, w, h, r) {
 // --- Style painting ---
 // Each paint function draws ONE line of text at (cx, y) with that style's
 // look. `lw` is the line's full width (incl. spacing), `fs` the font size.
-function bgBox(cx, y, lw, fs, { fill, stroke, strokeWidth = 0, radius = 18, padX = 28 }) {
-  const h = fs * 1.24;
+function bgBox(cx, y, lw, fs, { fill, stroke, strokeWidth = 0, radius = 18, padX = 28, padY = 0 }) {
+  const h = fs * 1.24 + padY;
   const w = lw + padX * 2;
   const r = Math.min(radius, h / 2, w / 2);
   ctx.save();
@@ -620,6 +669,78 @@ const STYLE_PAINT = {
     }
     strokeWords(line, cx, y, '#ED1C24', w);
     ctx.fillStyle = '#FFC531';
+    drawWords(line, cx, y);
+  },
+  // StoryFont styles (Reza, 2026-11-22) — colours sampled from his
+  // screenshots. Each one's fill follows the رنگ tab once the user picks
+  // a colour, else the signature colour from the reference.
+  violet: (line, cx, y, lw, fs) => {
+    // Purple fill, white outline, crisp dark-purple offset shadow.
+    const dx = fs * (sp('violetShadow') / 100) * 0.6;
+    const dy = fs * (sp('violetShadow') / 100);
+    ctx.save();
+    ctx.shadowColor = '#4B0098'; ctx.shadowBlur = 0; ctx.shadowOffsetX = dx; ctx.shadowOffsetY = dy;
+    strokeWords(line, cx, y, '#ffffff', fs * (sp('violetOutline') / 100));
+    ctx.fillStyle = state.colorTouched ? state.color : '#7A01FF';
+    drawWords(line, cx, y);
+    ctx.restore();
+  },
+  bubble: (line, cx, y, lw, fs) => {
+    // White fill, dark-navy outline, soft pink drop shadow.
+    ctx.save();
+    ctx.shadowColor = '#F48DA2'; ctx.shadowBlur = fs * (sp('bubbleShadow') / 100); ctx.shadowOffsetY = fs * 0.12;
+    strokeWords(line, cx, y, '#14324C', fs * (sp('bubbleOutline') / 100));
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+    ctx.restore();
+  },
+  roundline: (line, cx, y, lw, fs) => {
+    // A coral pill behind each line (the text rides slightly high on it,
+    // like the reference), white text with a black outline on top.
+    bgBox(cx, y + fs * 0.06, lw, fs, { fill: sp('roundlineC'), radius: fs * 0.62, padX: 28 });
+    strokeWords(line, cx, y, '#111111', fs * 0.08);
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+  },
+  pastille3d: (line, cx, y, lw, fs) => {
+    // Yellow fill, light-purple outline, dark-purple 3D extrusion
+    // shadow — the same sweep technique as the sticker's maroon
+    // extrusion. The sweep paints a fixed colour, so textFill is false:
+    // a gradient text colour must not leak into the shadow.
+    const dy = fs * (sp('pastille3dShadow') / 100);
+    const dx = -0.6 * dy;
+    const steps = Math.max(1, Math.min(24, Math.ceil(Math.hypot(dx, dy) / 3)));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      ctx.fillStyle = '#4B177B';
+      drawWords(line, cx, y, dx * t, dy * t, 'fill', false);
+    }
+    strokeWords(line, cx, y, '#BA6BEA', fs * (sp('pastille3dOutline') / 100));
+    ctx.fillStyle = state.colorTouched ? state.color : '#FDEC00';
+    drawWords(line, cx, y);
+  },
+  // Box styles: the box itself is painted block-level in draw() (like
+  // glass/quotes); the paint functions below only paint the text.
+  gradline: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+  },
+  squarebox: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+  },
+  lightbox: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#111111';
+    drawWords(line, cx, y);
+  },
+  shadowline: (line, cx, y, lw, fs) => {
+    // A tall white bar behind each line with a soft drop shadow;
+    // purple text by default (the reference).
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
+    bgBox(cx, y, lw, fs, { fill: sp('shadowlineC'), radius: sp('shadowlineR'), padX: 30, padY: fs * 0.6 });
+    ctx.restore();
+    ctx.fillStyle = state.colorTouched ? state.color : '#663AB6';
     drawWords(line, cx, y);
   },
   // Tweet card: the text itself is grey (the black card + header +
@@ -967,6 +1088,30 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.fillText('“', cx + bw / 2 - 24, top + fontSize * 0.75);
     ctx.fillText('”', cx - bw / 2 + 24, top + blockH + pad - 12);
+    ctx.restore();
+  }
+
+  // Box styles (StoryFont, Reza 2026-11-22): a solid or gradient
+  // rounded box behind the whole text block — roomier padding than
+  // glass/quotes, like the reference. The text itself is painted
+  // per-line below; each box has its own colour/radius knobs.
+  if (state.style === 'squarebox' || state.style === 'lightbox' || state.style === 'gradline') {
+    const pad = 72;
+    const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
+    const top = y - lineHeight / 2 - pad / 2;
+    const r = state.style === 'squarebox' ? sp('squareboxR') : state.style === 'lightbox' ? sp('lightboxR') : sp('gradlineR');
+    ctx.save();
+    if (state.style === 'gradline') {
+      const g = ctx.createLinearGradient(cx - bw / 2, 0, cx + bw / 2, 0);
+      g.addColorStop(0, sp('gradlineC1'));
+      g.addColorStop(0.5, sp('gradlineC2'));
+      g.addColorStop(1, sp('gradlineC3'));
+      ctx.fillStyle = g;
+    } else {
+      ctx.fillStyle = state.style === 'squarebox' ? sp('squareboxC') : sp('lightboxC');
+    }
+    roundRect(cx - bw / 2, top, bw, blockH + pad, r);
+    ctx.fill();
     ctx.restore();
   }
 
