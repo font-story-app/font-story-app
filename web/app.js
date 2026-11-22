@@ -1087,7 +1087,7 @@ const NOTE_GOLD = '#D9AA1E';
 // font size, and at least as tall as one body line.
 function noteMinSize(fs) {
   const prevFont = ctx.font;
-  ctx.font = `500 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  ctx.font = `400 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
   const notesW = ctx.measureText('Notes').width;
   const doneW = ctx.measureText('Done').width;
   ctx.font = prevFont;
@@ -1106,7 +1106,7 @@ function noteMinSize(fs) {
 // the middle; justify keeps the direction-based anchor.
 function noteLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0, rtl = true) {
   const padX = 56;                    // card padding left/right
-  const headerH = fs * 0.9;           // white header band height
+  const headerH = fs * 1.1;           // white header band height (Reza, 2026-11-22: a bit taller)
   const gapHeaderText = fs * 0.35;    // header bottom -> first line top
   const padBottom = fs * 0.45;        // last line bottom -> card bottom
   const bodyH = Math.max(blockH, minBlockH);
@@ -1156,7 +1156,7 @@ function paintNoteCard(l, fs) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   const hy = l.y + l.headerH / 2;
-  const headFont = `500 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
+  const headFont = `400 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
   ctx.font = headFont;
   // Chevron «‹» + Notes, left.
   const chevX = l.x + l.padX, chevS = fs * 0.28;
