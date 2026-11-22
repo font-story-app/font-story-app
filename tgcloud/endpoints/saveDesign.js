@@ -13,7 +13,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
   'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
-  'sticker', 'tweet', 'note', 'message',
+  'sticker', 'tweet', 'note', 'message', 'halo',
   // StoryFont styles (Reza, 2026-11-22).
   'roundline', 'pastille3d', 'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -63,6 +63,10 @@ const STYLE_PARAMS = {
   messageC: { color: true },
   messageCardW: { min: 400, max: 900 },
   messageCardH: { min: 300, max: 800 },
+  haloBoxC: { color: true },
+  haloShadowC: { color: true },
+  haloOffset: { min: 0, max: 30 },
+  haloBlur: { min: 0, max: 40 },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
   roundlineC: { color: true },

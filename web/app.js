@@ -83,6 +83,7 @@ const STYLES = [
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
+  { id: 'halo', label: 'هاله' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -287,22 +288,34 @@ const STYLE_CONTROLS = {
   ],
   // iPhone Notes frame (Reza, 2026-11-22): a white card with the gold
   // Notes header (‹ Notes / ... / share / Done) and the text in the
-  // dusty-pink content area below. Colours sampled from his screenshot.
+  // white content area below. Colours sampled from his screenshot.
   note: [
     { key: 'noteCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
     { key: 'noteCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
-    { key: 'noteC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E4D0D9' },
+    { key: 'noteC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E5E5EA' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   // iPhone Messages notification (Reza, 2026-11-22): a white header
   // band with the green Messages icon + Messages / Now, and the text
-  // in black on the light-pink content area below. Colours sampled
+  // in black on the light-grey content area below. Colours sampled
   // from his screenshot.
   message: [
     { key: 'messageCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
     { key: 'messageCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
-    { key: 'messageC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#EDBCD2' },
+    { key: 'messageC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E5E5EA' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Red box + white text with a dark halo and an offset shadow
+  // (Reza, 2026-11-22): colours and geometry sampled from his
+  // screenshot — box #FB3250, shadow #5E121E, pads ~0.29x/0.28y of
+  // the font size, shadow offset down-right, halo blur ~12% of fs.
+  halo: [
+    { key: 'haloBoxC', label: 'رنگ باکس', type: 'color', def: '#FB3250' },
+    { key: 'haloShadowC', label: 'رنگ سایه', type: 'color', def: '#5E121E' },
+    { key: 'haloOffset', label: 'فاصله سایه', type: 'range', min: 0, max: 30, step: 1, def: 6, unit: '٪' },
+    { key: 'haloBlur', label: 'محو شدگی هاله', type: 'range', min: 0, max: 40, step: 1, def: 12, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -841,24 +854,49 @@ const STYLE_PAINT = {
     ctx.fillStyle = state.colorTouched ? state.color : '#A1A1AA';
     drawWords(line, cx, y);
   },
-  // Notes frame: dark grey text on the dusty-pink content area (the
+  // Notes frame: dark grey text on the light-grey content area (the
   // card + gold header are painted block-level in draw()). A colour
   // picked in the رنگ tab wins; if the content colour is changed,
   // contrastText keeps the text readable on it.
   note: (line, cx, y) => {
-    const c = sp('noteC') || '#E4D0D9';
+    const c = sp('noteC') || '#E5E5EA';
     ctx.fillStyle = state.colorTouched ? state.color
-      : c.toUpperCase() === '#E4D0D9' ? '#595355' : contrastText(c);
+      : c.toUpperCase() === '#E5E5EA' ? '#595355' : contrastText(c);
     drawWords(line, cx, y);
   },
-  // Messages frame: black text on the light-pink content area (the
+  // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
   // A colour picked in the رنگ tab wins; if the content colour is
   // changed, contrastText keeps the text readable on it.
   message: (line, cx, y) => {
-    const c = sp('messageC') || '#EDBCD2';
+    const c = sp('messageC') || '#E5E5EA';
     ctx.fillStyle = state.colorTouched ? state.color
-      : c.toUpperCase() === '#EDBCD2' ? '#000000' : contrastText(c);
+      : c.toUpperCase() === '#E5E5EA' ? '#000000' : contrastText(c);
+    drawWords(line, cx, y);
+  },
+  // Halo: white text on a solid red box (the box is painted
+  // block-level in draw()). The shadow is two passes in the dark
+  // maroon: (A) a soft halo hugging the letters — the shadow-colour
+  // text at the line position with a big blur, no offset; (B) a
+  // sharper copy offset down-right. Both use textFill=false so a
+  // gradient text colour cannot leak into the shadow layers. The
+  // white text on top covers the solid shadow glyphs, leaving the
+  // halo and the offset shadow visible around them.
+  halo: (line, cx, y, lw, fs) => {
+    const sh = sp('haloShadowC');
+    const off = fs * sp('haloOffset') / 100;
+    const blur = fs * sp('haloBlur') / 100;
+    ctx.save();
+    ctx.shadowColor = sh; ctx.shadowBlur = blur;
+    ctx.fillStyle = sh;
+    drawWords(line, cx, y, 0, 0, 'fill', false);
+    ctx.restore();
+    ctx.save();
+    ctx.shadowColor = sh; ctx.shadowBlur = blur * 0.35;
+    ctx.fillStyle = sh;
+    drawWords(line, cx + off * 0.5, y + off, 0, 0, 'fill', false);
+    ctx.restore();
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
     drawWords(line, cx, y);
   },
 };
@@ -1119,9 +1157,13 @@ function paintTweetCard(l, fs) {
 }
 
 // iPhone Notes frame (Reza, 2026-11-22): a white card with the gold
-// Notes header and the text in the dusty-pink content area below.
-// Colours sampled from his screenshot: gold #D9AA1E, content
-// #E4D0D9, text #595355. Like the tweet card, the chrome stays fixed
+// Notes header and the text in the light-grey content area below.
+// Colours sampled from his screenshot: gold #D9AA1E, text #595355.
+// The content was dusty-pink #E4D0D9 until 2026-11-22, when Reza
+// asked for the crimson tone removed — briefly white, then light
+// grey #E5E5EA so the header band and the content are not the same
+// colour (Reza: a bit darker). Like the
+// tweet card, the chrome stays fixed
 // at NOTE_CHROME_FS while the body text follows the side size rail.
 const NOTE_CHROME_FS = 110;
 const NOTE_GOLD = '#D9AA1E';
@@ -1176,12 +1218,12 @@ function noteLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 
   };
 }
 
-// Paint the note card chrome: dusty-pink card with a white header band
+// Paint the note card chrome: light-grey card with a white header band
 // and the gold iOS Notes header (‹ Notes on the left, ... / share /
 // Done on the right, LTR like the screenshot). The user's text itself
 // is painted per line by STYLE_PAINT.note.
 function paintNoteCard(l, fs) {
-  const content = sp('noteC') || '#E4D0D9';
+  const content = sp('noteC') || '#E5E5EA';
   ctx.save();
   // Card body (pink) + white header band (clipped to the rounded top).
   roundRect(l.x, l.y, l.w, l.h, l.r);
@@ -1302,12 +1344,12 @@ function messageLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH
   };
 }
 
-// Paint the message card chrome: light-pink card with a white header
+// Paint the message card chrome: light-grey card with a white header
 // band and the iOS Messages header (green app icon + Messages on the
 // left, Now on the right, LTR like the screenshot). The user's text
 // itself is painted per line by STYLE_PAINT.message.
 function paintMessageCard(l, fs) {
-  const content = sp('messageC') || '#EDBCD2';
+  const content = sp('messageC') || '#E5E5EA';
   ctx.save();
   // Card body (pink) + white header band (clipped to the rounded top).
   roundRect(l.x, l.y, l.w, l.h, l.r);
@@ -1487,6 +1529,23 @@ function draw() {
       ctx.fillStyle = state.style === 'squarebox' ? sp('squareboxC') : sp('lightboxC');
     }
     roundRect(cx - bw / 2, top, bw, blockH + pad, r);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Halo (Reza, 2026-11-22): a solid red box with SHARP corners
+  // behind the whole text block — tighter padding than the other
+  // box styles, matching the reference (side pads ~0.29x and
+  // vertical pads ~0.28x of the font size). The text + shadow are
+  // painted per-line below.
+  if (state.style === 'halo') {
+    const padX = textFs * 0.29;
+    const padY = textFs * 0.28;
+    const bw = Math.max(...lines.map((l) => lineWidth(l))) + padX * 2;
+    const top = y - lineHeight / 2 - padY;
+    ctx.save();
+    ctx.fillStyle = sp('haloBoxC');
+    roundRect(cx - bw / 2, top, bw, blockH + padY * 2, 0);
     ctx.fill();
     ctx.restore();
   }
