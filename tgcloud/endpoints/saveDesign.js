@@ -61,7 +61,6 @@ const STYLE_PARAMS = {
   // StoryFont styles (Reza, 2026-11-22).
   violetOutline: { min: 1, max: 8 },
   violetShadow: { min: 0, max: 20 },
-  violetTrack: { min: -30, max: 0 },
   bubbleOutline: { min: 4, max: 16 },
   bubbleShadow: { min: 0, max: 40 },
   roundlineC: { color: true },
