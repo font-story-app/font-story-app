@@ -15,7 +15,7 @@ const ALLOWED_STYLES = [
   'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
   'sticker', 'tweet',
   // StoryFont styles (Reza, 2026-11-22).
-  'violet', 'bubble', 'roundline', 'pastille3d', 'gradline',
+  'roundline', 'pastille3d', 'gradline',
   'squarebox', 'lightbox', 'shadowline',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
@@ -59,10 +59,6 @@ const STYLE_PARAMS = {
   tweetCardH: { min: 300, max: 800 },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
-  violetOutline: { min: 1, max: 8 },
-  violetShadow: { min: 0, max: 20 },
-  bubbleOutline: { min: 4, max: 16 },
-  bubbleShadow: { min: 0, max: 40 },
   roundlineC: { color: true },
   pastille3dOutline: { min: 4, max: 16 },
   pastille3dShadow: { min: 0, max: 40 },
