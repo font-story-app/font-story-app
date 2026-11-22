@@ -74,6 +74,7 @@ const STYLES = [
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
   { id: 'halo', label: 'هاله' },
+  { id: 'msgbubble', label: 'حباب پیام' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -306,6 +307,19 @@ const STYLE_CONTROLS = {
     { key: 'haloShadowC', label: 'رنگ سایه', type: 'color', def: '#5E121E' },
     { key: 'haloOffset', label: 'فاصله سایه', type: 'range', min: 0, max: 30, step: 1, def: 6, unit: '٪' },
     { key: 'haloBlur', label: 'محو شدگی هاله', type: 'range', min: 0, max: 40, step: 1, def: 12, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // iMessage-style blue bubble with a tail at the bottom-right corner
+  // (Reza, 2026-11-22): fill #087ffe (his code's default), white
+  // text, corner radius ~0.25x of fs (bottom-right 0.7x of that, like
+  // his 22px vs 32px), tail = his exact SVG path (see
+  // paintMsgbubble), side pads 0.5x / vertical pads 0.4x of fs. The
+  // bubble hugs the text block (ONE bubble for the whole block, tail
+  // once at the bottom-right) and follows the align buttons.
+  msgbubble: [
+    { key: 'msgbubbleC', label: 'رنگ حباب', type: 'color', def: '#087ffe' },
+    { key: 'msgbubbleR', label: 'گردی حباب', type: 'range', min: 0, max: 60, step: 1, def: 25, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -894,6 +908,13 @@ const STYLE_PAINT = {
     ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
     drawWords(line, cx, y);
   },
+  // Message bubble: white text on the blue bubble (the bubble + tail
+  // are painted block-level in draw()). A colour picked in the رنگ
+  // tab wins.
+  msgbubble: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+  },
 };
 
 // Text alignment happens INSIDE the text block, which stays centred on
@@ -1397,6 +1418,74 @@ function paintMessageCard(l, fs) {
   ctx.restore();
 }
 
+// Message bubble geometry: the bubble hugs the text block (side pads
+// 0.5x, vertical pads 0.4x of the font size) and its centre follows
+// the alignment buttons inside the canvas inner area (80..1000),
+// the same rule as the tweet/note/message cards. The tail is Reza's
+// exact SVG path (see paintMsgbubble): a 34x36 shape overlapping the
+// bottom-right corner, its tip poking ~0.17x right of the bubble.
+function msgbubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = fs * 0.5;
+  const padY = fs * 0.4;
+  const w = maxLw + padX * 2;
+  const hh = blockH + padY * 2;
+  const r = Math.min(fs * (sp('msgbubbleR') / 100), hh / 2, w / 2);
+  const slack = Math.max(0, (1080 - 160 - w) / 2);
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  return {
+    x: cx - w / 2 + blockShift, y: h / 2 - hh / 2, w, h: hh, r,
+    padX, padY, blockShift,
+    tailOut: fs * 0.17, tailDrop: fs * 0.01, rtl,
+  };
+}
+
+// Paint the bubble: a rounded rect (the body) + the tail as a
+// SEPARATE shape overlapping the bottom-right corner — Reza's exact
+// code (2026-11-22 21:30, «این کد دقیقشه»), translated from his DOM
+// version (a div + an SVG tail) into canvas paths. The app paints
+// everything on canvas, so a DOM element cannot be used directly;
+// the tail below is his SVG path verbatim, scaled so 1 SVG unit =
+// 0.01x of fs: viewBox 0 0 34 36, the path
+// M 17 0 C 17 18, 21 29, 34 35 C 23 36.5, 14 33, 8 28.5 L 8 12 L 17 0 Z,
+// placed with its left edge 0.17x left of the bubble's right edge and
+// its bottom on the bubble's bottom edge — exactly like his
+// right:-17px / bottom:0 positioning. The tip pokes 0.17x out to the
+// right. The bubble's bottom-right corner radius is 0.7x of the
+// others, like his 22px vs 32px.
+function paintMsgbubble(l, fs) {
+  const bx = l.x, by = l.y, bw = l.w, bh = l.h, r = l.r;
+  const rBR = r * 0.7;
+  // The body.
+  ctx.beginPath();
+  ctx.moveTo(bx + r, by);
+  ctx.lineTo(bx + bw - r, by);
+  ctx.arcTo(bx + bw, by, bx + bw, by + r, r);
+  ctx.lineTo(bx + bw, by + bh - rBR);
+  ctx.arcTo(bx + bw, by + bh, bx + bw - rBR, by + bh, rBR);
+  ctx.lineTo(bx + r, by + bh);
+  ctx.arcTo(bx, by + bh, bx, by + bh - r, r);
+  ctx.lineTo(bx, by + r);
+  ctx.arcTo(bx, by, bx + r, by, r);
+  ctx.closePath();
+  ctx.fillStyle = sp('msgbubbleC');
+  ctx.fill();
+  // The tail — Reza's SVG path verbatim (see the header comment).
+  const u = fs * 0.01;
+  const ox = bx + bw - 17 * u, oy = by + bh - 36 * u;
+  ctx.beginPath();
+  ctx.moveTo(ox + 17 * u, oy);
+  ctx.bezierCurveTo(ox + 17 * u, oy + 18 * u, ox + 21 * u, oy + 29 * u, ox + 34 * u, oy + 35 * u);
+  ctx.bezierCurveTo(ox + 23 * u, oy + 36.5 * u, ox + 14 * u, oy + 33 * u, ox + 8 * u, oy + 28.5 * u);
+  ctx.lineTo(ox + 8 * u, oy + 12 * u);
+  ctx.lineTo(ox + 17 * u, oy);
+  ctx.closePath();
+  ctx.fillStyle = sp('msgbubbleC');
+  ctx.fill();
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -1450,7 +1539,11 @@ function draw() {
   const messageRTL = state.style === 'message' ? isRTLText(lines[0] || '') : true;
   const messageMin = state.style === 'message' ? messageMinSize(chromeFs) : { minW: 0, minBlockH: 0 };
   const messageL = state.style === 'message' ? messageLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, messageMin.minW, messageMin.minBlockH, messageRTL) : null;
-  const frameL = tweetL || noteL || messageL;
+  // The message bubble wraps the block the same way (it hugs the
+  // text; the tail sits once at the bottom-right corner).
+  const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
+  const msgbubbleL = state.style === 'msgbubble' ? msgbubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, msgbubbleRTL) : null;
+  const frameL = tweetL || noteL || messageL || msgbubbleL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -1542,6 +1635,10 @@ function draw() {
   // around the whole text block (the text itself is painted per-line
   // below, in black on pink).
   if (messageL) paintMessageCard(messageL, chromeFs);
+
+  // Message bubble: blue bubble + tail around the whole text block
+  // (the text itself is painted per-line below, in white).
+  if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
 
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
@@ -1662,7 +1759,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -1670,6 +1767,7 @@ function redraw() {
   paintTweetSamples();
   paintNoteSamples();
   paintMessageSamples();
+  paintMsgbubbleSamples();
 }
 
 // Caret blink.
@@ -2158,6 +2256,7 @@ function buildStylePicker() {
       if (item.id === 'tweet') return '<canvas class="sample-canvas sample-canvas-tweet" width="190" height="120"></canvas>';
       if (item.id === 'note') return '<canvas class="sample-canvas sample-canvas-note" width="190" height="120"></canvas>';
       if (item.id === 'message') return '<canvas class="sample-canvas sample-canvas-message" width="190" height="120"></canvas>';
+      if (item.id === 'msgbubble') return '<canvas class="sample-canvas sample-canvas-msgbubble" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -2441,6 +2540,72 @@ function paintMessageSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-message';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the message-bubble preview with the REAL bubble code
+// (msgbubbleLayout + paintMsgbubble + the body text) on its small
+// canvas — a miniature of the actual bubble, so the preview always
+// matches the canvas. Called from redraw(), like the message samples.
+function paintMsgbubbleSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-msgbubble')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // bubble scales with the rail, like the body text.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const msgbubbleRTL = isRTLText(lines[0] || '');
+        const msgbubbleL = msgbubbleLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, msgbubbleRTL);
+        const blockCx = 540 + msgbubbleL.blockShift;
+        // Fit the whole bubble INTO the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed. The fit
+        // counts the tail, which pokes out past the bubble's right and
+        // bottom edges, so it is never clipped.
+        const s = Math.min(W / (msgbubbleL.w + msgbubbleL.tailOut), H / (msgbubbleL.h + msgbubbleL.tailDrop));
+        const cardCx = msgbubbleL.x + (msgbubbleL.w + msgbubbleL.tailOut) / 2, cardCy = msgbubbleL.y + (msgbubbleL.h + msgbubbleL.tailDrop) / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintMsgbubble(msgbubbleL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.msgbubble(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-msgbubble';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
