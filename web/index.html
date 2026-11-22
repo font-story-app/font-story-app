@@ -55,7 +55,7 @@
       </div>
       <div class="sheet-panel" id="panel-font">
         <div class="sheet-head">
-          <span>فونت</span>
+          <span>فونت<button type="button" id="fontSearchBtn" class="font-search-btn" aria-label="جستجوی فونت" aria-expanded="false" title="جستجوی فونت"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button></span>
           <span class="font-filters">
             <button type="button" class="font-filter" data-filter="fa">فارسی</button>
             <button type="button" class="font-filter" data-filter="en">انگلیسی</button>
@@ -63,7 +63,12 @@
             <button type="button" class="font-filter" data-filter="custom" id="customFilter" hidden>فونت‌های من</button>
           </span>
         </div>
-        <input type="search" id="fontSearch" class="font-search" dir="auto" placeholder="جستجوی فونت…&#x200F;" aria-label="جستجوی فونت" autocomplete="off">
+        <div id="fontSearchWrap" class="font-search-wrap">
+          <div class="font-search-inner">
+            <input type="search" id="fontSearch" class="font-search" dir="auto" placeholder="جستجوی فونت…&#x200F;" aria-label="جستجوی فونت" autocomplete="off">
+            <button type="button" id="fontSearchClose" class="font-search-close" aria-label="بستن جستجو"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          </div>
+        </div>
         <p class="sheet-note" id="fontSearchEmpty" hidden>فونتی با این اسم پیدا نشد.</p>
         <div id="fontRow" class="card-row"></div>
         <p class="sheet-note" id="favEmpty" hidden>هنوز فونتی رو محبوب نکردی — روی هر فونت چند ثانیه نگه دار تا اینجا بیاد.</p>

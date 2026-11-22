@@ -1702,6 +1702,7 @@ function buildCardPicker(el, items, current, onPick, sampleHtml) {
 // switch which fonts the row shows — Persian, English, or favourites.
 let fontFilter = null; // 'fa' | 'en' | 'fav' | 'custom' — defaults to the current font's language
 let fontQuery = ''; // live search text (see fontMatches) — cleared on filter switch
+let fontSearchOpen = false; // the search form is open (see setFontSearchOpen)
 function fontLang(id) {
   const f = fontEntry(id);
   if (!f) return 'fa';
@@ -2690,17 +2691,35 @@ document.querySelectorAll('.tab').forEach((b) => {
 document.querySelectorAll('.font-filter').forEach((b) => {
   b.addEventListener('click', () => {
     fontFilter = b.dataset.filter;
-    // A new list starts a new search — the old query would only ever
-    // show an empty row in the other language's list.
-    fontQuery = '';
-    const si = $('fontSearch');
-    if (si) si.value = '';
+    // A new list starts a new search — close the form (without its own
+    // rebuild; buildFontPicker below does it once).
+    setFontSearchOpen(false, false);
     buildFontPicker();
   });
 });
 // Live search: every keystroke re-filters the current list. The input
 // sits outside #fontRow, so rebuilding the row never steals its focus.
 $('fontSearch').addEventListener('input', (e) => { fontQuery = e.target.value; buildFontPicker(); });
+// Search mode (Reza, 2026-11-22): the form hides behind a magnifier
+// button in the panel head; tapping it slides the form down and focuses
+// it, tapping it again (or the × on the form) closes it. Closing clears
+// the query and restores the full list.
+function setFontSearchOpen(open, rebuild = true) {
+  fontSearchOpen = open;
+  $('fontSearchWrap').classList.toggle('open', open);
+  const btn = $('fontSearchBtn');
+  btn.classList.toggle('active', open);
+  btn.setAttribute('aria-expanded', String(open));
+  const si = $('fontSearch');
+  if (open) { si.focus(); return; }
+  // Closing: clear the query and restore the full list.
+  fontQuery = '';
+  if (si) si.value = '';
+  if (document.activeElement === si) si.blur();
+  if (rebuild) buildFontPicker();
+}
+$('fontSearchBtn').addEventListener('click', () => setFontSearchOpen(!fontSearchOpen));
+$('fontSearchClose').addEventListener('click', () => setFontSearchOpen(false));
 
 function applyDesign(d) {
   state.text = d.text || '';

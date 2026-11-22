@@ -373,7 +373,43 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .font-filters { display: flex; gap: 6px; }
 .font-filter { font-family: inherit; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.12); border: 0; border-radius: 999px; padding: 5px 12px; cursor: pointer; }
 .font-filter.active { background: #fff; color: #2b1e18; }
-/* Font search: sits above the font row, filters the current list live. */
+/* Font search: hidden behind a magnifier button in the panel head (Reza,
+   2026-11-22) — the form slides down below the header when opened. */
+.font-search-btn {
+  width: 28px; height: 28px;
+  border: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.9);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-inline-start: 6px;
+}
+.font-search-btn.active { background: #fff; color: #2b1e18; }
+/* The wrap collapses to zero height when closed (grid 0fr -> 1fr
+   animates the slide-down) and fades with it; visibility keeps the
+   closed input out of the tab order. */
+.font-search-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition: grid-template-rows .25s ease, opacity .2s ease, visibility 0s .25s;
+}
+.font-search-wrap.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition: grid-template-rows .25s ease, opacity .2s ease, visibility 0s;
+}
+.font-search-inner {
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+  /* The 10px gap below the form lives here, inside the animated row,
+     so it collapses with the form instead of leaving a gap. */
+  padding-bottom: 10px;
+}
 .font-search {
   width: 100%;
   box-sizing: border-box;
@@ -381,17 +417,27 @@ body.editing .sheet, body.editing .tabbar { display: none; }
   border: 1px solid rgba(255,255,255,0.2);
   color: #fff;
   border-radius: 10px;
-  padding: 9px 12px;
+  /* Extra left padding: the × sits over the input's left end. */
+  padding: 9px 12px 9px 36px;
   font-family: inherit;
   font-size: 15px;
   outline: none;
-  /* No top margin: .sheet-head already leaves 10px below itself, so
-     the gap above the box is 10px; the 10px below matches it (was
-     10px top / 4px bottom — 20px above, 4px below, visibly uneven). */
-  margin: 0 0 10px;
+  margin: 0;
 }
 .font-search:focus { border-color: rgba(255,255,255,0.5); }
 .font-search::placeholder { color: rgba(255,255,255,0.55); text-align: right; }
+/* × on the form: exits search mode (clears the query, hides the form). */
+.font-search-close {
+  position: absolute;
+  top: 8px; left: 8px;
+  width: 24px; height: 24px;
+  border: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.font-search-close .icon { width: 14px; height: 14px; }
 /* Long-press cards: no text selection or iOS callout while holding. */
 .pick-card { position: relative; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .fav-badge { position: absolute; top: 6px; inset-inline-start: 6px; width: 16px; height: 16px; color: #ff6b81; }
