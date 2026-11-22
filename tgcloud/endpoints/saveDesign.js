@@ -14,6 +14,9 @@ const ALLOWED_STYLES = [
   'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
   'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
   'sticker', 'tweet',
+  // StoryFont styles (Reza, 2026-11-22).
+  'violet', 'bubble', 'roundline', 'pastille3d', 'gradline',
+  'squarebox', 'lightbox', 'shadowline',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
 const ALLOWED_ALIGNS = ['center', 'right', 'left', 'justify'];
@@ -55,6 +58,24 @@ const STYLE_PARAMS = {
   tweetCardW: { min: 400, max: 900 },
   tweetCardH: { min: 300, max: 800 },
   tweetTextSize: { min: 50, max: 150 },
+  // StoryFont styles (Reza, 2026-11-22).
+  violetOutline: { min: 4, max: 16 },
+  violetShadow: { min: 0, max: 30 },
+  bubbleOutline: { min: 4, max: 16 },
+  bubbleShadow: { min: 0, max: 40 },
+  roundlineC: { color: true },
+  pastille3dOutline: { min: 4, max: 16 },
+  pastille3dShadow: { min: 0, max: 40 },
+  gradlineC1: { color: true },
+  gradlineC2: { color: true },
+  gradlineC3: { color: true },
+  gradlineR: { min: 0, max: 60 },
+  squareboxC: { color: true },
+  squareboxR: { min: 0, max: 60 },
+  lightboxC: { color: true },
+  lightboxR: { min: 0, max: 60 },
+  shadowlineC: { color: true },
+  shadowlineR: { min: 0, max: 60 },
 };
 
 function sanitizeStyleParams(input) {
