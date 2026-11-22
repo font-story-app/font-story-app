@@ -75,7 +75,8 @@ const STYLES = [
   { id: 'message', label: 'پیام' },
   { id: 'halo', label: 'هاله' },
   { id: 'msgbubble', label: 'حباب پیام' },
-  { id: 'dropbubble', label: 'حباب قطره‌ای' },
+  { id: 'dropbubble', label: 'حباب پیام ۲' },
+  { id: 'brushstroke', label: 'براش' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -329,6 +330,16 @@ const STYLE_CONTROLS = {
   dropbubble: [
     { key: 'dropbubbleC', label: 'رنگ حباب', type: 'color', def: '#087ffe' },
     { key: 'dropbubbleR', label: 'گردی حباب', type: 'range', min: 0, max: 60, step: 1, def: 50, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Dry-brush band (Reza's createBrushTextStyle code, 2026-11-22): a
+  // wide horizontal brush stroke behind the whole text block, with a
+  // pale-pink shadow copy. (The old 'brush' style is a different,
+  // per-line tilted box — this one is a block-level dry-brush band.)
+  brushstroke: [
+    { key: 'brushC', label: 'رنگ قلم‌مو', type: 'color', def: '#241e5a' },
+    { key: 'brushShadowC', label: 'رنگ سایه', type: 'color', def: '#fce8f3' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -925,6 +936,10 @@ const STYLE_PAINT = {
     drawWords(line, cx, y);
   },
   dropbubble: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+  },
+  brushstroke: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
     drawWords(line, cx, y);
   },
@@ -1577,6 +1592,121 @@ function paintDropbubble(l, fs) {
   ctx.fill();
 }
 
+// Dry-brush stroke (Reza 2026-11-22 23:02 — his createBrushTextStyle
+// code): a wide horizontal brush band behind the whole text block,
+// dark navy #241e5a with a pale-pink #fce8f3 shadow copy offset
+// (1, 9), a dry-brush filter (feTurbulence bristles + displacement)
+// and a scratches mask. The app paints on canvas, so the SVG is drawn
+// as an image — brushSvgString() is his exact SVG (filter + mask +
+// shape, colours substituted, one fixed uid); while it loads (or if
+// it fails) a flat fallback paints the same 7 paths as canvas fills,
+// so the band is never blank. The SVG has no external references, so
+// drawing it never taints the canvas and the PNG export keeps working.
+const BRUSH_PATHS = [
+  'M 102 52 L 360 44 L 520 46 L 516 74 L 106 78 Z',
+  'M 62 84 L 115 74 L 548 68 L 542 104 L 74 108 Z',
+  'M 78 104 L 542 100 L 574 114 L 540 134 L 72 140 Z',
+  'M 56 154 L 105 138 L 548 144 L 544 182 L 70 180 Z',
+  'M 104 176 L 530 180 L 522 214 L 340 218 L 100 206 Z',
+  'M 170 43 L 395 39 L 365 45 Z',
+  'M 290 217 L 485 214 L 445 221 Z',
+];
+const BRUSH_SCRATCHES = [
+  'M 88 64 L 185 60 L 142 66 L 90 68 Z',
+  'M 96 71 L 152 69 L 122 73 Z',
+  'M 335 50 L 455 46 L 410 51 Z',
+  'M 455 55 L 522 52 L 490 57 Z',
+  'M 60 99 L 126 97 L 95 103 Z',
+  'M 62 142 L 118 140 L 88 146 Z',
+  'M 78 190 L 178 193 L 130 195 Z',
+  'M 488 94 L 560 91 L 525 99 Z',
+  'M 500 130 L 575 127 L 538 136 Z',
+  'M 450 151 L 545 148 L 515 156 Z',
+  'M 485 186 L 555 184 L 520 190 Z',
+  'M 215 153 L 298 151 L 265 154 Z',
+  'M 370 156 L 430 154 L 405 157 Z',
+  'M 410 207 L 520 204 L 475 210 Z',
+  'M 145 208 L 235 211 L 195 212 Z',
+];
+function brushSvgString(brushColor, shadowColor) {
+  const uid = 'brush-svg';
+  const shape = BRUSH_PATHS.map((d) => `<path d="${d}" />`).join('');
+  const scratches = BRUSH_SCRATCHES.map((d) => `<path d="${d}" fill="black" />`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" width="600" height="260" preserveAspectRatio="none"><defs>`
+    + `<filter id="${uid}-drybrush" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">`
+    + `<feTurbulence type="fractalNoise" baseFrequency="0.007 0.34" numOctaves="3" seed="11" result="fineBristles" />`
+    + `<feColorMatrix in="fineBristles" type="matrix" values="1 0 0 0 0 0 0.10 0 0 0.45 0 0 0 0 0.5 0 0 0 1 0" result="horizontalNoise" />`
+    + `<feDisplacementMap in="SourceGraphic" in2="horizontalNoise" scale="48" xChannelSelector="R" yChannelSelector="G" result="displaced" />`
+    + `<feComponentTransfer in="displaced"><feFuncA type="linear" slope="2.4" intercept="-0.55" /></feComponentTransfer>`
+    + `</filter>`
+    + `<mask id="${uid}-scratches"><rect x="-50" y="-50" width="700" height="360" fill="white" />${scratches}</mask>`
+    + `<g id="${uid}-shape" filter="url(#${uid}-drybrush)" mask="url(#${uid}-scratches)">${shape}</g>`
+    + `</defs>`
+    + `<use href="#${uid}-shape" fill="${shadowColor}" transform="translate(1, 9)" />`
+    + `<use href="#${uid}-shape" fill="${brushColor}" />`
+    + `</svg>`;
+}
+const brushImgCache = new Map();
+function getBrushImage(brushColor, shadowColor) {
+  const key = brushColor + '|' + shadowColor;
+  let img = brushImgCache.get(key);
+  if (!img) {
+    img = new Image();
+    img.onload = () => { redraw(); };
+    // On error the fallback below keeps painting the flat shape.
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(brushSvgString(brushColor, shadowColor));
+    brushImgCache.set(key, img);
+  }
+  return img;
+}
+// Brush band geometry: his container is min(92vw, 640px) wide (the
+// 640px cap binds at the 1080 canvas, like the bubbles' caps) and
+// max 95vw (1026px at the canvas — long text squeezes the pads instead
+// of overflowing). The side pads are 0.6x of fs — NOT his clamp()
+// value (1.15x): with 1.15x the inner width was 387, narrower than
+// the text itself (~402 at fs=110), so the band grew to fit and the
+// align buttons had zero slack to move the text (found by the live
+// check 2026-11-22 23:10). At 0.6x the inner width is 508 — the same
+// as the msgbubble's proven 510 — so right/left move the text ~21px
+// on screen. The band itself NEVER moves (same rule as the bubbles,
+// Reza 2026-11-22 22:09) — the text aligns inside it via the band's
+// inner width (see alignW in draw()).
+function brushLayout(fs, maxLw, blockH, lineHeight, h, cx) {
+  const padX = fs * 0.6;
+  const padY = fs * 0.55;
+  const w = Math.min(Math.max(maxLw + padX * 2, 640), 1026);
+  const hh = blockH + padY * 2;
+  // The band stays centred on the canvas whatever the alignment is;
+  // only the text inside it moves (draw() anchors the lines within
+  // the band's inner width).
+  const blockShift = 0;
+  return {
+    x: cx - w / 2 + blockShift, y: h / 2 - hh / 2, w, h: hh,
+    padX, padY, blockShift,
+  };
+}
+function paintBrush(l, fs) {
+  const bx = l.x, by = l.y, bw = l.w, bh = l.h;
+  const img = getBrushImage(sp('brushC'), sp('brushShadowC'));
+  if (img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, bx, by, bw, bh);
+    return;
+  }
+  // Fallback (image still loading, or it failed): the same 7 paths as
+  // flat canvas fills — shadow copy first (offset 1, 9 in viewBox
+  // units, exactly like his <use transform>), then the brush colour.
+  ctx.save();
+  ctx.translate(bx, by);
+  ctx.scale(bw / 600, bh / 260);
+  ctx.fillStyle = sp('brushShadowC');
+  ctx.save(); ctx.translate(1, 9);
+  for (const d of BRUSH_PATHS) ctx.fill(new Path2D(d));
+  ctx.restore();
+  ctx.fillStyle = sp('brushC');
+  for (const d of BRUSH_PATHS) ctx.fill(new Path2D(d));
+  ctx.restore();
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -1638,15 +1768,18 @@ function draw() {
   // below the bottom edge instead of poking out of the corner).
   const dropbubbleRTL = state.style === 'dropbubble' ? isRTLText(lines[0] || '') : true;
   const dropbubbleL = state.style === 'dropbubble' ? dropbubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, dropbubbleRTL) : null;
-  const frameL = tweetL || noteL || messageL || msgbubbleL || dropbubbleL;
+  // The dry-brush band wraps the block the same way (a wide band
+  // behind the whole text block, with a pink shadow copy).
+  const brushL = state.style === 'brushstroke' ? brushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
+  const frameL = tweetL || noteL || messageL || msgbubbleL || dropbubbleL || brushL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
-  // Message/droplet bubble: the alignment block is the bubble's INNER
-  // width, not the text width (Reza 2026-11-22 22:09 — the align
-  // buttons move only the text inside the bubble; the bubble itself
-  // stays centred). alignW is maxLw for every other style, so the
-  // three call sites below (line anchor, caret, editor) are unchanged
-  // for them.
-  const bubbleL = msgbubbleL || dropbubbleL;
+  // Message/droplet bubble and brush band: the alignment block is the
+  // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
+  // the align buttons move only the text inside the block; the block
+  // itself stays centred). alignW is maxLw for every other style, so
+  // the three call sites below (line anchor, caret, editor) are
+  // unchanged for them.
+  const bubbleL = msgbubbleL || dropbubbleL || brushL;
   const alignW = bubbleL ? bubbleL.w - bubbleL.padX * 2 : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -1746,6 +1879,10 @@ function draw() {
   // Droplet bubble: uniformly round blue bubble + hanging droplet tail
   // around the whole text block (text painted per-line below, in white).
   if (dropbubbleL) paintDropbubble(dropbubbleL, textFs);
+
+  // Dry-brush band: navy brush stroke + pale-pink shadow around the
+  // whole text block (text painted per-line below, in white).
+  if (brushL) paintBrush(brushL, textFs);
 
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
@@ -1866,7 +2003,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -1876,6 +2013,7 @@ function redraw() {
   paintMessageSamples();
   paintMsgbubbleSamples();
   paintDropbubbleSamples();
+  paintBrushSamples();
 }
 
 // Caret blink.
@@ -2366,6 +2504,7 @@ function buildStylePicker() {
       if (item.id === 'message') return '<canvas class="sample-canvas sample-canvas-message" width="190" height="120"></canvas>';
       if (item.id === 'msgbubble') return '<canvas class="sample-canvas sample-canvas-msgbubble" width="190" height="120"></canvas>';
       if (item.id === 'dropbubble') return '<canvas class="sample-canvas sample-canvas-dropbubble" width="190" height="120"></canvas>';
+      if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -2787,6 +2926,77 @@ function paintDropbubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-dropbubble';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the dry-brush preview with the REAL band code
+// (brushLayout + paintBrush + the body text) on its small canvas — a
+// miniature of the actual band, so the preview always matches the
+// canvas. Called from redraw(), like the bubble samples. The shadow
+// copy pokes ~1px right and ~9px down in viewBox units, so the fit
+// counts that overhang and the shadow is never clipped.
+function paintBrushSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-brushstroke')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // band scales with the rail, like the body text.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const brushL = brushLayout(textFs, maxLw, blockH, lineHeight, 1080, 540);
+        const blockCx = 540 + brushL.blockShift;
+        // The sample's text aligns inside the band too (same alignW
+        // rule as draw()).
+        const alignW = brushL.w - brushL.padX * 2;
+        // Fit the whole band INTO the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed. The fit
+        // counts the shadow overhang (right + down), so it is never
+        // clipped.
+        const shX = brushL.w / 600, shY = brushL.h * 9 / 260;
+        const s = Math.min(W / (brushL.w + shX), H / (brushL.h + shY));
+        const cardCx = brushL.x + (brushL.w + shX) / 2, cardCy = brushL.y + (brushL.h + shY) / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintBrush(brushL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.brushstroke(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-brushstroke';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

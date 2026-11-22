@@ -376,6 +376,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-dropbubble {
   height: 60px;
 }
+/* Dry-brush preview: same miniature treatment as the droplet bubble. */
+.pick-card .sample canvas.sample-canvas-brushstroke {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -508,6 +512,8 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
 .sample-dropbubble { background: #087ffe; color: #fff; border-radius: 24px; padding: 0 10px; }
+/* Dry-brush preview fallback (used only if the canvas paint fails). */
+.sample-brushstroke { background: #241e5a; color: #fff; border-radius: 4px; padding: 0 10px; }
 
 .colors { display: flex; align-items: center; gap: 12px; padding: 4px 0 8px; }
 .swatches { display: flex; gap: 12px; overflow-x: auto; min-width: 0; flex: 1; scrollbar-width: none; }
