@@ -69,12 +69,11 @@ const STYLES = [
   { id: 'winter', label: 'زمستانی' },
   { id: 'rosseta', label: 'رُزتا' },
   { id: 'sticker', label: 'استیکر' },
-  // StoryFont styles (Reza, 2026-11-22): the eight canvas looks from his
+  // StoryFont styles (Reza, 2026-11-22): the six canvas looks from his
   // screenshots, colours sampled from the shots. 'pastille' above used to
   // be labelled «پاستیل» — it is only a purple outline, so it is now
   // «دور بنفش» and the real Pastille lives below as 'pastille3d'.
-  { id: 'violet', label: 'ویولت' },
-  { id: 'bubble', label: 'بابل' },
+  // 'violet' and 'bubble' were removed at Reza's request the same day.
   { id: 'roundline', label: 'خط گرد' },
   { id: 'pastille3d', label: 'پاستیل' },
   { id: 'gradline', label: 'خط گرادینت' },
@@ -185,16 +184,8 @@ const STYLE_CONTROLS = {
     { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
     { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
   ],
-  // StoryFont styles (Reza, 2026-11-22): knobs for the eight new looks.
+  // StoryFont styles (Reza, 2026-11-22): knobs for the new looks.
   // Colours are the sampled defaults from his screenshots.
-  violet: [
-    { key: 'violetOutline', label: 'ضخامت خط دور', type: 'range', min: 1, max: 8, step: 1, def: 3, unit: '٪' },
-    { key: 'violetShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 20, step: 1, def: 10, unit: '٪' },
-  ],
-  bubble: [
-    { key: 'bubbleOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
-    { key: 'bubbleShadow', label: 'میزان سایه', type: 'range', min: 0, max: 40, step: 1, def: 15, unit: '٪' },
-  ],
   roundline: [
     { key: 'roundlineC', label: 'رنگ خط', type: 'color', def: '#FF5152' },
   ],
@@ -674,27 +665,6 @@ const STYLE_PAINT = {
   // StoryFont styles (Reza, 2026-11-22) — colours sampled from his
   // screenshots. Each one's fill follows the رنگ tab once the user picks
   // a colour, else the signature colour from the reference.
-  violet: (line, cx, y, lw, fs) => {
-    // Purple fill, thin white outline, crisp dark-purple shadow straight
-    // below (measured from the reference 2026-11-22: outline ~3% of the
-    // font size, shadow offset ~10% straight down, no sideways shift).
-    const dy = fs * (sp('violetShadow') / 100);
-    ctx.save();
-    ctx.shadowColor = '#4B0098'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = dy;
-    strokeWords(line, cx, y, '#ffffff', fs * (sp('violetOutline') / 100));
-    ctx.fillStyle = state.colorTouched ? state.color : '#7700FF';
-    drawWords(line, cx, y);
-    ctx.restore();
-  },
-  bubble: (line, cx, y, lw, fs) => {
-    // White fill, dark-navy outline, soft pink drop shadow.
-    ctx.save();
-    ctx.shadowColor = '#F48DA2'; ctx.shadowBlur = fs * (sp('bubbleShadow') / 100); ctx.shadowOffsetY = fs * 0.12;
-    strokeWords(line, cx, y, '#14324C', fs * (sp('bubbleOutline') / 100));
-    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
-    drawWords(line, cx, y);
-    ctx.restore();
-  },
   roundline: (line, cx, y, lw, fs) => {
     // A coral pill behind each line (the text rides slightly high on it,
     // like the reference), white text with a black outline on top.
