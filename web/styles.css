@@ -403,6 +403,16 @@ body.editing .sheet, body.editing .tabbar { display: none; }
     4px 4px 0 #fff, -4px 4px 0 #fff, 4px -4px 0 #fff, -4px -4px 0 #fff,
     -6px 9px 0 #5c1220;
 }
+/* StoryFont styles (Reza, 2026-11-22): picker approximations of the
+   eight new looks, colours sampled from his screenshots. */
+.sample-violet { color: #7a01ff; -webkit-text-stroke: 1px #fff; text-shadow: 2px 3px 0 #4b0098; }
+.sample-bubble { color: #fff; -webkit-text-stroke: 1.5px #14324c; text-shadow: 0 4px 8px rgba(244,141,162,0.85); }
+.sample-roundline { background: #ff5152; color: #fff; -webkit-text-stroke: 1px #111; border-radius: 999px; padding: 0 8px; }
+.sample-pastille3d { color: #fdec00; -webkit-text-stroke: 1.5px #ba6bea; text-shadow: 3px 4px 0 #4b177b; }
+.sample-gradline { background: linear-gradient(90deg, #ae37f1, #e23c6e, #fc732f); color: #fff; border-radius: 10px; padding: 0 8px; }
+.sample-squarebox { background: #000; color: #fff; border-radius: 3px; padding: 0 8px; }
+.sample-lightbox { background: #fff; color: #111; border-radius: 8px; padding: 0 8px; }
+.sample-shadowline { background: #fff; color: #663ab6; border-radius: 2px; padding: 0 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.35); }
 /* Tweet card preview fallback (used only if the canvas paint fails):
    grey text on the black card. */
 .sample-tweet { background: #000; color: #a1a1aa; border-radius: 8px; padding: 0 6px; }
