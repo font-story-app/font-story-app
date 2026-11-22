@@ -75,6 +75,7 @@ const STYLES = [
   { id: 'message', label: 'پیام' },
   { id: 'halo', label: 'هاله' },
   { id: 'msgbubble', label: 'حباب پیام' },
+  { id: 'dropbubble', label: 'حباب قطره‌ای' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -320,6 +321,14 @@ const STYLE_CONTROLS = {
   msgbubble: [
     { key: 'msgbubbleC', label: 'رنگ حباب', type: 'color', def: '#087ffe' },
     { key: 'msgbubbleR', label: 'گردی حباب', type: 'range', min: 0, max: 60, step: 1, def: 25, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Droplet bubble (Reza's second createChatBubble code, 2026-11-22):
+  // uniformly round + a droplet tail hanging below the bottom edge.
+  dropbubble: [
+    { key: 'dropbubbleC', label: 'رنگ حباب', type: 'color', def: '#087ffe' },
+    { key: 'dropbubbleR', label: 'گردی حباب', type: 'range', min: 0, max: 60, step: 1, def: 50, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -915,6 +924,10 @@ const STYLE_PAINT = {
     ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
     drawWords(line, cx, y);
   },
+  dropbubble: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+  },
 };
 
 // Text alignment happens INSIDE the text block, which stays centred on
@@ -1492,6 +1505,78 @@ function paintMsgbubble(l, fs) {
   ctx.fill();
 }
 
+// Droplet bubble geometry (Reza 2026-11-22 22:54 — a NEW bubble type
+// from his second createChatBubble code): a uniformly round bubble
+// (radius clamp(36px, 7vw, 54px) in his code — no special bottom-right
+// corner) with a droplet tail that HANGS BELOW the bottom edge,
+// inset from the right (bottom: -20px, right: 14px in his code).
+// Width is max(text + side pads, min(86% of the 1080 canvas, 560)),
+// i.e. his min(86vw, 560px) — the 560px cap binds at the 1080 canvas
+// width and the bubble spans 52% of the page. The bubble itself NEVER
+// moves (same rule as msgbubble, Reza 2026-11-22 22:09) — the text
+// aligns inside it via the bubble's inner width (see alignW in draw()).
+// The tail is his exact SVG path (see paintDropbubble): a 56x36 shape
+// whose top edge sits 16u above the bubble's bottom and whose tip
+// hangs 18u below it, 25u left of the bubble's right edge.
+function dropbubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = fs * 0.5;
+  const padY = fs * 0.4;
+  const w = Math.max(maxLw + padX * 2, Math.min(1080 * 0.86, 560));
+  const hh = blockH + padY * 2;
+  const r = Math.min(fs * (sp('dropbubbleR') / 100), hh / 2, w / 2);
+  // The bubble stays centred on the canvas whatever the alignment is;
+  // only the text inside it moves (draw() anchors the lines within
+  // the bubble's inner width).
+  const blockShift = 0;
+  return {
+    x: cx - w / 2 + blockShift, y: h / 2 - hh / 2, w, h: hh, r,
+    padX, padY, blockShift,
+    tailOut: 0, tailDrop: fs * 0.18, rtl,
+  };
+}
+
+// Paint the droplet bubble: a uniformly rounded rect (the body) + the
+// tail as a SEPARATE shape hanging below the bottom edge — Reza's exact
+// code (2026-11-22 22:54), translated from his DOM version (a div + an
+// SVG tail) into canvas paths. The app paints everything on canvas, so
+// a DOM element cannot be used directly; the tail below is his SVG path
+// verbatim, scaled so 1 SVG unit = 0.01x of fs: viewBox 0 0 56 36, the
+// path M 4 16 C 17 16, 28 31, 45 34 C 37 29, 34 21, 41 13 C 43 10.5,
+// 45 8.5, 46 6 L 4 6 Z, placed with its right edge 14u left of the
+// bubble's right edge and its bottom 20u below the bubble's bottom
+// edge — exactly like his code (bottom: -20px, right: 14px). Unlike
+// msgbubble, all four corners share the same radius (his code has no
+// borderBottomRightRadius here).
+function paintDropbubble(l, fs) {
+  const bx = l.x, by = l.y, bw = l.w, bh = l.h, r = l.r;
+  // The body.
+  ctx.beginPath();
+  ctx.moveTo(bx + r, by);
+  ctx.lineTo(bx + bw - r, by);
+  ctx.arcTo(bx + bw, by, bx + bw, by + r, r);
+  ctx.lineTo(bx + bw, by + bh - r);
+  ctx.arcTo(bx + bw, by + bh, bx + bw - r, by + bh, r);
+  ctx.lineTo(bx + r, by + bh);
+  ctx.arcTo(bx, by + bh, bx, by + bh - r, r);
+  ctx.lineTo(bx, by + r);
+  ctx.arcTo(bx, by, bx + r, by, r);
+  ctx.closePath();
+  ctx.fillStyle = sp('dropbubbleC');
+  ctx.fill();
+  // The tail — Reza's SVG path verbatim (see the header comment).
+  const u = fs * 0.01;
+  const ox = bx + bw - 70 * u, oy = by + bh - 16 * u;
+  ctx.beginPath();
+  ctx.moveTo(ox + 4 * u, oy + 16 * u);
+  ctx.bezierCurveTo(ox + 17 * u, oy + 16 * u, ox + 28 * u, oy + 31 * u, ox + 45 * u, oy + 34 * u);
+  ctx.bezierCurveTo(ox + 37 * u, oy + 29 * u, ox + 34 * u, oy + 21 * u, ox + 41 * u, oy + 13 * u);
+  ctx.bezierCurveTo(ox + 43 * u, oy + 10.5 * u, ox + 45 * u, oy + 8.5 * u, ox + 46 * u, oy + 6 * u);
+  ctx.lineTo(ox + 4 * u, oy + 6 * u);
+  ctx.closePath();
+  ctx.fillStyle = sp('dropbubbleC');
+  ctx.fill();
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -1549,14 +1634,20 @@ function draw() {
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
   const msgbubbleL = state.style === 'msgbubble' ? msgbubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, msgbubbleRTL) : null;
-  const frameL = tweetL || noteL || messageL || msgbubbleL;
+  // The droplet bubble wraps the block the same way (its tail hangs
+  // below the bottom edge instead of poking out of the corner).
+  const dropbubbleRTL = state.style === 'dropbubble' ? isRTLText(lines[0] || '') : true;
+  const dropbubbleL = state.style === 'dropbubble' ? dropbubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, dropbubbleRTL) : null;
+  const frameL = tweetL || noteL || messageL || msgbubbleL || dropbubbleL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
-  // Message bubble: the alignment block is the bubble's INNER width,
-  // not the text width (Reza 2026-11-22 22:09 — the align buttons move
-  // only the text inside the bubble; the bubble itself stays centred).
-  // alignW is maxLw for every other style, so the three call sites
-  // below (line anchor, caret, editor) are unchanged for them.
-  const alignW = msgbubbleL ? msgbubbleL.w - msgbubbleL.padX * 2 : maxLw;
+  // Message/droplet bubble: the alignment block is the bubble's INNER
+  // width, not the text width (Reza 2026-11-22 22:09 — the align
+  // buttons move only the text inside the bubble; the bubble itself
+  // stays centred). alignW is maxLw for every other style, so the
+  // three call sites below (line anchor, caret, editor) are unchanged
+  // for them.
+  const bubbleL = msgbubbleL || dropbubbleL;
+  const alignW = bubbleL ? bubbleL.w - bubbleL.padX * 2 : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
     hw: frameL ? frameL.w / 2 : maxLw / 2, hh: frameL ? frameL.h / 2 : blockH / 2,
@@ -1651,6 +1742,10 @@ function draw() {
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
+
+  // Droplet bubble: uniformly round blue bubble + hanging droplet tail
+  // around the whole text block (text painted per-line below, in white).
+  if (dropbubbleL) paintDropbubble(dropbubbleL, textFs);
 
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
@@ -1771,7 +1866,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -1780,6 +1875,7 @@ function redraw() {
   paintNoteSamples();
   paintMessageSamples();
   paintMsgbubbleSamples();
+  paintDropbubbleSamples();
 }
 
 // Caret blink.
@@ -2269,6 +2365,7 @@ function buildStylePicker() {
       if (item.id === 'note') return '<canvas class="sample-canvas sample-canvas-note" width="190" height="120"></canvas>';
       if (item.id === 'message') return '<canvas class="sample-canvas sample-canvas-message" width="190" height="120"></canvas>';
       if (item.id === 'msgbubble') return '<canvas class="sample-canvas sample-canvas-msgbubble" width="190" height="120"></canvas>';
+      if (item.id === 'dropbubble') return '<canvas class="sample-canvas sample-canvas-dropbubble" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -2621,6 +2718,75 @@ function paintMsgbubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-msgbubble';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the droplet-bubble preview with the REAL bubble code
+// (dropbubbleLayout + paintDropbubble + the body text) on its small
+// canvas — a miniature of the actual bubble, so the preview always
+// matches the canvas. Called from redraw(), like the message samples.
+function paintDropbubbleSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-dropbubble')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // bubble scales with the rail, like the body text.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const dropbubbleRTL = isRTLText(lines[0] || '');
+        const dropbubbleL = dropbubbleLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, dropbubbleRTL);
+        const blockCx = 540 + dropbubbleL.blockShift;
+        // The sample's text aligns inside the bubble too (same alignW
+        // rule as draw()).
+        const alignW = dropbubbleL.w - dropbubbleL.padX * 2;
+        // Fit the whole bubble INTO the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed. The fit
+        // counts the tail, which hangs below the bottom edge, so it is
+        // never clipped.
+        const s = Math.min(W / (dropbubbleL.w + dropbubbleL.tailOut), H / (dropbubbleL.h + dropbubbleL.tailDrop));
+        const cardCx = dropbubbleL.x + (dropbubbleL.w + dropbubbleL.tailOut) / 2, cardCy = dropbubbleL.y + (dropbubbleL.h + dropbubbleL.tailDrop) / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintDropbubble(dropbubbleL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.dropbubble(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-dropbubble';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
