@@ -1425,9 +1425,10 @@ function paintMessageCard(l, fs) {
 // width is max(text + side pads, min(88% of the 1080 canvas, 620)),
 // i.e. the 620px cap from his code binds at the 1080 canvas width
 // and the bubble spans 57% of the page, not the whole of it. The
-// bubble's centre follows the alignment buttons across the FULL
-// canvas width (slack 230px at the minimum width), the same rule as
-// the tweet/note/message cards. The tail is Reza's exact SVG path
+// bubble itself NEVER moves (Reza 2026-11-22 22:09: the align buttons
+// must move only the text INSIDE the bubble, not the whole bubble) —
+// the text alignment happens in draw() via the bubble's inner width
+// (see alignW there). The tail is Reza's exact SVG path
 // (see paintMsgbubble): a 34x36 shape overlapping the bottom-right
 // corner, its tip poking ~0.17x right of the bubble.
 function msgbubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
@@ -1436,11 +1437,10 @@ function msgbubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const w = Math.max(maxLw + padX * 2, Math.min(1080 * 0.88, 620));
   const hh = blockH + padY * 2;
   const r = Math.min(fs * (sp('msgbubbleR') / 100), hh / 2, w / 2);
-  const slack = Math.max(0, (1080 - w) / 2);
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  // The bubble stays centred on the canvas whatever the alignment is;
+  // only the text inside it moves (draw() anchors the lines within
+  // the bubble's inner width).
+  const blockShift = 0;
   return {
     x: cx - w / 2 + blockShift, y: h / 2 - hh / 2, w, h: hh, r,
     padX, padY, blockShift,
@@ -1551,6 +1551,12 @@ function draw() {
   const msgbubbleL = state.style === 'msgbubble' ? msgbubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, msgbubbleRTL) : null;
   const frameL = tweetL || noteL || messageL || msgbubbleL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
+  // Message bubble: the alignment block is the bubble's INNER width,
+  // not the text width (Reza 2026-11-22 22:09 — the align buttons move
+  // only the text inside the bubble; the bubble itself stays centred).
+  // alignW is maxLw for every other style, so the three call sites
+  // below (line anchor, caret, editor) are unchanged for them.
+  const alignW = msgbubbleL ? msgbubbleL.w - msgbubbleL.padX * 2 : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
     hw: frameL ? frameL.w / 2 : maxLw / 2, hh: frameL ? frameL.h / 2 : blockH / 2,
@@ -1651,7 +1657,7 @@ function draw() {
     const lr = lineRanges[li];
     ctx.save();
     const lw = lineWidth(line);
-    const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx); // this line's own anchor for the alignment
+    const lcx = alignCx(lw, alignW, line, gaps[li], blockCx); // this line's own anchor for the alignment
     // A justified line's visible width is the block's full width.
     const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
     lineJustifyGap = gaps[li];
@@ -1679,7 +1685,7 @@ function draw() {
   // the selection instead. (The native textarea caret is transparent
   // by design; the canvas draws the only visible caret.)
   if (state.caret && document.activeElement === textInput && !hasSel) {
-    const g = caretGeometry(selStart, lineRanges, lines, maxLw, lineHeight, blockH, h, gaps, blockCx);
+    const g = caretGeometry(selStart, lineRanges, lines, alignW, lineHeight, blockH, h, gaps, blockCx);
     ctx.save();
     ctx.fillStyle = flatColor(state.color);
     ctx.fillRect(g.x - 3.5, g.y - textFs * 0.55, 7, textFs * 1.1);
@@ -1708,7 +1714,7 @@ function draw() {
     ctx.imageSmoothingEnabled = true;
   }
 
-  syncEditorLayout(textFs, lineHeight, blockH, maxLw, frameL ? frameL.blockShift : 0);
+  syncEditorLayout(textFs, lineHeight, blockH, alignW, frameL ? frameL.blockShift : 0);
 }
 
 // Keep the (invisible) editor's text laid out exactly where the canvas
@@ -2580,6 +2586,9 @@ function paintMsgbubbleSamples() {
         const msgbubbleRTL = isRTLText(lines[0] || '');
         const msgbubbleL = msgbubbleLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, msgbubbleRTL);
         const blockCx = 540 + msgbubbleL.blockShift;
+        // The sample's text aligns inside the bubble too (same alignW
+        // rule as draw()).
+        const alignW = msgbubbleL.w - msgbubbleL.padX * 2;
         // Fit the whole bubble INTO the sample canvas, centred, keeping
         // the aspect — a uniform scale, so nothing is squashed. The fit
         // counts the tail, which pokes out past the bubble's right and
@@ -2596,7 +2605,7 @@ function paintMsgbubbleSamples() {
           for (let li = 0; li < lines.length; li++) {
             const line = lines[li];
             const lw = lineWidth(line);
-            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
             const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
             lineJustifyGap = gaps[li];
             STYLE_PAINT.msgbubble(line, lcx, y, visLw, textFs);
