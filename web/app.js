@@ -1701,6 +1701,7 @@ function buildCardPicker(el, items, current, onPick, sampleHtml) {
 // One row, like the style panel: the three filter buttons in the head
 // switch which fonts the row shows — Persian, English, or favourites.
 let fontFilter = null; // 'fa' | 'en' | 'fav' | 'custom' — defaults to the current font's language
+let fontQuery = ''; // live search text (see fontMatches) — cleared on filter switch
 function fontLang(id) {
   const f = fontEntry(id);
   if (!f) return 'fa';
@@ -1750,15 +1751,24 @@ function renderFontBatch() {
     fontSentinel = null;
   }
 }
+// Search match: a font matches when the query (trimmed, case-insensitive)
+// is a substring of its label (Persian or Latin) or its id — so «وزیر»
+// finds وزیر and وزیرمتن, and "rob" finds Roboto, Roboto Condensed…
+function fontMatches(f, q) {
+  const needle = (q || '').trim().toLowerCase();
+  if (!needle) return true;
+  return f.label.toLowerCase().includes(needle) || f.id.toLowerCase().includes(needle);
+}
 function buildFontPicker() {
   const favs = getFavs();
   if (!fontFilter) fontFilter = fontLang(state.font);
   const imported = [...importedFonts.values()];
-  const items = fontFilter === 'fav'
+  const base = fontFilter === 'fav'
     ? favs.map((id) => fontEntry(id)).filter(Boolean)
     : fontFilter === 'custom'
       ? imported
       : [...FONTS.filter((f) => f.lang === fontFilter), ...imported.filter((f) => f.lang === fontFilter)];
+  const items = base.filter((f) => fontMatches(f, fontQuery));
   const obs = getFontMoreObserver();
   if (fontSentinel && obs) obs.unobserve(fontSentinel);
   fontItems = items;
@@ -1781,8 +1791,10 @@ function buildFontPicker() {
   // The import card sits at the end of every list except favourites —
   // it is the way in, not a font, so it never hides behind a filter.
   if (fontFilter !== 'fav') row.appendChild(importCard());
-  row.style.display = (items.length || fontFilter !== 'fav') ? '' : 'none';
-  $('favEmpty').hidden = !(fontFilter === 'fav' && !items.length);
+  const q = fontQuery.trim();
+  $('fontSearchEmpty').hidden = !(q && !items.length);
+  row.style.display = (items.length || (fontFilter !== 'fav' && !q)) ? '' : 'none';
+  $('favEmpty').hidden = !(fontFilter === 'fav' && !items.length && !q);
   syncCustomFilter();
   document.querySelectorAll('.font-filter').forEach((b) =>
     b.classList.toggle('active', b.dataset.filter === fontFilter));
@@ -2676,8 +2688,19 @@ document.querySelectorAll('.tab').forEach((b) => {
   b.addEventListener('click', () => switchTab(b.dataset.tab));
 });
 document.querySelectorAll('.font-filter').forEach((b) => {
-  b.addEventListener('click', () => { fontFilter = b.dataset.filter; buildFontPicker(); });
+  b.addEventListener('click', () => {
+    fontFilter = b.dataset.filter;
+    // A new list starts a new search — the old query would only ever
+    // show an empty row in the other language's list.
+    fontQuery = '';
+    const si = $('fontSearch');
+    if (si) si.value = '';
+    buildFontPicker();
+  });
 });
+// Live search: every keystroke re-filters the current list. The input
+// sits outside #fontRow, so rebuilding the row never steals its focus.
+$('fontSearch').addEventListener('input', (e) => { fontQuery = e.target.value; buildFontPicker(); });
 
 function applyDesign(d) {
   state.text = d.text || '';
