@@ -1418,19 +1418,25 @@ function paintMessageCard(l, fs) {
   ctx.restore();
 }
 
-// Message bubble geometry: the bubble hugs the text block (side pads
-// 0.5x, vertical pads 0.4x of the font size) and its centre follows
-// the alignment buttons inside the canvas inner area (80..1000),
-// the same rule as the tweet/note/message cards. The tail is Reza's
-// exact SVG path (see paintMsgbubble): a 34x36 shape overlapping the
-// bottom-right corner, its tip poking ~0.17x right of the bubble.
+// Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
+// Reza's code sets min-width: min(88vw, 620px) with the text centred
+// in it. The 88% alone (950px) took the whole page length on his
+// phone (Reza, 2026-11-22 22:00: «کل طول صفحه رو می گیره») — so the
+// width is max(text + side pads, min(88% of the 1080 canvas, 620)),
+// i.e. the 620px cap from his code binds at the 1080 canvas width
+// and the bubble spans 57% of the page, not the whole of it. The
+// bubble's centre follows the alignment buttons across the FULL
+// canvas width (slack 230px at the minimum width), the same rule as
+// the tweet/note/message cards. The tail is Reza's exact SVG path
+// (see paintMsgbubble): a 34x36 shape overlapping the bottom-right
+// corner, its tip poking ~0.17x right of the bubble.
 function msgbubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const padX = fs * 0.5;
   const padY = fs * 0.4;
-  const w = maxLw + padX * 2;
+  const w = Math.max(maxLw + padX * 2, Math.min(1080 * 0.88, 620));
   const hh = blockH + padY * 2;
   const r = Math.min(fs * (sp('msgbubbleR') / 100), hh / 2, w / 2);
-  const slack = Math.max(0, (1080 - 160 - w) / 2);
+  const slack = Math.max(0, (1080 - w) / 2);
   const blockShift = state.align === 'right' ? slack
     : state.align === 'left' ? -slack
     : state.align === 'justify' ? (rtl ? slack : -slack)
