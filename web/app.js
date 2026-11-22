@@ -212,9 +212,9 @@ const STYLE_CONTROLS = {
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   underline: [
-    { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 2, max: 40, step: 1, def: 8, unit: 'px' },
-    { key: 'underlineC1', label: 'رنگ اول خط زیر', type: 'color', def: '#7C3AED' },
-    { key: 'underlineC2', label: 'رنگ دوم خط زیر', type: 'color', def: '#2563EB' },
+    { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 20, max: 80, step: 1, def: 40, unit: '٪' },
+    { key: 'underlineC1', label: 'رنگ اول خط زیر', type: 'color', def: '#7A4BFB' },
+    { key: 'underlineC2', label: 'رنگ دوم خط زیر', type: 'color', def: '#7A4BFB' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -703,10 +703,32 @@ const STYLE_PAINT = {
     drawWords(line, cx, y);
   },
   underline: (line, cx, y, lw, fs) => {
-    ctx.fillStyle = state.color; drawWords(line, cx, y);
-    const uw = sp('underlineWidth');
-    ctx.save(); ctx.fillStyle = textGradient(cx, lw, [[0, sp('underlineC1')], [1, sp('underlineC2')]]);
-    roundRect(cx - lw / 2, y + fs * 0.58, lw, uw, Math.min(4, uw / 2)); ctx.fill(); ctx.restore();
+    // Reference (Reza, 2026-11-22): the text sits ON a thick violet
+    // bar like on a shelf — the bar's top edge is at the baseline, the
+    // letters rest on it — with a soft drop shadow under the bar and a
+    // soft shadow under the letters. The bar is solid #7A4BFB by
+    // default (both gradient stops the same); the two colour knobs can
+    // still make it a gradient. Bar height is the «ضخامت» knob as a %
+    // of the font size (default 40%).
+    const barH = fs * (sp('underlineWidth') / 100);
+    const barW = lw + fs * 0.7;
+    const barTop = y + fs * 0.3;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = fs * 0.15;
+    ctx.shadowOffsetY = fs * 0.08;
+    ctx.fillStyle = textGradient(cx, barW, [[0, sp('underlineC1')], [1, sp('underlineC2')]]);
+    roundRect(cx - barW / 2, barTop, barW, barH, fs * 0.05);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = fs * 0.06;
+    ctx.shadowOffsetY = fs * 0.04;
+    ctx.shadowOffsetX = fs * 0.02;
+    ctx.fillStyle = state.color;
+    drawWords(line, cx, y);
+    ctx.restore();
   },
   pixel: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   quotes: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },

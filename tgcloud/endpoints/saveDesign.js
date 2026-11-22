@@ -43,7 +43,7 @@ const STYLE_PARAMS = {
   roundStroke: { min: 4, max: 16 },
   rossetaStroke: { min: 1, max: 8 },
   brushTilt: { min: -10, max: 10 },
-  underlineWidth: { min: 2, max: 40 },
+  underlineWidth: { min: 20, max: 80 },
   underlineC1: { color: true },
   underlineC2: { color: true },
   pixelSize: { min: 2, max: 12 },
