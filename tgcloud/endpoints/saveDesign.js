@@ -32,6 +32,8 @@ const STYLE_PARAMS = {
   glowGlow: { min: 0, max: 80 },
   winterGlow: { min: 0, max: 60 },
   glassOpacity: { min: 5, max: 50 },
+  glassC: { color: true },
+  glassR: { min: 0, max: 40 },
   retroOffset: { min: 0, max: 30 },
   shadowBlur: { min: 0, max: 40 },
   shadowOffset: { min: 0, max: 30 },

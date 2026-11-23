@@ -157,6 +157,13 @@ const STYLE_CONTROLS = {
     { key: 'glassOpacity', label: 'غلظت شیشه', type: 'range', min: 5, max: 50, step: 1, def: 16, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+    // The panel colour and corner radius are the glass style's OWN
+    // knobs now (Reza 2026-11-23, screenshot: #FFFFFF / 25px) — they
+    // used to be the global style colour/radius shared by the four box
+    // styles, whose defaults (#F4D93E / 18) are the highlight style's
+    // signature look and must not change.
+    { key: 'glassC', label: 'رنگ شیشه', type: 'color', def: '#FFFFFF' },
+    { key: 'glassR', label: 'گردی کادر', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: 'px' },
   ],
   retro: [
     { key: 'retroOffset', label: 'فاصله لایه‌ها', type: 'range', min: 0, max: 30, step: 1, def: 10, unit: 'px' },
@@ -1817,10 +1824,10 @@ function draw() {
     const pad = 48;
     const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
     ctx.save();
-    ctx.fillStyle = hexAlpha(state.styleColor, sp('glassOpacity') / 100);
-    ctx.strokeStyle = hexAlpha(state.styleColor, 0.55);
+    ctx.fillStyle = hexAlpha(sp('glassC'), sp('glassOpacity') / 100);
+    ctx.strokeStyle = hexAlpha(sp('glassC'), 0.55);
     ctx.lineWidth = 3;
-    roundRect(cx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, state.borderRadius);
+    roundRect(cx - bw / 2, y - lineHeight / 2 - pad / 2, bw, blockH + pad, sp('glassR'));
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -3019,7 +3026,7 @@ function paintBrushSamples() {
 // radius — the «استایل» section in the per-style sheet only shows for
 // these (Reza, 2026-11-21); the other styles never read styleColor or
 // borderRadius, so the knobs would do nothing there.
-const BOX_STYLES = ['highlight', 'brush', 'quotes', 'glass'];
+const BOX_STYLES = ['highlight', 'brush', 'quotes'];
 // Build the «تنظیمات این استایل» controls for the current style.
 // Rebuilt on style change, on opening the sheet, and on applying a
 // saved design — so the sheet always shows the current style's knobs.
@@ -3148,11 +3155,12 @@ function renderStyleControls() {
   // The «استایل» section moved here from the text settings (gear) sheet
   // (Reza, 2026-11-21): the style colour and the corner radius live
   // with the style's own knobs now. They are global state — not
-  // per-style params — and they only show for the four box styles that
-  // actually paint with them (highlight, brush, quotes, glass); for
-  // every other style the section is not shown at all. Same ids and
-  // wiring as before, so the saved-design restore (applyDesign) needs
-  // no change.
+  // per-style params — and they only show for the three box styles that
+  // actually paint with them (highlight, brush, quotes); glass has its
+  // own colour/radius knobs (glassC/glassR, Reza 2026-11-23), so it is
+  // not in this list. For every other style the section is not shown
+  // at all. Same ids and wiring as before, so the saved-design restore
+  // (applyDesign) needs no change.
   if (BOX_STYLES.includes(state.style)) {
     const sub = document.createElement('div');
     sub.className = 'settings-sub';
@@ -3316,6 +3324,15 @@ function applyDesign(d) {
   state.styleColor = typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor) ? d.styleColor : '#F4D93E';
   state.borderRadius = clampNum(d.borderRadius, 0, 40, 18);
   state.styleParams = sanitizeStyleParams(d.styleParams);
+  // Glass used the global style colour/radius until 2026-11-23; old
+  // saved glass designs carry them in the top-level columns, so carry
+  // them into the glass style's own params (new designs save them
+  // there instead). Without this, an old glass design saved in yellow
+  // would reopen white.
+  if (state.style === 'glass') {
+    if (!state.styleParams.glassC && typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor)) state.styleParams.glassC = d.styleColor;
+    if (state.styleParams.glassR == null && Number.isFinite(Number(d.borderRadius))) state.styleParams.glassR = clampNum(d.borderRadius, 0, 40, 25);
+  }
   textInput.value = state.text;
   $('colorPicker').value = flatColor(state.color);
   syncSettingsUI();
