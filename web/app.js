@@ -549,8 +549,8 @@ const STYLE_CONTROLS = {
   // with a small time label in the top-right corner and the text
   // centred in it.
   glassnotif: [
-    { key: 'glassNotifCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'glassNotifCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'glassNotifCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'glassNotifCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'glassNotifCardC', label: 'رنگ کارت', type: 'color', def: '#ffffff' },
     { key: 'glassNotifCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 34, unit: '٪' },
     { key: 'glassNotifTime', label: 'زمان', type: 'text', def: 'now', max: 10 },
@@ -565,8 +565,8 @@ const STYLE_CONTROLS = {
   // was REMOVED at his ask the same day («اون خط عمودی آخر هر خط چیه
   // اونو حذف کن») — the card is now just the text, no cursor.
   typed: [
-    { key: 'typedCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'typedCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'typedCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'typedCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'typedCardC', label: 'رنگ کارت', type: 'color', def: '#ebaaf0' },
     { key: 'typedBorderC', label: 'رنگ حاشیه و سایه', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -577,8 +577,8 @@ const STYLE_CONTROLS = {
   // corners, and a thick black arc hugging each of the top-right and
   // bottom-left corners, straddling the border.
   corner: [
-    { key: 'cornerCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'cornerCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'cornerCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'cornerCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'cornerCardC', label: 'رنگ کارت', type: 'color', def: '#f2f2f2' },
     { key: 'cornerBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
     { key: 'cornerAccentC', label: 'رنگ کمان', type: 'color', def: '#000000' },
@@ -605,8 +605,8 @@ const STYLE_CONTROLS = {
   // No card fill: the page background shows through, like the
   // slantquote style.
   doubleline: [
-    { key: 'doubleLineCardW', label: 'عرض بلوک', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'doubleLineCardH', label: 'ارتفاع بلوک', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'doubleLineCardW', label: 'عرض بلوک', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'doubleLineCardH', label: 'ارتفاع بلوک', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'doubleLineC', label: 'رنگ خط', type: 'color', def: '#000000' },
     { key: 'doubleLineO', label: 'غلظت خط', type: 'range', min: 10, max: 100, step: 1, def: 24, unit: '٪' },
     { key: 'doubleLineT', label: 'ضخامت خط', type: 'range', min: 1, max: 12, step: 1, def: 5, unit: 'px' },
@@ -619,8 +619,8 @@ const STYLE_CONTROLS = {
   // over a dark blurred glow. No card fill behind the text: the glow
   // is a translucent dark veil over the page background.
   yellowbars: [
-    { key: 'yellowBarsCardW', label: 'عرض بنر', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'yellowBarsCardH', label: 'ارتفاع بنر', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'yellowBarsCardW', label: 'عرض بنر', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'yellowBarsCardH', label: 'ارتفاع بنر', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'yellowBarsC', label: 'رنگ نوار', type: 'color', def: '#fce93a' },
     { key: 'yellowBarsStrokeC', label: 'رنگ دورخط', type: 'color', def: '#111111' },
     { key: 'yellowBarsGlowC', label: 'رنگ هاله', type: 'color', def: '#1a0008' },
