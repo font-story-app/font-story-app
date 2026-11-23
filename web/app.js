@@ -227,7 +227,7 @@ const STYLE_CONTROLS = {
   ],
   sticker: [
     { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
-    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 38, unit: '٪' },
+    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 19, unit: '٪' },
     { key: 'stickerOutlineC', label: 'رنگ خط دور', type: 'color', def: '#df0b0b' },
     { key: 'stickerShadowC', label: 'رنگ سایه', type: 'color', def: '#660b0b' },
     { key: 'stickerC', label: 'رنگ برچسب', type: 'color', def: '#ffffff' },
