@@ -200,7 +200,10 @@ const STYLE_CONTROLS = {
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   pastille: [
-    { key: 'pastilleStroke', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 10, unit: '٪' },
+    { key: 'pastilleOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 40, step: 1, def: 25, unit: '٪' },
+    { key: 'pastilleShadow', label: 'عمق سایه', type: 'range', min: 0, max: 40, step: 1, def: 18, unit: '٪' },
+    { key: 'pastilleOutlineC', label: 'رنگ خط دور', type: 'color', def: '#c377f6' },
+    { key: 'pastilleShadowC', label: 'رنگ سایه', type: 'color', def: '#4c1878' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -769,8 +772,35 @@ const STYLE_PAINT = {
     ctx.fillStyle = state.colorTouched ? state.color : contrastText(sp('brushBoxC')); drawWords(line, cx, y);
   },
   pastille: (line, cx, y, lw, fs) => {
-    strokeWords(line, cx, y, '#7c3aed', fs * (sp('pastilleStroke') / 100));
-    ctx.fillStyle = state.color; drawWords(line, cx, y);
+    // Purple 3D (Reza 2026-11-23 — his createPurple3DTextStyle code,
+    // replacing the flat purple outline): yellow text, a purple
+    // outline, a dark-purple 3D extrusion swept down (and slightly
+    // left) in 20 steps. His geometry, as % of fs (his font is 115px):
+    // outline stroke 25%, shadow stroke 28.5%, extrusion dy 18% /
+    // dx -2% (so dx = -dy/9). Each shadow layer is stroked AND filled
+    // in the shadow colour (his SVG layers carry both fill and stroke,
+    // paintOrder stroke fill); the outline is stroked AND filled in
+    // the outline colour. The text follows the رنگ tab (solid or
+    // gradient) once the user picks a colour, else his yellow #fff01f;
+    // the layer copies pass textFill=false so a gradient text colour
+    // can never leak into them.
+    const dy = fs * (sp('pastilleShadow') / 100);
+    const dx = -(1 / 9) * dy;
+    const shadow = sp('pastilleShadowC');
+    const sw = fs * 0.285;
+    for (let i = 20; i >= 0; i--) {
+      const t = i / 20;
+      strokeWords(line, cx, y, shadow, sw, dx * t, dy * t);
+      ctx.fillStyle = shadow;
+      drawWords(line, cx, y, dx * t, dy * t, 'fill', false);
+    }
+    const outline = sp('pastilleOutlineC');
+    strokeWords(line, cx, y, outline, fs * (sp('pastilleOutline') / 100));
+    ctx.fillStyle = outline;
+    drawWords(line, cx, y, 0, 0, 'fill', false);
+    if (state.colorTouched) ctx.fillStyle = textColorFill(line, cx, y, lw);
+    else ctx.fillStyle = '#fff01f';
+    drawWords(line, cx, y);
   },
   round: (line, cx, y, lw, fs) => {
     ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
@@ -2168,10 +2198,11 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); });
   }
   draw();
   paintStickerSamples();
+  paintPastilleSamples();
   paintUnderlineSamples();
   paintTweetSamples();
   paintNoteSamples();
@@ -2664,6 +2695,7 @@ function buildStylePicker() {
       // text-shadow cannot express (sticker), and the old tweet black
       // box with grey text did not read as a tweet card at all.
       if (item.id === 'sticker') return '<canvas class="sample-canvas" width="184" height="54"></canvas>';
+      if (item.id === 'pastille') return '<canvas class="sample-canvas sample-canvas-pastille" width="184" height="54"></canvas>';
       if (item.id === 'underline') return '<canvas class="sample-canvas sample-canvas-underline" width="184" height="54"></canvas>';
       if (item.id === 'quotes') return '<canvas class="sample-canvas sample-canvas-quotes" width="190" height="120"></canvas>';
       if (item.id === 'tweet') return '<canvas class="sample-canvas sample-canvas-tweet" width="190" height="120"></canvas>';
@@ -2709,6 +2741,47 @@ function paintStickerSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sticker';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint every «دور بنفش» card preview with the REAL pastille code
+// (STYLE_PAINT.pastille) on its small canvas — same font, weight and
+// pastille knobs as the main canvas, just smaller. Called from
+// redraw(), like the sticker samples. If painting fails, fall back to
+// the CSS approximation.
+function paintPastilleSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-pastille')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // Fit «متن شما» into the canvas, leaving room for the purple
+        // outline (25% of fs) and the shadow sweep (28.5% stroke +
+        // 18% drop).
+        let fs = Math.floor(H * 0.42);
+        const setFont = (s) => {
+          ctx.font = `${state.weight} ${s}px ${fontFamily()}`;
+          if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        };
+        setFont(fs);
+        const maxW = W * 0.78;
+        while (fs > 10 && lineWidth('متن شما') > maxW) { fs -= 1; setFont(fs); }
+        lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
+        STYLE_PAINT.pastille('متن شما', W / 2, H / 2 + fs * 0.06, lineWidth('متن شما'), fs);
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-pastille';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
