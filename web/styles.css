@@ -458,6 +458,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-slantquote {
   height: 60px;
 }
+/* Double line text preview: same miniature treatment as the slantquote card. */
+.pick-card .sample canvas.sample-canvas-doubleline {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -599,6 +603,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-typed { background: #ebaaf0; color: #000; border: 3px solid #000; border-radius: 8px; padding: 0 6px; }
 .sample-corner { background: #f2f2f2; color: #000; border: 2px solid #000; border-radius: 10px; padding: 0 6px; }
 .sample-slantquote { background: transparent; color: #fff; border: 2px solid #fff; border-radius: 10px; padding: 0 6px; }
+.sample-doubleline { background: transparent; color: #fff; border-top: 2px solid rgba(0, 0, 0, 0.24); border-bottom: 2px solid rgba(0, 0, 0, 0.24); padding: 6px; }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */

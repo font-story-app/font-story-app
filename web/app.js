@@ -73,6 +73,7 @@ const STYLES = [
   { id: 'underline', label: 'خط زیر' },
   { id: 'pixel', label: 'پیکسلی' },
   { id: 'sticker', label: 'استیکر' },
+  { id: 'doubleline', label: 'دو خط' },
   // Reza 2026-11-23: doubleFrame + the two bubbles moved here, right
   // after the sticker.
   { id: 'doubleFrame', label: 'قاب دوتایی' },
@@ -594,6 +595,20 @@ const STYLE_CONTROLS = {
     { key: 'slantQuoteCardH', label: 'ارتفاع کادر', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'slantQuoteFrameC', label: 'رنگ کادر', type: 'color', def: '#ffffff' },
     { key: 'slantQuoteQuoteC', label: 'رنگ گیومه', type: 'color', def: '#ffffff' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Double line text (Reza, 2026-11-23 — his createDoubleLineTextStyle
+  // code): bold white text between two thin horizontal lines — one
+  // above, one below — black at 24% opacity, 5px thick, sharp edges.
+  // No card fill: the page background shows through, like the
+  // slantquote style.
+  doubleline: [
+    { key: 'doubleLineCardW', label: 'عرض بلوک', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'doubleLineCardH', label: 'ارتفاع بلوک', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'doubleLineC', label: 'رنگ خط', type: 'color', def: '#000000' },
+    { key: 'doubleLineO', label: 'غلظت خط', type: 'range', min: 10, max: 100, step: 1, def: 24, unit: '٪' },
+    { key: 'doubleLineT', label: 'ضخامت خط', type: 'range', min: 1, max: 12, step: 1, def: 5, unit: 'px' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1382,6 +1397,16 @@ const STYLE_PAINT = {
   // because the white-on-background pairing is the look, like the
   // quotes style.
   slantquote: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
+  },
+  // Double line text (Reza, 2026-11-23 — his createDoubleLineTextStyle
+  // code): white text between two thin lines (the lines are painted
+  // block-level in draw()). A colour picked in the رنگ tab wins;
+  // otherwise his #ffffff — a fixed design colour, not contrastText,
+  // because the white-on-background pairing is the look, like the
+  // slantquote style.
+  doubleline: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
@@ -3655,6 +3680,54 @@ function paintSlantQuoteCard(l, fs) {
   paintSlantQuoteMark(l.x + l.botCx, l.y + l.botCy, off, l.s, true);
 }
 
+// --- Double line text (Reza, 2026-11-23 — his
+// createDoubleLineTextStyle code): bold white text between two thin
+// horizontal lines — one above, one below — black at 24% opacity,
+// 5px thick, sharp edges. No card fill: the page background shows
+// through.
+
+// Geometry of the double-line block around the text. Same shape as
+// the other card layouts (fixed px padding, height floor splitting
+// evenly, blockShift following the alignment buttons). The lines span
+// the full block width; the text sits between them with his vertical
+// padding on both sides.
+function doubleLineLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 28, padTop = 68, padBottom = 68; // his max text padding
+  const cardW = Math.max(maxLw + padX * 2, sp('doubleLineCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the block is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('doubleLineCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the double-line block: one thin line across the top edge and
+// one across the bottom edge, in the line colour at his opacity,
+// sharp-edged (no radius). The text itself is painted per line by
+// STYLE_PAINT.doubleline.
+function paintDoubleLine(l, fs) {
+  const lineC = sp('doubleLineC') || '#000000';
+  const lineO = sp('doubleLineO') ?? 24;
+  const lineT = sp('doubleLineT') ?? 5;
+  ctx.fillStyle = hexToRgba(lineC, lineO / 100);
+  ctx.fillRect(l.x, l.y, l.w, lineT);
+  ctx.fillRect(l.x, l.y + l.h - lineT, l.w, lineT);
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -4357,6 +4430,9 @@ function draw() {
   // takes textFs for the shared signature only).
   const slantQuoteRTL = state.style === 'slantquote' ? isRTLText(lines[0] || '') : true;
   const slantQuoteL = state.style === 'slantquote' ? slantQuoteLayout(textFs, maxLw, blockH, lineHeight, h, cx, slantQuoteRTL) : null;
+  // The double-line block wraps the text the same way.
+  const doubleLineRTL = state.style === 'doubleline' ? isRTLText(lines[0] || '') : true;
+  const doubleLineL = state.style === 'doubleline' ? doubleLineLayout(textFs, maxLw, blockH, lineHeight, h, cx, doubleLineRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -4378,7 +4454,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || slantQuoteL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || slantQuoteL || doubleLineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4562,6 +4638,11 @@ function draw() {
   // painted per-line below, in white).
   if (slantQuoteL) paintSlantQuoteCard(slantQuoteL, textFs);
 
+  // Double line text: bold white text between two thin lines — one
+  // above, one below — no card fill, the page background shows
+  // through (the text itself is painted per-line below, in white).
+  if (doubleLineL) paintDoubleLine(doubleLineL, textFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -4703,7 +4784,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintSlantQuoteCardSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -4734,6 +4815,7 @@ function redraw() {
   paintTypedCardSamples();
   paintCornerCardSamples();
   paintSlantQuoteCardSamples();
+  paintDoubleLineSamples();
 }
 
 // Caret blink.
@@ -5262,6 +5344,7 @@ function buildStylePicker() {
       if (item.id === 'typed') return '<canvas class="sample-canvas sample-canvas-typed" width="190" height="120"></canvas>';
       if (item.id === 'corner') return '<canvas class="sample-canvas sample-canvas-corner" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
+      if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -6782,6 +6865,72 @@ function paintSlantQuoteCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-slantquote';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the double-line preview with the REAL doubleline code
+// (doubleLineLayout + paintDoubleLine + the body text) on its small
+// canvas — a miniature of the actual block, same pattern as the
+// slantquote preview. Called from redraw(), like the slantquote
+// samples. If painting fails, fall back to the CSS box.
+function paintDoubleLineSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-doubleline')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the block chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const doubleLineRTL = isRTLText(lines[0] || '');
+        const doubleLineL = doubleLineLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, doubleLineRTL);
+        const blockCx = 540 + doubleLineL.blockShift;
+        // Fit the whole block into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const s = Math.min(W / doubleLineL.w, H / doubleLineL.h);
+        const cardCx = doubleLineL.x + doubleLineL.w / 2, cardCy = doubleLineL.y + doubleLineL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintDoubleLine(doubleLineL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.doubleline(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-doubleline';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
