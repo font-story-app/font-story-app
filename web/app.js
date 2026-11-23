@@ -1765,12 +1765,13 @@ function paintBrush(l, fs) {
 // EXCEPT the vertical gap: his (51 − padY) leaves the quote glyphs
 // (which hang 21.8×scale below the frame's top edge) with ~zero
 // clearance over the text in the wide variant, and the letters rise
-// ~0.2×fs above the line-box top, so a long text (wide frame) landed
-// the glyphs ON the letters (Reza's screenshot, 2026-11-23). The
-// vertical gap is therefore the max of his value and the clearance the
-// glyphs need — the frame grows taller instead of the glyphs touching
-// the text. Shared by draw() and the picker miniature
-// (paintQuotesSamples), so the card shows the real frame.
+// ~0.2× the TEXT size above the line-box top, so a long text (wide
+// frame) landed the glyphs ON the letters (Reza's screenshot,
+// 2026-11-23). The vertical gap is therefore the max of his value and
+// the clearance the glyphs need — the frame grows taller instead of the
+// glyphs touching the text. fs is the size the FRAME is sized from (the
+// fixed reference, see quoteRefLayout) — the text size never enters the
+// layout, so the sliders change only the font, never the frame.
 function quoteFrameLayout(fs, maxLw, blockH) {
   const u = fs / 57.6;
   const framePadX = 30 * u;
@@ -1781,7 +1782,14 @@ function quoteFrameLayout(fs, maxLw, blockH) {
   const swPx = isSmall ? Math.max(4, strokePx - 1.5) : strokePx;
   const quoteScale = isSmall ? 0.72 : 1.02;
   const padY = 28 * quoteScale;
-  const framePadY = Math.max(51 - padY, padY + 21.8 * quoteScale + 15.5) * u;
+  // The margin is CONSTANT (25 his-px): it covers the letters' ascent
+  // (~0.2× the text size) up to a 200px text plus 4px of clearance, so
+  // the frame's height is identical at every font size (for the same
+  // line count). It must NOT grow with the text size — a margin that
+  // followed the text made the frame 8px shorter at 50% (the browser
+  // check caught it, 2026-11-23), which is exactly the "the frame
+  // changes with the font" Reza asked to stop.
+  const framePadY = Math.max(51 - padY, padY + 21.8 * quoteScale + 25) * u;
   const bh = blockH + framePadY * 2;
   const H = bh / u;
   const padX = Math.ceil(swPx / 2) + 2;
@@ -1839,6 +1847,36 @@ function paintQuoteFrame(L, fx, fy) {
   ctx.restore();
 }
 
+// The quotes frame is a FIXED card (Reza, 2026-11-23): its size comes
+// from the text laid out at the reference size below, NOT the current
+// text size — so the side size rail and the «اندازه فونت متن» knob
+// change ONLY the font, never the frame (moving either used to grow
+// and shrink the frame along with the text). The text re-wraps inside
+// the frame's inner width at the current size; the frame's height only
+// grows when the text wraps to more lines than the reference layout
+// (so the text always fits inside it), and its width never changes
+// with the font. The reference is the default rail size (110).
+const QUOTE_REF_FS = 110;
+
+// Lay the current text out at the reference size and return the frame's
+// inner width (the reference text width) and block height. Temporarily
+// sets the canvas font to the reference size, then restores it — the
+// caller (draw) has the text-size font set at this point.
+function quoteRefLayout() {
+  const savedFont = ctx.font;
+  const savedSpacing = ('letterSpacing' in ctx) ? ctx.letterSpacing : '';
+  ctx.font = `${state.weight} ${QUOTE_REF_FS}px ${fontFamily()}`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+  const ranges = wrapLineRanges(state.text || '…', 1080 - 160);
+  const refLines = ranges.map((r) => r.text);
+  const refLineHeight = QUOTE_REF_FS * state.lineHeight + styleLineGapPx(QUOTE_REF_FS);
+  const refBlockH = refLines.length * refLineHeight;
+  const refMaxLw = Math.max(0, ...refLines.map((l) => lineWidth(l)));
+  ctx.font = savedFont;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = savedSpacing;
+  return { refMaxLw, refBlockH };
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -1863,7 +1901,13 @@ function draw() {
   // Safari 17+); word spacing is applied manually in drawWords.
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
   const maxWidth = w - 160;
-  const lineRanges = wrapLineRanges(state.text || '…', maxWidth);
+  // Quotes: the frame is a fixed card (see quoteRefLayout) — the text
+  // wraps inside the frame's inner width (the reference text width),
+  // not the canvas width, so a bigger font re-wraps instead of
+  // widening the frame.
+  const quoteRef = state.style === 'quotes' ? quoteRefLayout() : null;
+  const wrapWidth = quoteRef ? quoteRef.refMaxLw : maxWidth;
+  const lineRanges = wrapLineRanges(state.text || '…', wrapWidth);
   const lines = lineRanges.map((r) => r.text);
   const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
   const blockH = lines.length * lineHeight;
@@ -1903,7 +1947,17 @@ function draw() {
   // The dry-brush band wraps the block the same way (a wide band
   // behind the whole text block, with a pink shadow copy).
   const brushL = state.style === 'brushstroke' ? brushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
-  const frameL = tweetL || noteL || messageL || msgbubbleL || dropbubbleL || brushL;
+  // The quotes frame is a fixed card (see quoteRefLayout): sized from
+  // the reference text width and the taller of the reference / current
+  // block height, so the sliders never move it — only the text inside
+  // resizes. It carries the same shape as the other frame layouts so
+  // the alignment and the tap-to-dismiss hit test treat it like a
+  // bubble (the text aligns inside the frame's inner width).
+  const quotesL = state.style === 'quotes' ? (() => {
+    const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
+    return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
+  })() : null;
+  const frameL = tweetL || noteL || messageL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -1911,7 +1965,7 @@ function draw() {
   // itself stays centred). alignW is maxLw for every other style, so
   // the three call sites below (line anchor, caret, editor) are
   // unchanged for them.
-  const bubbleL = msgbubbleL || dropbubbleL || brushL;
+  const bubbleL = msgbubbleL || dropbubbleL || brushL || quotesL;
   const alignW = bubbleL ? bubbleL.w - bubbleL.padX * 2 : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -1949,11 +2003,10 @@ function draw() {
   // Quotes style: teal border around the whole text block, with quote
   // marks in the corners (the text itself is painted per-line below).
   if (state.style === 'quotes') {
-    // The frame layout + paint live in quoteFrameLayout /
-    // paintQuoteFrame (above draw) so the picker miniature
-    // (paintQuotesSamples) shares the exact same code.
-    const L = quoteFrameLayout(textFs, maxLw, blockH);
-    paintQuoteFrame(L, cx - L.bw / 2, y - lineHeight / 2 - L.framePadY);
+    // The frame layout lives in quotesL (above, with the other frame
+    // layouts) so the alignment and hit test share it; the paint itself
+    // is in paintQuoteFrame (shared with the picker miniature).
+    paintQuoteFrame(quotesL.L, quotesL.x, quotesL.y);
   }
 
   // Box styles (StoryFont, Reza 2026-11-22): a solid or gradient
@@ -3144,23 +3197,33 @@ function paintQuotesSamples() {
       ctx = sctx;
       try {
         ctx.textBaseline = 'middle';
-        // Lay the sample out exactly like draw() does it, at the real
-        // quotes text size, then fit the whole frame (glyphs included)
-        // into the card with a uniform scale, so nothing is clipped.
+        // Lay the sample out exactly like draw() does it: the frame is
+        // a fixed card from the reference size (QUOTE_REF_FS), and the
+        // text re-wraps inside the frame's inner width at the real
+        // quotes text size — so the card's frame never moves with the
+        // sliders, only the text inside it does. Then fit the whole
+        // frame (glyphs included) into the card with a uniform scale,
+        // so nothing is clipped.
         const textFs = state.size * (sp('quoteTextSize') / 100);
+        ctx.font = `${state.weight} ${QUOTE_REF_FS}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const refRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const refLines = refRanges.map((r) => r.text);
+        const refLineHeight = QUOTE_REF_FS * state.lineHeight + styleLineGapPx(QUOTE_REF_FS);
+        const refBlockH = refLines.length * refLineHeight;
+        const refMaxLw = Math.max(0, ...refLines.map((l) => lineWidth(l)));
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges('متن شما', refMaxLw);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
-        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
-        const L = quoteFrameLayout(textFs, maxLw, blockH);
+        const L = quoteFrameLayout(QUOTE_REF_FS, refMaxLw, Math.max(refBlockH, blockH));
         // The glyphs hang ~24.8×scale above the frame's top edge and
         // below its bottom edge — count that overhang in the fit.
         const overhang = 24.8 * L.quoteScale * L.u;
         const scale = Math.min(W / L.bw, H / (L.bh + overhang * 2), 1);
-        lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
+        lineJustifyGap = 0; // natural spacing, never stretched
         ctx.save();
         ctx.translate(W / 2, H / 2);
         ctx.scale(scale, scale);
@@ -3169,11 +3232,16 @@ function paintQuotesSamples() {
         // The sample text is centred on the frame (the default centre
         // alignment); the frame, not the alignment, is what the card
         // previews. The frame's local origin is its TOP-LEFT (after the
-        // translate above), so the text centre is bw/2 and the first
-        // baseline is framePadY + lineHeight/2 — NOT -bh/2 (that put
-        // the text above the frame, outside it; Reza's screenshot,
-        // 2026-11-23).
-        STYLE_PAINT.quotes(lines[0], L.bw / 2, L.framePadY + lineHeight / 2);
+        // translate above), and the text block is centred in the frame,
+        // so the first baseline is (bh − blockH)/2 + lineHeight/2 —
+        // NOT framePadY (that put the text too high when the frame is
+        // taller than the text; and NOT -bh/2, that put the text above
+        // the frame, outside it — Reza's screenshot, 2026-11-23).
+        let ty = (L.bh - blockH) / 2 + lineHeight / 2;
+        for (const line of lines) {
+          STYLE_PAINT.quotes(line, L.bw / 2, ty);
+          ty += lineHeight;
+        }
         ctx.restore();
       } finally {
         ctx = prevCtx;
