@@ -95,6 +95,7 @@ const STYLES = [
   { id: 'heart', label: 'قلب پایین' },
   { id: 'glassnotif', label: 'اعلان شیشه‌ای' },
   { id: 'typed', label: 'تایپ' },
+  { id: 'corner', label: 'کمان گوشه' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -565,6 +566,19 @@ const STYLE_CONTROLS = {
     { key: 'typedCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'typedCardC', label: 'رنگ کارت', type: 'color', def: '#ebaaf0' },
     { key: 'typedBorderC', label: 'رنگ حاشیه و سایه', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Corner accent card (Reza, 2026-11-23 — his createCornerAccentCard
+  // code): a light-grey card with a thin black border, fully rounded
+  // corners, and a thick black arc hugging each of the top-right and
+  // bottom-left corners, straddling the border.
+  corner: [
+    { key: 'cornerCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'cornerCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'cornerCardC', label: 'رنگ کارت', type: 'color', def: '#f2f2f2' },
+    { key: 'cornerBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
+    { key: 'cornerAccentC', label: 'رنگ کمان', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1327,12 +1341,21 @@ const STYLE_PAINT = {
     drawWords(line, cx, y);
   },
   // Typed input card (Reza, 2026-11-23 — his createTypedInputCard
-  // code): black text on the lavender card (the card, border, shadow
-  // and cursor are painted block-level in draw()). A colour picked in
+  // code): black text on the lavender card (the card, border and
+  // shadow are painted block-level in draw()). A colour picked in
   // the رنگ tab wins; otherwise his #000000 — a fixed design colour,
   // not contrastText, because the black-on-lavender pairing is the
   // look.
   typed: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Corner accent card (Reza, 2026-11-23 — his createCornerAccentCard
+  // code): black text on the light-grey card (the card, border and
+  // corner arcs are painted block-level in draw()). A colour picked in
+  // the رنگ tab wins; otherwise his #000000 — a fixed design colour,
+  // not contrastText, because the black-on-grey pairing is the look.
+  corner: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -3395,6 +3418,89 @@ function paintTypedCard(l, fs) {
   ctx.stroke();
 }
 
+// --- Corner accent card (Reza, 2026-11-23 — his
+// createCornerAccentCard code): a light-grey card with a thin black
+// border, fully rounded corners, and a thick black arc hugging each
+// of the top-right and bottom-left corners, straddling the border.
+
+// Geometry of the corner accent card around the text block. Same
+// shape as the other card layouts (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons).
+function cornerCardLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 56, padTop = 48, padBottom = 48; // his max card padding
+  const borderW = 4;                             // his border width
+  const cardW = Math.max(maxLw + padX * 2, sp('cornerCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('cornerCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 48,
+    padX, borderW, blockShift, rtl,
+  };
+}
+
+// Paint the corner accent card: the light-grey card, the thin border
+// stroked inside the card bounds, and the two thick corner arcs —
+// one hugging the top-right corner, one the bottom-left (his SVG
+// rotated 180°). Each arc is his path translated to canvas: a 10px
+// straight lead-in along the edge, a quarter-circle of radius 46
+// (the border's centreline radius: 48 − 2) around the corner centre,
+// and a 10px straight lead-out along the other edge; stroke 17,
+// butt caps, so the arc straddles the border — 6.5px outside the
+// card, 6.5px inside. The text itself is painted per line by
+// STYLE_PAINT.corner.
+function paintCornerCard(l, fs) {
+  const cardC = sp('cornerCardC') || '#f2f2f2';
+  const borderC = sp('cornerBorderC') || '#000000';
+  const accentC = sp('cornerAccentC') || '#000000';
+  ctx.fillStyle = cardC;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+  // The border sits inside the card bounds (his border-box), so the
+  // stroke is inset by half its width.
+  ctx.strokeStyle = borderC;
+  ctx.lineWidth = l.borderW;
+  roundRect(l.x + l.borderW / 2, l.y + l.borderW / 2, l.w - l.borderW, l.h - l.borderW, l.r - l.borderW / 2);
+  ctx.stroke();
+  // The corner arcs: stroke 17, butt caps, drawn on top of the
+  // border. The arc radius is the border's centreline radius.
+  const arcR = l.r - l.borderW / 2;
+  const lead = 10; // his straight extensions at each end of the arc
+  ctx.strokeStyle = accentC;
+  ctx.lineWidth = 17;
+  ctx.lineCap = 'butt';
+  // Top-right corner: from the top edge, around the corner centre,
+  // to the right edge.
+  const trCx = l.x + l.w - l.r, trCy = l.y + l.r;
+  ctx.beginPath();
+  ctx.moveTo(trCx - lead, trCy - arcR);
+  ctx.lineTo(trCx, trCy - arcR);
+  ctx.arc(trCx, trCy, arcR, -Math.PI / 2, 0);
+  ctx.lineTo(trCx + arcR, trCy + lead);
+  ctx.stroke();
+  // Bottom-left corner: the same arc rotated 180° — from the left
+  // edge, around the corner centre, to the bottom edge.
+  const blCx = l.x + l.r, blCy = l.y + l.h - l.r;
+  ctx.beginPath();
+  ctx.moveTo(blCx - arcR, blCy - lead);
+  ctx.lineTo(blCx - arcR, blCy);
+  ctx.arc(blCx, blCy, arcR, Math.PI, Math.PI / 2, true);
+  ctx.lineTo(blCx + lead, blCy + arcR);
+  ctx.stroke();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -4089,6 +4195,9 @@ function draw() {
   // text-sized cards).
   const typedRTL = state.style === 'typed' ? isRTLText(lines[0] || '') : true;
   const typedL = state.style === 'typed' ? typedInputLayout(textFs, maxLw, blockH, lineHeight, h, cx, typedRTL) : null;
+  // The corner accent card wraps the block the same way.
+  const cornerRTL = state.style === 'corner' ? isRTLText(lines[0] || '') : true;
+  const cornerL = state.style === 'corner' ? cornerCardLayout(textFs, maxLw, blockH, lineHeight, h, cx, cornerRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -4110,7 +4219,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4282,6 +4391,12 @@ function draw() {
   // below, in black).
   if (typedL) paintTypedCard(typedL, textFs);
 
+  // Corner accent card: a light-grey card with a thin black border
+  // and a thick black arc hugging each of the top-right and
+  // bottom-left corners (the text itself is painted per-line below,
+  // in black).
+  if (cornerL) paintCornerCard(cornerL, textFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -4423,7 +4538,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -4452,6 +4567,7 @@ function redraw() {
   paintHeartCardSamples();
   paintGlassNotifCardSamples();
   paintTypedCardSamples();
+  paintCornerCardSamples();
 }
 
 // Caret blink.
@@ -4978,6 +5094,7 @@ function buildStylePicker() {
       if (item.id === 'heart') return '<canvas class="sample-canvas sample-canvas-heart" width="190" height="120"></canvas>';
       if (item.id === 'glassnotif') return '<canvas class="sample-canvas sample-canvas-glassnotif" width="190" height="120"></canvas>';
       if (item.id === 'typed') return '<canvas class="sample-canvas sample-canvas-typed" width="190" height="120"></canvas>';
+      if (item.id === 'corner') return '<canvas class="sample-canvas sample-canvas-corner" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -6363,6 +6480,73 @@ function paintTypedCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-typed';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the corner accent card preview with the REAL corner code
+// (cornerCardLayout + paintCornerCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the typed
+// preview. Called from redraw(), like the typed samples. If painting
+// fails, fall back to the CSS box.
+function paintCornerCardSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-corner')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const cornerRTL = isRTLText(lines[0] || '');
+        const cornerL = cornerCardLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, cornerRTL);
+        const blockCx = 540 + cornerL.blockShift;
+        // Fit the whole card PLUS the arcs' 6.5px overhang on each
+        // side into the sample canvas, centred, keeping the aspect —
+        // a uniform scale, so nothing is squashed.
+        const fitW = cornerL.w + 14, fitH = cornerL.h + 14;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = cornerL.x + cornerL.w / 2, cardCy = cornerL.y + cornerL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintCornerCard(cornerL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.corner(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-corner';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
