@@ -487,8 +487,6 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-underline { color: #fff; background: linear-gradient(180deg, transparent 0 56%, #7349f9 56%); text-shadow: -1px 2px 0 #4b28b5; border-radius: 4px; padding: 0 8px; }
 .sample-pixel { font-family: monospace; letter-spacing: 1px; }
 .sample-quotes { border: 2px solid #34f5df; border-radius: 8px; padding: 0 6px; }
-.sample-winter { color: #4ade80; text-shadow: 0 0 12px #22ff88; }
-.sample-rosseta { color: transparent; -webkit-text-stroke: 1px #a7f3d0; }
 .sample-sticker {
   color: #ffc224;
   -webkit-text-stroke: 2px #df0b0b;

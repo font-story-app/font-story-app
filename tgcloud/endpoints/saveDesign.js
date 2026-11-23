@@ -13,7 +13,7 @@ const CUSTOM_FONT_RE = /^custom-[0-9a-f]{8}$/;
 const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
-  'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
+  'arcadia', 'underline', 'pixel', 'quotes',
   'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke',
   // StoryFont styles (Reza, 2026-11-22).
   'pastille3d', 'gradline',
@@ -30,7 +30,6 @@ const ALLOWED_WEIGHTS = [400, 500, 600, 700, 800, 900];
 const STYLE_PARAMS = {
   neonGlow: { min: 0, max: 80 },
   glowGlow: { min: 0, max: 80 },
-  winterGlow: { min: 0, max: 60 },
   glassOpacity: { min: 5, max: 50 },
   glassC: { color: true },
   glassR: { min: 0, max: 40 },
@@ -49,7 +48,6 @@ const STYLE_PARAMS = {
   pastilleShadow: { min: 0, max: 40 },
   pastilleOutlineC: { color: true },
   pastilleShadowC: { color: true },
-  rossetaStroke: { min: 1, max: 8 },
   brushTilt: { min: -10, max: 10 },
   brushBoxC: { color: true },
   brushBoxR: { min: 0, max: 40 },

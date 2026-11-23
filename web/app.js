@@ -70,8 +70,6 @@ const STYLES = [
   { id: 'arcadia', label: 'آرکادیا' },
   { id: 'underline', label: 'خط زیر' },
   { id: 'pixel', label: 'پیکسلی' },
-  { id: 'winter', label: 'زمستانی' },
-  { id: 'rosseta', label: 'رُزتا' },
   { id: 'sticker', label: 'استیکر' },
   { id: 'pastille3d', label: 'پاستیل' },
   { id: 'tweet', label: 'توییت' },
@@ -153,11 +151,7 @@ const STYLE_CONTROLS = {
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
-  winter: [
-    { key: 'winterGlow', label: 'شدت درخشش', type: 'range', min: 0, max: 60, step: 1, def: 30, unit: '' },
-    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
-    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
-  ],
+  // ('winter' was deleted at Reza's request, 2026-11-23.)
   glass: [
     { key: 'glassOpacity', label: 'غلظت شیشه', type: 'range', min: 5, max: 50, step: 1, def: 16, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -207,11 +201,7 @@ const STYLE_CONTROLS = {
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 10, unit: 'px' },
   ],
   // ('round' was deleted at Reza's request, 2026-11-23.)
-  rosseta: [
-    { key: 'rossetaStroke', label: 'ضخامت خط دور', type: 'range', min: 1, max: 8, step: 0.5, def: 2.5, unit: 'px' },
-    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
-    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
-  ],
+  // ('rosseta' was deleted at Reza's request, 2026-11-23.)
   brush: [
     { key: 'brushTilt', label: 'کجی قلم‌مو', type: 'range', min: -10, max: 10, step: 1, def: -2, unit: '°' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -855,14 +845,7 @@ const STYLE_PAINT = {
   },
   pixel: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   quotes: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
-  winter: (line, cx, y) => {
-    ctx.shadowColor = flatColor(state.color); ctx.shadowBlur = sp('winterGlow'); ctx.fillStyle = state.color;
-    drawWords(line, cx, y); ctx.shadowBlur = 0; drawWords(line, cx, y);
-  },
-  rosseta: (line, cx, y, lw, fs) => {
-    ctx.font = `300 ${fs}px ${fontFamily()}`;
-    strokeWords(line, cx, y, '#a7f3d0', sp('rossetaStroke'));
-  },
+  // ('winter' and 'rosseta' were deleted at Reza's request, 2026-11-23.)
   sticker: (line, cx, y, lw, fs) => {
     // Sticker 3D (Reza 2026-11-23 — his createSticker3DTextStyle code,
     // replacing v5): golden text, a red outline, a maroon 3D extrusion
