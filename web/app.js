@@ -50,9 +50,10 @@ const STYLES = [
   { id: 'brush', label: 'قلم‌مو' },
   { id: 'quotes', label: 'نقل‌قول' },
   // StoryFont styles (Reza, 2026-11-22): the six canvas looks from his
-  // screenshots, colours sampled from the shots. 'pastille' below used to
-  // be labelled «پاستیل» — it is only a purple outline, so it is now
-  // «دور بنفش» and the real Pastille lives below as 'pastille3d'.
+  // screenshots, colours sampled from the shots. 'pastille' was briefly
+  // labelled «دور بنفش» (2026-11-23, when it was only a purple outline);
+  // Reza renamed it back to «پاستیل» the same day, and the separate
+  // 'pastille3d' style was deleted.
   // 'violet' and 'bubble' were removed at Reza's request the same day.
   { id: 'gradline', label: 'خط گرادینت' },
   { id: 'squarebox', label: 'باکس مشکی' },
@@ -66,12 +67,11 @@ const STYLES = [
   { id: 'glow', label: 'درخشان' },
   { id: 'gradient', label: 'گرادیان' },
   { id: 'stroke', label: 'استروک' },
-  { id: 'pastille', label: 'دور بنفش' },
+  { id: 'pastille', label: 'پاستیل' },
   { id: 'arcadia', label: 'آرکادیا' },
   { id: 'underline', label: 'خط زیر' },
   { id: 'pixel', label: 'پیکسلی' },
   { id: 'sticker', label: 'استیکر' },
-  { id: 'pastille3d', label: 'پاستیل' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
@@ -237,12 +237,7 @@ const STYLE_CONTROLS = {
   // StoryFont styles (Reza, 2026-11-22): knobs for the new looks.
   // Colours are the sampled defaults from his screenshots.
   // ('roundline' was deleted at Reza's request, 2026-11-23.)
-  pastille3d: [
-    { key: 'pastille3dOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
-    { key: 'pastille3dShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
-    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
-    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
-  ],
+  // ('pastille3d' was deleted at Reza's request, 2026-11-23.)
   gradline: [
     { key: 'gradlineC1', label: 'رنگ اول گرادیان', type: 'color', def: '#AE37F1' },
     { key: 'gradlineC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#E23C6E' },
@@ -632,7 +627,7 @@ function drawWords(line, cx, y, dx = 0, dy = 0, mode = 'fill', textFill = true) 
   // styles whose text fill is the text colour — 'gradient' and
   // 'sticker' paint their own fill and ignore the text colour.
   // `textFill` is false for calls that paint a SHADOW layer in a fixed
-  // colour (pastille3d's extrusion): the gradient must not leak into it.
+  // colour (pastille's extrusion): the gradient must not leak into it.
   if (mode === 'fill' && textFill && !['gradient', 'sticker'].includes(state.style) && isGradientColor(state.color)) {
     ctx.fillStyle = textColorFill(line, cx, y, visW);
   }
@@ -895,23 +890,7 @@ const STYLE_PAINT = {
   // screenshots. Each one's fill follows the رنگ tab once the user picks
   // a colour, else the signature colour from the reference.
   // ('roundline' was deleted at Reza's request, 2026-11-23.)
-  pastille3d: (line, cx, y, lw, fs) => {
-    // Yellow fill, light-purple outline, dark-purple 3D extrusion
-    // shadow — the same sweep technique as the sticker's maroon
-    // extrusion. The sweep paints a fixed colour, so textFill is false:
-    // a gradient text colour must not leak into the shadow.
-    const dy = fs * (sp('pastille3dShadow') / 100);
-    const dx = -0.6 * dy;
-    const steps = Math.max(1, Math.min(24, Math.ceil(Math.hypot(dx, dy) / 3)));
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      ctx.fillStyle = '#4B177B';
-      drawWords(line, cx, y, dx * t, dy * t, 'fill', false);
-    }
-    strokeWords(line, cx, y, '#BA6BEA', fs * (sp('pastille3dOutline') / 100));
-    ctx.fillStyle = state.colorTouched ? state.color : '#FDEC00';
-    drawWords(line, cx, y);
-  },
+  // ('pastille3d' was deleted at Reza's request, 2026-11-23.)
   // Box styles: the box itself is painted block-level in draw() (like
   // glass/quotes); the paint functions below only paint the text.
   gradline: (line, cx, y) => {
@@ -2766,7 +2745,7 @@ function paintStickerSamples() {
   }
 }
 
-// Paint every «دور بنفش» card preview with the REAL pastille code
+// Paint every «پاستیل» card preview with the REAL pastille code
 // (STYLE_PAINT.pastille) on its small canvas — same font, weight and
 // pastille knobs as the main canvas, just smaller. Called from
 // redraw(), like the sticker samples. If painting fails, fall back to

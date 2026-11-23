@@ -16,7 +16,7 @@ const ALLOWED_STYLES = [
   'arcadia', 'underline', 'pixel', 'quotes',
   'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke',
   // StoryFont styles (Reza, 2026-11-22).
-  'pastille3d', 'gradline',
+  'gradline',
   'squarebox', 'lightbox', 'shadowline',
 ];
 const ALLOWED_ASPECTS = ['9:16', '1:1'];
@@ -85,8 +85,6 @@ const STYLE_PARAMS = {
   brushShadowC: { color: true },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
-  pastille3dOutline: { min: 4, max: 16 },
-  pastille3dShadow: { min: 0, max: 40 },
   gradlineC1: { color: true },
   gradlineC2: { color: true },
   gradlineC3: { color: true },
