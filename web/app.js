@@ -355,7 +355,7 @@ const STYLE_CONTROLS = {
     { key: 'musicCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'musicCardC', label: 'رنگ کارت', type: 'color', def: '#1a040d' },
     { key: 'musicCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 48, unit: '٪' },
-    { key: 'musicSubtitle', label: 'زیرعنوان', type: 'text', def: 'Music By StoryFont', max: 40 },
+    { key: 'musicSubtitle', label: 'زیرعنوان', type: 'text', def: 'Music by Font Story', max: 40 },
     { key: 'musicCurrent', label: 'زمان فعلی', type: 'text', def: '2:00', max: 5 },
     { key: 'musicTotal', label: 'زمان کل', type: 'text', def: '2:52', max: 5 },
     { key: 'musicProgress', label: 'پیشرفت پخش', type: 'range', min: 0, max: 100, step: 1, def: 61, unit: '٪' },
@@ -1695,7 +1695,7 @@ function musicInk() {
 // block, so they never move when the height floor adds space.
 function musicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const padX = 56;                    // card padding left/right (same as note)
-  const subtitleFs = fs * 0.15;       // «Music By StoryFont», his ~16px
+  const subtitleFs = fs * 0.15;       // «Music by Font Story», his ~16px
   const gapSubtitleText = fs * 0.3;   // subtitle -> title
   const gapTextProgress = fs * 0.35;  // title -> progress bar
   const trackH = fs * 0.045;          // progress track height, his 5px
@@ -1759,7 +1759,7 @@ function paintMusicCard(l, fs) {
   ctx.font = `400 ${l.subtitleFs}px 'Vazir', system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText((sp('musicSubtitle') || '').trim() || 'Music By StoryFont', l.x + l.w / 2, l.subtitleY);
+  ctx.fillText((sp('musicSubtitle') || '').trim() || 'Music by Font Story', l.x + l.w / 2, l.subtitleY);
   ctx.restore();
   // Progress: a white track at 0.42 opacity, a white fill to the
   // progress %, and a white knob with a soft shadow at its end.
