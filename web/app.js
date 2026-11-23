@@ -87,6 +87,7 @@ const STYLES = [
   { id: 'stitched', label: 'دوخت' },
   { id: 'sewingpin', label: 'سنجاق' },
   { id: 'spiral', label: 'دفترچه' },
+  { id: 'windowcard', label: 'پنجره' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -475,6 +476,19 @@ const STYLE_CONTROLS = {
     { key: 'spiralPaperC', label: 'رنگ کاغذ', type: 'color', def: '#f9ad7b' },
     { key: 'spiralWireC', label: 'رنگ فنر و کادر', type: 'color', def: '#000000' },
     { key: 'spiralCoils', label: 'تعداد حلقه‌ها', type: 'range', min: 2, max: 24, step: 1, def: 14 },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Window card (Reza, 2026-11-23 — his createWindowCard code): a
+  // desktop window — a terracotta title bar with the three window
+  // controls (minimize, maximize, close) on the right, and a white
+  // body with the text centred in it.
+  windowcard: [
+    { key: 'windowCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'windowCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'windowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#db977d' },
+    { key: 'windowBodyC', label: 'رنگ بدنه', type: 'color', def: '#ffffff' },
+    { key: 'windowIconC', label: 'رنگ آیکون‌ها', type: 'color', def: '#ffffff' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1186,6 +1200,15 @@ const STYLE_PAINT = {
   // in the رنگ tab wins; otherwise his #000000 — a fixed design colour,
   // not contrastText, because the black-on-orange pairing is the look.
   spiral: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Window card (Reza, 2026-11-23 — his createWindowCard code): black
+  // text on the white body (the title bar + body + controls are
+  // painted block-level in draw()). A colour picked in the رنگ tab
+  // wins; otherwise his #000000 — a fixed design colour, not
+  // contrastText, because the black-on-white pairing is the look.
+  windowcard: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -2794,6 +2817,96 @@ function paintSpiralCard(l, fs) {
   ctx.restore();
 }
 
+// --- Window card (Reza, 2026-11-23 — his createWindowCard code): a
+// desktop window — a terracotta title bar with the three window
+// controls (minimize, maximize, close) on the right, and a white body
+// with the text centred in it. The icons are his SVG paths, drawn
+// with canvas strokes in their 28x28 viewBox (same technique as the
+// music icons, minus the transform — the icons are a fixed 28px).
+
+// Geometry of the window card around the text block. Same shape as
+// the other card layouts (fixed px padding, height floor splitting
+// evenly, blockShift following the alignment buttons). The text is
+// centred in the BODY — the header sits above it — so the space above
+// the text is the header height plus the body padding.
+function windowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 44;                    // his max body padding left/right
+  const headerH = 84;                 // his max header height
+  const bodyPadTop = 48, bodyPadBottom = 48; // his max body padding
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('windowCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - headerH - bodyPadTop;
+  let cardBottom = textBottom + bodyPadBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred in the
+  // body.
+  const extraH = Math.max(0, sp('windowCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
+    padX, headerH, blockShift, rtl,
+  };
+}
+
+// Paint the window card: the rounded card clipped (overflow hidden),
+// the white body filling it, the terracotta title bar across the top,
+// then the three window controls — minimize, maximize, close —
+// right-aligned in the LTR header, his exact viewBox coordinates at
+// their fixed 28px size. His SVG icons carry no linecap, so the
+// strokes use butt caps (the canvas default is butt too, but it is
+// set explicitly — the shared ctx may carry 'round' from another
+// style). The text itself is painted per line by
+// STYLE_PAINT.windowcard.
+function paintWindowCard(l, fs) {
+  const headerC = sp('windowHeaderC') || '#db977d';
+  const bodyC = sp('windowBodyC') || '#ffffff';
+  const iconC = sp('windowIconC') || '#ffffff';
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.clip();
+  ctx.fillStyle = bodyC;
+  ctx.fillRect(l.x, l.y, l.w, l.h);
+  ctx.fillStyle = headerC;
+  ctx.fillRect(l.x, l.y, l.w, l.headerH);
+  const iconSize = 28; // his max icon size
+  const gap = 26;      // his max gap between icons
+  const padRight = 32; // his max header padding
+  const iconY = l.y + (l.headerH - iconSize) / 2;
+  const closeX = l.x + l.w - padRight - iconSize;
+  const maxX = closeX - gap - iconSize;
+  const minX = maxX - gap - iconSize;
+  ctx.strokeStyle = iconC;
+  ctx.lineCap = 'butt';
+  // Minimize: a horizontal line across the middle.
+  ctx.lineWidth = 3.6;
+  ctx.beginPath();
+  ctx.moveTo(minX + 2, iconY + 14);
+  ctx.lineTo(minX + 26, iconY + 14);
+  ctx.stroke();
+  // Maximize: an outlined square.
+  ctx.beginPath();
+  ctx.rect(maxX + 3, iconY + 3, 22, 22);
+  ctx.stroke();
+  // Close: an X.
+  ctx.lineWidth = 3.8;
+  ctx.beginPath();
+  ctx.moveTo(closeX + 4, iconY + 4);
+  ctx.lineTo(closeX + 24, iconY + 24);
+  ctx.moveTo(closeX + 24, iconY + 4);
+  ctx.lineTo(closeX + 4, iconY + 24);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -3458,6 +3571,11 @@ function draw() {
   // the page).
   const spiralRTL = state.style === 'spiral' ? isRTLText(lines[0] || '') : true;
   const spiralL = state.style === 'spiral' ? spiralLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, spiralRTL) : null;
+  // The window card wraps the block the same way (a title bar on top,
+  // the text centred in the body below it; the body block still
+  // follows the alignment buttons).
+  const windowcardRTL = state.style === 'windowcard' ? isRTLText(lines[0] || '') : true;
+  const windowcardL = state.style === 'windowcard' ? windowLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, windowcardRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -3479,7 +3597,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -3621,6 +3739,11 @@ function draw() {
   // per-line below, in black).
   if (spiralL) paintSpiralCard(spiralL, chromeFs);
 
+  // Window card: a terracotta title bar with the three window controls
+  // on the right, and a white body (the text itself is painted
+  // per-line below, in black).
+  if (windowcardL) paintWindowCard(windowcardL, chromeFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -3752,7 +3875,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -3775,6 +3898,7 @@ function redraw() {
   paintStitchedSamples();
   paintSewingPinSamples();
   paintSpiralSamples();
+  paintWindowCardSamples();
 }
 
 // Caret blink.
@@ -4295,6 +4419,7 @@ function buildStylePicker() {
       if (item.id === 'stitched') return '<canvas class="sample-canvas sample-canvas-stitched" width="190" height="120"></canvas>';
       if (item.id === 'sewingpin') return '<canvas class="sample-canvas sample-canvas-sewingpin" width="190" height="120"></canvas>';
       if (item.id === 'spiral') return '<canvas class="sample-canvas sample-canvas-spiral" width="190" height="120"></canvas>';
+      if (item.id === 'windowcard') return '<canvas class="sample-canvas sample-canvas-windowcard" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -5287,6 +5412,71 @@ function paintSpiralSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-spiral';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the window card preview with the REAL window code
+// (windowLayout + paintWindowCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the
+// spiral preview. Called from redraw(), like the spiral samples.
+// If painting fails, fall back to the CSS box.
+function paintWindowCardSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-windowcard')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const windowcardRTL = isRTLText(lines[0] || '');
+        const windowcardL = windowLayout(110, maxLw, blockH, lineHeight, 1080, 540, windowcardRTL);
+        const blockCx = 540 + windowcardL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / windowcardL.w, H / windowcardL.h);
+        const cardCx = windowcardL.x + windowcardL.w / 2, cardCy = windowcardL.y + windowcardL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintWindowCard(windowcardL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.windowcard(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-windowcard';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
