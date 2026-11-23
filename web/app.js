@@ -85,6 +85,7 @@ const STYLES = [
   { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'msgnotif', label: 'اعلان پیام' },
   { id: 'stitched', label: 'دوخت' },
+  { id: 'sewingpin', label: 'سنجاق' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -447,6 +448,19 @@ const STYLE_CONTROLS = {
     { key: 'stitchedCardC', label: 'رنگ کارت', type: 'color', def: '#da778b' },
     { key: 'stitchedCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 94, unit: '٪' },
     { key: 'stitchedStitchC', label: 'رنگ دوخت', type: 'color', def: '#71333d' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Sewing pin card (Reza, 2026-11-23 — his createSewingPinCard
+  // code): an olive card with a white frame and a horizontal sewing
+  // pin across the top — a red ball head on the left, a metal shaft
+  // passing through two holes in the card, a pointed tip on the right.
+  sewingpin: [
+    { key: 'sewingpinCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'sewingpinCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'sewingpinCardC', label: 'رنگ کارت', type: 'color', def: '#b2a148' },
+    { key: 'sewingpinBorderC', label: 'رنگ قاب', type: 'color', def: '#ffffff' },
+    { key: 'sewingpinHeadC', label: 'رنگ سر سنجاق', type: 'color', def: '#e34a59' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1141,6 +1155,15 @@ const STYLE_PAINT = {
   // contrastText, because the brown-red-on-rose pairing is the look.
   stitched: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#6e1904';
+    drawWords(line, cx, y);
+  },
+  // Sewing pin card (Reza, 2026-11-23 — his createSewingPinCard
+  // code): white text on the olive card (the card + white frame +
+  // sewing pin are painted block-level in draw()). A colour picked in
+  // the رنگ tab wins; otherwise his #ffffff — a fixed design colour,
+  // not contrastText, because the white-on-olive pairing is the look.
+  sewingpin: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -2483,6 +2506,180 @@ function paintStitchedCard(l, fs) {
   ctx.restore();
 }
 
+// --- Sewing pin card (Reza, 2026-11-23 — his createSewingPinCard
+// code): an olive card with a white frame and a horizontal sewing pin
+// across the top. Like the pushpin, the pin is his exact SVG rendered
+// as a data-URL image (the brushstroke/pin pattern): the canvas cannot
+// do his feGaussianBlur shadows or his radial head gradient, so the
+// browser renders the SVG natively and the canvas draws the image —
+// no external refs, so the export is never tainted.
+
+// His mixHex helper, verbatim: blend two hex colours by a ratio
+// (the head's five gradient colours all derive from the head colour).
+function sewingPinMix(hexA, hexB, ratio) {
+  const parse = (h) => {
+    const clean = h.replace('#', '');
+    const n = parseInt(clean.length === 6 ? clean : 'e34a59', 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const [r1, g1, b1] = parse(hexA);
+  const [r2, g2, b2] = parse(hexB);
+  const r = Math.round(r1 + (r2 - r1) * ratio);
+  const g = Math.round(g1 + (g2 - g1) * ratio);
+  const b = Math.round(b1 + (b2 - b1) * ratio);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+// His sewing-pin SVG, verbatim (fixed uid 'sew-pin'). The viewBox is
+// padded by 12 units on every side (-12 -12 384 100) so the blurred
+// head shadow — which bleeds ~9 units above his y=0 — is not clipped
+// by the image viewport; the layout compensates for the padding.
+function sewingPinSvgString(headColor) {
+  const uid = 'sew-pin';
+  const headHighlight = sewingPinMix(headColor, '#ffd6dc', 0.45);
+  const headMid = headColor;
+  const headDeep = sewingPinMix(headColor, '#2e0207', 0.62);
+  const headRimDark = sewingPinMix(headColor, '#0d0002', 0.88);
+  const headBounce = sewingPinMix(headColor, '#ff9aa5', 0.35);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -12 384 100" width="384" height="100" style="overflow:visible">
+  <defs>
+    <filter id="${uid}-headShadow" x="-50%" y="-60%" width="200%" height="220%">
+      <feGaussianBlur stdDeviation="5.2" />
+    </filter>
+    <filter id="${uid}-shaftShadow" x="-15%" y="-120%" width="130%" height="340%">
+      <feGaussianBlur stdDeviation="2.6" />
+    </filter>
+    <linearGradient id="${uid}-metal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e1513" />
+      <stop offset="26%" stop-color="#584742" />
+      <stop offset="50%" stop-color="#b4a39a" />
+      <stop offset="74%" stop-color="#503f3a" />
+      <stop offset="100%" stop-color="#1b1210" />
+    </linearGradient>
+    <linearGradient id="${uid}-leftAO" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0e0505" stop-opacity="0.72" />
+      <stop offset="16%" stop-color="#0e0505" stop-opacity="0" />
+      <stop offset="86%" stop-color="#0e0505" stop-opacity="0" />
+      <stop offset="100%" stop-color="#140c06" stop-opacity="0.65" />
+    </linearGradient>
+    <linearGradient id="${uid}-rightAO" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#140c06" stop-opacity="0.65" />
+      <stop offset="14%" stop-color="#0e0505" stop-opacity="0" />
+      <stop offset="82%" stop-color="#0e0505" stop-opacity="0" />
+      <stop offset="100%" stop-color="#221916" stop-opacity="0.5" />
+    </linearGradient>
+    <radialGradient id="${uid}-headGrad" cx="38%" cy="62%" r="68%" fx="34%" fy="66%">
+      <stop offset="0%" stop-color="${headHighlight}" />
+      <stop offset="36%" stop-color="${headMid}" />
+      <stop offset="74%" stop-color="${headDeep}" />
+      <stop offset="93%" stop-color="${headRimDark}" />
+      <stop offset="100%" stop-color="#090001" />
+    </radialGradient>
+    <radialGradient id="${uid}-headSpec" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.58" />
+      <stop offset="55%" stop-color="#ffdce2" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <clipPath id="${uid}-headClip">
+      <circle cx="38" cy="40" r="20.5" />
+    </clipPath>
+  </defs>
+  <ellipse cx="36" cy="25.5" rx="20" ry="18.5" fill="#2b2109" fill-opacity="0.38" filter="url(#${uid}-headShadow)" />
+  <ellipse cx="37" cy="40.5" rx="19.5" ry="18" fill="#241b07" fill-opacity="0.22" filter="url(#${uid}-shaftShadow)" />
+  <path d="M 54 29.5 L 160 36.2" stroke="#241b07" stroke-width="5.2" stroke-linecap="round" stroke-opacity="0.34" filter="url(#${uid}-shaftShadow)" />
+  <path d="M 225 36.2 L 343 32.8" stroke="#241b07" stroke-width="4.4" stroke-linecap="round" stroke-opacity="0.28" filter="url(#${uid}-shaftShadow)" />
+  <ellipse cx="161.5" cy="39.5" rx="2.6" ry="3.8" fill="#2f260c" fill-opacity="0.72" />
+  <ellipse cx="224.5" cy="39.5" rx="2.6" ry="3.8" fill="#2f260c" fill-opacity="0.72" />
+  <rect x="55" y="36.3" width="107.5" height="6.4" rx="3.2" fill="url(#${uid}-metal)" />
+  <rect x="55" y="36.3" width="107.5" height="6.4" rx="3.2" fill="url(#${uid}-leftAO)" />
+  <line x1="60" y1="39.2" x2="158" y2="39.2" stroke="#f2e6df" stroke-opacity="0.38" stroke-width="1" stroke-linecap="round" />
+  <path d="M 224 36.3 L 312 36.5 L 348 39.5 L 312 42.5 L 224 42.7 A 3.2 3.2 0 0 1 224 36.3 Z" fill="url(#${uid}-metal)" />
+  <path d="M 224 36.3 L 312 36.5 L 348 39.5 L 312 42.5 L 224 42.7 A 3.2 3.2 0 0 1 224 36.3 Z" fill="url(#${uid}-rightAO)" />
+  <line x1="228" y1="39.2" x2="334" y2="39.4" stroke="#f2e6df" stroke-opacity="0.34" stroke-width="0.9" stroke-linecap="round" />
+  <g clip-path="url(#${uid}-headClip)">
+    <circle cx="38" cy="40" r="20.5" fill="url(#${uid}-headGrad)" />
+    <path d="M 16 26 C 24 14, 52 14, 60 32 C 63 44, 56 58, 43 61 C 51 52, 52 36, 44 27 C 36 20, 23 22, 16 26 Z" fill="#120103" fill-opacity="0.58" />
+    <ellipse cx="31.5" cy="43.5" rx="8.8" ry="6.4" transform="rotate(-24 31.5 43.5)" fill="url(#${uid}-headSpec)" />
+    <path d="M 22 52 C 28 59, 41 60, 48 55" fill="none" stroke="${headBounce}" stroke-width="2" stroke-opacity="0.45" stroke-linecap="round" />
+  </g>
+</svg>`;
+}
+const sewingPinImgCache = new Map();
+function getSewingPinImage(headColor) {
+  const key = headColor;
+  let img = sewingPinImgCache.get(key);
+  if (!img) {
+    img = new Image();
+    img.onload = () => { redraw(); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(sewingPinSvgString(headColor));
+    sewingPinImgCache.set(key, img);
+  }
+  return img;
+}
+
+// Geometry of the sewing pin card around the text block. Same shape
+// as the stitched layout (fixed px padding, height floor splitting
+// evenly, blockShift following the alignment buttons). The pin is 42%
+// of the card wide, centred, its visible top 28px below the card top
+// (his max top offset); the image box is offset by the 12-unit
+// viewBox padding so the visible pin lands exactly there.
+function sewingPinLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 48;                    // his max horizontal padding
+  const padTop = 118, padBottom = 66; // his max vertical padding
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('sewingpinCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('sewingpinCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  const pinW = cardW * 0.42;
+  const pinH = pinW * 100 / 384;
+  const pinX = cardX + (cardW - pinW) / 2;
+  const pinY = cardTop + 28 - (12 / 100) * pinH;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
+    padX, blockShift, rtl, pinX, pinY, pinW, pinH,
+  };
+}
+
+// Paint the sewing pin card: the olive card, then the white frame
+// drawn inside the card bounds (half the stroke would spill outside
+// the card edge otherwise), then the sewing pin image across the top.
+// The text itself is painted per line by STYLE_PAINT.sewingpin.
+function paintSewingPinCard(l, fs) {
+  const cardC = sp('sewingpinCardC') || '#b2a148';
+  const borderC = sp('sewingpinBorderC') || '#ffffff';
+  const bw = 5; // his max border width
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = cardC;
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.strokeStyle = borderC;
+  ctx.lineWidth = bw;
+  roundRect(l.x + bw / 2, l.y + bw / 2, l.w - bw, l.h - bw, Math.max(0, l.r - bw / 2));
+  ctx.stroke();
+  ctx.restore();
+  const img = getSewingPinImage(sp('sewingpinHeadC') || '#e34a59');
+  if (img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, l.pinX, l.pinY, l.pinW, l.pinH);
+  }
+  // (No flat fallback — the pin is too detailed to fake with paths;
+  // the data: URL loads immediately and onload redraws.)
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -3136,6 +3333,11 @@ function draw() {
   // follows the alignment buttons).
   const stitchedRTL = state.style === 'stitched' ? isRTLText(lines[0] || '') : true;
   const stitchedL = state.style === 'stitched' ? stitchedLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, stitchedRTL) : null;
+  // The sewing pin card wraps the block the same way (an olive card
+  // with a white frame and a sewing pin across the top; the body block
+  // still follows the alignment buttons).
+  const sewingpinRTL = state.style === 'sewingpin' ? isRTLText(lines[0] || '') : true;
+  const sewingpinL = state.style === 'sewingpin' ? sewingPinLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, sewingpinRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -3157,7 +3359,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -3288,6 +3490,11 @@ function draw() {
   // inside the edge (the text itself is painted per-line below, in
   // dark brown-red).
   if (stitchedL) paintStitchedCard(stitchedL, chromeFs);
+
+  // Sewing pin card: an olive card with a white frame and a sewing pin
+  // across the top (the text itself is painted per-line below, in
+  // white).
+  if (sewingpinL) paintSewingPinCard(sewingpinL, chromeFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -3420,7 +3627,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -3441,6 +3648,7 @@ function redraw() {
   paintDoubleFrameSamples();
   paintMsgnotifSamples();
   paintStitchedSamples();
+  paintSewingPinSamples();
 }
 
 // Caret blink.
@@ -3959,6 +4167,7 @@ function buildStylePicker() {
       if (item.id === 'doubleFrame') return '<canvas class="sample-canvas sample-canvas-doubleFrame" width="190" height="120"></canvas>';
       if (item.id === 'msgnotif') return '<canvas class="sample-canvas sample-canvas-msgnotif" width="190" height="120"></canvas>';
       if (item.id === 'stitched') return '<canvas class="sample-canvas sample-canvas-stitched" width="190" height="120"></canvas>';
+      if (item.id === 'sewingpin') return '<canvas class="sample-canvas sample-canvas-sewingpin" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -4813,6 +5022,73 @@ function paintStitchedSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-stitched';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the sewing pin card preview with the REAL sewing pin code
+// (sewingPinLayout + paintSewingPinCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the
+// stitched preview. Called from redraw(), like the stitched samples.
+// If painting fails, fall back to the CSS box. (The pin image loads
+// async; its onload redraws, so the miniature gains the pin a moment
+// after the first paint — same as the pushpin preview.)
+function paintSewingPinSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-sewingpin')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const sewingpinRTL = isRTLText(lines[0] || '');
+        const sewingpinL = sewingPinLayout(110, maxLw, blockH, lineHeight, 1080, 540, sewingpinRTL);
+        const blockCx = 540 + sewingpinL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / sewingpinL.w, H / sewingpinL.h);
+        const cardCx = sewingpinL.x + sewingpinL.w / 2, cardCy = sewingpinL.y + sewingpinL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintSewingPinCard(sewingpinL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.sewingpin(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-sewingpin';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
