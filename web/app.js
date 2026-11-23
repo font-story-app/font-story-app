@@ -9,7 +9,7 @@ const FONTS = [
   { id: 'IRAN', label: 'ایران', family: "'IRAN', sans-serif", lang: 'fa' },
   { id: 'YekanBakh', label: 'یکان‌بخ', family: "'Yekan Bakh NoEn', sans-serif", lang: 'fa' },
   { id: 'Vazirmatn', label: 'وزیرمتن', family: "'Vazirmatn', sans-serif", lang: 'fa' },
-  { id: 'Lalezar', label: 'لاله‌زار', family: "'Lalezar', sans-serif", lang: 'fa' },
+  { id: 'Lalezar', label: 'لاله‌زار', family: "'Lalezar', sans-serif", lang: 'fa', defWeight: 400 },
   { id: 'Estedad', label: 'استعداد', family: "'Estedad', sans-serif", lang: 'fa' },
   { id: 'Parastoo', label: 'پرستو', family: "'Parastoo', sans-serif", lang: 'fa' },
   { id: 'Amiri', label: 'امیری', family: "'Amiri', serif", lang: 'fa' },
@@ -436,6 +436,12 @@ const state = {
   // while the spacing is still untouched. Once the user moves a slider,
   // the shared value follows them across styles instead.
   wordSpacingTouched: false,
+  // Same idea for the font weight (Reza, 2026-11-23): the weight is one
+  // shared value across fonts — but a font may declare its own default
+  // (Lalezar: 400 — it ships a single weight), which applies when the
+  // font is selected while the weight is still untouched. Once the user
+  // moves the weight slider, the shared value follows them across fonts.
+  weightTouched: false,
   aspect: '1:1',
   align: 'center',
   size: 110,
@@ -2644,9 +2650,15 @@ const fontObserver = ('IntersectionObserver' in window) ? new IntersectionObserv
 
 function selectFont(id) {
   state.font = id;
+  const font = fontEntry(id);
+  // Apply the font's default weight while the weight is still
+  // untouched (see weightTouched above): Lalezar opens at 400, every
+  // other font at 800. A value the user already set stays put.
+  if (!state.weightTouched) {
+    state.weight = typeof font?.defWeight === 'number' ? font.defWeight : 800;
+  }
   document.querySelectorAll('#panel-font .pick-card').forEach((x) =>
     x.classList.toggle('active', x.dataset.fontId === id));
-  const font = fontEntry(id);
   if (font && !font.custom) ensureLazyFont(font).then(redraw);
   redraw();
 }
@@ -3620,6 +3632,9 @@ function applyDesign(d) {
   state.aspect = d.aspect || '9:16';
   state.align = ['center', 'right', 'left', 'justify'].includes(d.align) ? d.align : 'center';
   state.weight = [400, 500, 600, 700, 800, 900].includes(Number(d.weight)) ? Number(d.weight) : 800;
+  // A saved design carries an explicit weight, so the font's default
+  // must not override it when the design opens.
+  state.weightTouched = true;
   state.letterSpacing = clampNum(d.letterSpacing, 0, 40, 0);
   state.wordSpacing = clampNum(d.wordSpacing, 0, 60, 0);
   // A saved design carries an explicit word spacing, so the style's
@@ -4117,7 +4132,7 @@ function bindSetting(rangeId, valueId, format, apply) {
     redraw();
   });
 }
-bindSetting('weightRange', 'weightValue', (v) => String(v), (v) => { state.weight = v; });
+bindSetting('weightRange', 'weightValue', (v) => String(v), (v) => { state.weight = v; state.weightTouched = true; });
 bindSetting('letterRange', 'letterValue', (v) => v + 'px', (v) => { state.letterSpacing = v; });
 bindSetting('wordRange', 'wordValue', (v) => v + 'px', (v) => { state.wordSpacing = v; state.wordSpacingTouched = true; });
 bindSetting('lineRange', 'lineValue', (v) => v.toFixed(1), (v) => { state.lineHeight = v; });
