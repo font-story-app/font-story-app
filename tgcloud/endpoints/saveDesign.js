@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -119,6 +119,13 @@ const STYLE_PARAMS = {
   heartsCardC: { color: true },
   heartsStripC: { color: true },
   heartsHeartC: { color: true },
+  // Double frame text card (Reza, 2026-11-23).
+  doubleFrameCardW: { min: 400, max: 900 },
+  doubleFrameCardH: { min: 300, max: 800 },
+  doubleFrameOuterC: { color: true },
+  doubleFrameInnerC: { color: true },
+  doubleFrameBgC: { color: true },
+  doubleFrameT: { min: 0, max: 40 },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
   gradlineC1: { color: true },

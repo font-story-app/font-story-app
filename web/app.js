@@ -82,6 +82,7 @@ const STYLES = [
   { id: 'frame', label: 'قاب صورتی' },
   { id: 'bell', label: 'زنگوله' },
   { id: 'hearts', label: 'قلب‌ها' },
+  { id: 'doubleFrame', label: 'قاب دوتایی' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -402,6 +403,20 @@ const STYLE_CONTROLS = {
     { key: 'heartsCardC', label: 'رنگ کارت', type: 'color', def: '#3b0b1f' },
     { key: 'heartsStripC', label: 'رنگ نوار', type: 'color', def: '#a3b2c0' },
     { key: 'heartsHeartC', label: 'رنگ قلب‌ها', type: 'color', def: '#f3d7ca' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Double frame text card (Reza, 2026-11-23 — his
+  // createDoubleFrameTextCard code): a white outer frame, a dark grey
+  // middle frame and a dark burgundy inner box, all sharp-cornered,
+  // with coral pink text.
+  doubleFrame: [
+    { key: 'doubleFrameCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'doubleFrameCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 350, unit: 'px' },
+    { key: 'doubleFrameOuterC', label: 'رنگ قاب بیرونی', type: 'color', def: '#ffffff' },
+    { key: 'doubleFrameInnerC', label: 'رنگ قاب میانی', type: 'color', def: '#333333' },
+    { key: 'doubleFrameBgC', label: 'رنگ پس‌زمینه', type: 'color', def: '#2d0616' },
+    { key: 'doubleFrameT', label: 'ضخامت قاب‌ها', type: 'range', min: 0, max: 40, step: 1, def: 26, unit: 'px' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1067,6 +1082,16 @@ const STYLE_PAINT = {
   hearts: (line, cx, y) => {
     const c = sp('heartsCardC') || '#3b0b1f';
     ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
+    drawWords(line, cx, y);
+  },
+  // Double frame text card (Reza, 2026-11-23 — his
+  // createDoubleFrameTextCard code): coral pink text on the dark
+  // burgundy inner box (the three frames are painted block-level in
+  // draw()). A colour picked in the رنگ tab wins; otherwise his coral
+  // pink #ff9ba2 — a fixed design colour, not contrastText, because the
+  // pink-on-burgundy pairing is the look.
+  doubleFrame: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ff9ba2';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -2164,6 +2189,58 @@ function paintHeartsCard(l) {
   paintHeartsStrip(l);
 }
 
+// --- Double frame text card (Reza, 2026-11-23 — his
+// createDoubleFrameTextCard code): three nested sharp-cornered
+// rectangles — a white outer frame, a dark grey middle frame and a dark
+// burgundy inner box — with coral pink text in the middle. One
+// thickness knob (his frameThickness) drives both frames.
+function doubleFrameLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const ft = sp('doubleFrameT') ?? 26;
+  const padX = 44;
+  const padY = 34;
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2 + ft * 4, sp('doubleFrameCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - ft * 4 - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const innerBoxH = Math.max(blockH + padY * 2, 200);
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - (innerBoxH - blockH) / 2 - ft * 2;
+  let cardBottom = textBottom + (innerBoxH - blockH) / 2 + ft * 2;
+  // Height floor: the card is at least the set size (his card is a
+  // wide, short card — the default floor is 350, not the usual 480);
+  // the extra space splits evenly above and below so the text stays
+  // centred.
+  const extraH = Math.max(0, sp('doubleFrameCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
+    padX, ft, blockShift, rtl,
+  };
+}
+
+// Paint the double frame card: three nested fillRects, all sharp
+// corners (radius 0 — his design). No shadow — his card has none.
+function paintDoubleFrameCard(l) {
+  const outerC = sp('doubleFrameOuterC') || '#ffffff';
+  const innerC = sp('doubleFrameInnerC') || '#333333';
+  const bgC = sp('doubleFrameBgC') || '#2d0616';
+  const ft = l.ft;
+  ctx.save();
+  ctx.fillStyle = outerC;
+  ctx.fillRect(l.x, l.y, l.w, l.h);
+  ctx.fillStyle = innerC;
+  ctx.fillRect(l.x + ft, l.y + ft, l.w - 2 * ft, l.h - 2 * ft);
+  ctx.fillStyle = bgC;
+  ctx.fillRect(l.x + 2 * ft, l.y + 2 * ft, l.w - 4 * ft, l.h - 4 * ft);
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -2801,6 +2878,11 @@ function draw() {
   // the card's centre).
   const heartsRTL = state.style === 'hearts' ? isRTLText(lines[0] || '') : true;
   const heartsL = state.style === 'hearts' ? heartsLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, heartsRTL) : null;
+  // The double frame card wraps the block the same way (three nested
+  // sharp-cornered frames around the text; the body block still follows
+  // the alignment buttons).
+  const doubleFrameRTL = state.style === 'doubleFrame' ? isRTLText(lines[0] || '') : true;
+  const doubleFrameL = state.style === 'doubleFrame' ? doubleFrameLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, doubleFrameRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -2822,7 +2904,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -2937,6 +3019,11 @@ function draw() {
   // its three hearts at the bottom (the text itself is painted per-line
   // below, in white, above the strip).
   if (heartsL) paintHeartsCard(heartsL);
+
+  // Double frame card: a white outer frame, a dark grey middle frame
+  // and a dark burgundy inner box, all sharp-cornered (the text itself
+  // is painted per-line below, in coral pink).
+  if (doubleFrameL) paintDoubleFrameCard(doubleFrameL);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -3069,7 +3156,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -3087,6 +3174,7 @@ function redraw() {
   paintFrameSamples();
   paintBellSamples();
   paintHeartsSamples();
+  paintDoubleFrameSamples();
 }
 
 // Caret blink.
@@ -3602,6 +3690,7 @@ function buildStylePicker() {
       if (item.id === 'frame') return '<canvas class="sample-canvas sample-canvas-frame" width="190" height="120"></canvas>';
       if (item.id === 'bell') return '<canvas class="sample-canvas sample-canvas-bell" width="190" height="120"></canvas>';
       if (item.id === 'hearts') return '<canvas class="sample-canvas sample-canvas-hearts" width="190" height="120"></canvas>';
+      if (item.id === 'doubleFrame') return '<canvas class="sample-canvas sample-canvas-doubleFrame" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -4256,6 +4345,71 @@ function paintHeartsSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-hearts';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the double frame card preview with the REAL double frame code
+// (doubleFrameLayout + paintDoubleFrameCard + the body text) on its
+// small canvas — a miniature of the actual card, same pattern as the
+// hearts preview. Called from redraw(), like the hearts samples. If
+// painting fails, fall back to the CSS box.
+function paintDoubleFrameSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-doubleFrame')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const doubleFrameRTL = isRTLText(lines[0] || '');
+        const doubleFrameL = doubleFrameLayout(110, maxLw, blockH, lineHeight, 1080, 540, doubleFrameRTL);
+        const blockCx = 540 + doubleFrameL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / doubleFrameL.w, H / doubleFrameL.h);
+        const cardCx = doubleFrameL.x + doubleFrameL.w / 2, cardCy = doubleFrameL.y + doubleFrameL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintDoubleFrameCard(doubleFrameL);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.doubleFrame(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-doubleFrame';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
