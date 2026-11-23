@@ -417,10 +417,13 @@ const ASPECTS = { '9:16': [1080, 1920], '1:1': [1080, 1080] };
 
 // Poufi-style background gradients (pink-orange default, cycles on tap).
 // Black and white are solid colours, not gradients — same list, same cycle.
+// Magenta (Reza, 2026-11-23 — sampled from his screenshot: a single-hue
+// magenta gradient, #d02470 at the top to #b31659 at the bottom).
 const BACKGROUNDS = [
   'linear-gradient(180deg, #ff3b5c 0%, #ff7a3d 100%)',
   'linear-gradient(180deg, #3b82f6 0%, #06b6d4 100%)',
   'linear-gradient(180deg, #8b5cf6 0%, #ec4899 100%)',
+  'linear-gradient(180deg, #d02470 0%, #b31659 100%)',
   'linear-gradient(180deg, #0ea47a 0%, #84cc16 100%)',
   '#000000',
   '#FFFFFF',
