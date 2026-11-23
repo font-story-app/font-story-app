@@ -76,13 +76,13 @@ const STYLES = [
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
   { id: 'pin', label: 'پونز' },
-  { id: 'msgbubble', label: 'حباب پیام' },
-  { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'music', label: 'موزیک' },
   { id: 'frame', label: 'قاب صورتی' },
   { id: 'bell', label: 'زنگوله' },
   { id: 'hearts', label: 'قلب‌ها' },
   { id: 'doubleFrame', label: 'قاب دوتایی' },
+  { id: 'msgbubble', label: 'حباب پیام' },
+  { id: 'dropbubble', label: 'حباب پیام ۲' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
