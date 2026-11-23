@@ -380,6 +380,12 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-brushstroke {
   height: 60px;
 }
+/* Quotes frame preview: same miniature treatment as the brush band — a
+   real canvas of the two-path frame with its glyph pairs, not a closed
+   CSS border (Reza, 2026-11-23). */
+.pick-card .sample canvas.sample-canvas-quotes {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }

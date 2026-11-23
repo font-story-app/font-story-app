@@ -1751,6 +1751,94 @@ function paintBrush(l, fs) {
   ctx.restore();
 }
 
+// The quotes frame layout (Reza 2026-11-23 — his createQuoteFrameStyle
+// code): a teal rounded frame drawn as TWO stroked paths (not a closed
+// rect) with a gap in the top edge and a gap in the bottom edge, a pair
+// of quote glyphs straddling each gap (the bottom pair rotated 180°).
+// His geometry is in CSS px at a 57.6px font, so everything is computed
+// in his px (u = fs/57.6 canvas px per his px) and rendered under a
+// scale(u) transform — the path strings in paintQuoteFrame are his exact
+// formulas, and the quote glyph path (QUOTE_PATH) is verbatim. isSmall
+// is his w < 460 threshold in his px (a narrow frame gets the compact
+// stroke/scale/radius). The frame-to-text gaps come from his container
+// padding (35px horizontal, 51px vertical) minus the frame insets —
+// EXCEPT the vertical gap: his (51 − padY) leaves the quote glyphs
+// (which hang 21.8×scale below the frame's top edge) with ~zero
+// clearance over the text in the wide variant, and the letters rise
+// ~0.2×fs above the line-box top, so a long text (wide frame) landed
+// the glyphs ON the letters (Reza's screenshot, 2026-11-23). The
+// vertical gap is therefore the max of his value and the clearance the
+// glyphs need — the frame grows taller instead of the glyphs touching
+// the text. Shared by draw() and the picker miniature
+// (paintQuotesSamples), so the card shows the real frame.
+function quoteFrameLayout(fs, maxLw, blockH) {
+  const u = fs / 57.6;
+  const framePadX = 30 * u;
+  const bw = maxLw + framePadX * 2;
+  const W = bw / u;
+  const isSmall = W < 460;
+  const strokePx = fs * (sp('quoteStroke') / 100) / u;
+  const swPx = isSmall ? Math.max(4, strokePx - 1.5) : strokePx;
+  const quoteScale = isSmall ? 0.72 : 1.02;
+  const padY = 28 * quoteScale;
+  const framePadY = Math.max(51 - padY, padY + 21.8 * quoteScale + 15.5) * u;
+  const bh = blockH + framePadY * 2;
+  const H = bh / u;
+  const padX = Math.ceil(swPx / 2) + 2;
+  const left = padX;
+  const right = W - padX;
+  const top = padY;
+  const bottom = H - padY;
+  const r = Math.min(isSmall ? 30 : 48, (bottom - top) * 0.32, (right - left) * 0.18);
+  const stub = Math.min(isSmall ? 18 : 34, (right - left) * 0.05);
+  const gapWidth = 112 * quoteScale;
+  const topGapStart = left + r + stub;
+  const topGapEnd = Math.min(right - r - 8, topGapStart + gapWidth);
+  const topCenterX = (topGapStart + topGapEnd) / 2;
+  const bottomGapEnd = right - r - stub;
+  const bottomGapStart = Math.max(left + r + 8, bottomGapEnd - gapWidth);
+  const bottomCenterX = (bottomGapStart + bottomGapEnd) / 2;
+  return { u, bw, bh, W, H, isSmall, swPx, quoteScale, padY, framePadY, padX, left, right, top, bottom, r, stub, gapWidth, topGapStart, topGapEnd, topCenterX, bottomGapEnd, bottomGapStart, bottomCenterX };
+}
+
+// Paint a quotes frame from quoteFrameLayout, with the frame's top-left
+// at (fx, fy) in the current ctx. The text itself is painted separately
+// (STYLE_PAINT.quotes), like draw() does it.
+function paintQuoteFrame(L, fx, fy) {
+  const frameColor = sp('quoteC');
+  const pathTopRight = `M ${L.topGapEnd} ${L.top} L ${L.right - L.r} ${L.top} A ${L.r} ${L.r} 0 0 1 ${L.right} ${L.top + L.r} L ${L.right} ${L.bottom - L.r} A ${L.r} ${L.r} 0 0 1 ${L.right - L.r} ${L.bottom} L ${L.bottomGapEnd} ${L.bottom}`;
+  const pathBottomLeft = `M ${L.bottomGapStart} ${L.bottom} L ${L.left + L.r} ${L.bottom} A ${L.r} ${L.r} 0 0 1 ${L.left} ${L.bottom - L.r} L ${L.left} ${L.top + L.r} A ${L.r} ${L.r} 0 0 1 ${L.left + L.r} ${L.top} L ${L.topGapStart} ${L.top}`;
+  ctx.save();
+  ctx.translate(fx, fy);
+  ctx.scale(L.u, L.u);
+  ctx.strokeStyle = frameColor;
+  ctx.lineWidth = L.swPx;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke(new Path2D(pathTopRight));
+  ctx.stroke(new Path2D(pathBottomLeft));
+  ctx.fillStyle = frameColor;
+  const q = new Path2D(QUOTE_PATH);
+  ctx.save();
+  ctx.translate(L.topCenterX, L.top);
+  ctx.scale(L.quoteScale, L.quoteScale);
+  ctx.translate(-34, -27);
+  ctx.fill(q);
+  ctx.translate(36, 0);
+  ctx.fill(q);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(L.bottomCenterX, L.bottom);
+  ctx.rotate(Math.PI);
+  ctx.scale(L.quoteScale, L.quoteScale);
+  ctx.translate(-34, -27);
+  ctx.fill(q);
+  ctx.translate(36, 0);
+  ctx.fill(q);
+  ctx.restore();
+  ctx.restore();
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -1861,86 +1949,11 @@ function draw() {
   // Quotes style: teal border around the whole text block, with quote
   // marks in the corners (the text itself is painted per-line below).
   if (state.style === 'quotes') {
-    // Quote frame (Reza 2026-11-23 — his createQuoteFrameStyle code):
-    // a teal rounded frame drawn as TWO stroked paths (not a closed
-    // rect) with a gap in the top edge and a gap in the bottom edge,
-    // a pair of quote glyphs straddling each gap (the bottom pair
-    // rotated 180°). His geometry is in CSS px at a 57.6px font, so
-    // everything is computed in his px (u = textFs/57.6 canvas px
-    // per his px) and rendered under a scale(u) transform — the path
-    // strings below are his exact formulas, and the quote glyph path
-    // (QUOTE_PATH) is verbatim. isSmall is his w < 460 threshold in
-    // his px (a narrow frame gets the compact stroke/scale/radius).
-    // The frame-to-text gaps come from his container padding (35px
-    // horizontal, 51px vertical) minus the frame insets — EXCEPT the
-    // vertical gap: his (51 − padY) leaves the quote glyphs (which
-    // hang 21.8×scale below the frame's top edge) with ~zero clearance
-    // over the text in the wide variant, and the letters rise ~0.2×fs
-    // above the line-box top, so a long text (wide frame) landed the
-    // glyphs ON the letters (Reza's screenshot, 2026-11-23). The
-    // vertical gap is therefore the max of his value and the clearance
-    // the glyphs need — the frame grows taller instead of the glyphs
-    // touching the text.
-    const u = textFs / 57.6;
-    const framePadX = 30 * u;
-    const bw = Math.max(...lines.map((l) => lineWidth(l))) + framePadX * 2;
-    const W = bw / u;
-    const isSmall = W < 460;
-    const strokePx = textFs * (sp('quoteStroke') / 100) / u;
-    const swPx = isSmall ? Math.max(4, strokePx - 1.5) : strokePx;
-    const quoteScale = isSmall ? 0.72 : 1.02;
-    const padY = 28 * quoteScale;
-    const framePadY = Math.max(51 - padY, padY + 21.8 * quoteScale + 15.5) * u;
-    const bh = blockH + framePadY * 2;
-    const H = bh / u;
-    const padX = Math.ceil(swPx / 2) + 2;
-    const left = padX;
-    const right = W - padX;
-    const top = padY;
-    const bottom = H - padY;
-    const r = Math.min(isSmall ? 30 : 48, (bottom - top) * 0.32, (right - left) * 0.18);
-    const stub = Math.min(isSmall ? 18 : 34, (right - left) * 0.05);
-    const gapWidth = 112 * quoteScale;
-    const topGapStart = left + r + stub;
-    const topGapEnd = Math.min(right - r - 8, topGapStart + gapWidth);
-    const topCenterX = (topGapStart + topGapEnd) / 2;
-    const bottomGapEnd = right - r - stub;
-    const bottomGapStart = Math.max(left + r + 8, bottomGapEnd - gapWidth);
-    const bottomCenterX = (bottomGapStart + bottomGapEnd) / 2;
-    const fx = cx - bw / 2;
-    const fy = y - lineHeight / 2 - framePadY;
-    const frameColor = sp('quoteC');
-    const pathTopRight = `M ${topGapEnd} ${top} L ${right - r} ${top} A ${r} ${r} 0 0 1 ${right} ${top + r} L ${right} ${bottom - r} A ${r} ${r} 0 0 1 ${right - r} ${bottom} L ${bottomGapEnd} ${bottom}`;
-    const pathBottomLeft = `M ${bottomGapStart} ${bottom} L ${left + r} ${bottom} A ${r} ${r} 0 0 1 ${left} ${bottom - r} L ${left} ${top + r} A ${r} ${r} 0 0 1 ${left + r} ${top} L ${topGapStart} ${top}`;
-    ctx.save();
-    ctx.translate(fx, fy);
-    ctx.scale(u, u);
-    ctx.strokeStyle = frameColor;
-    ctx.lineWidth = swPx;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke(new Path2D(pathTopRight));
-    ctx.stroke(new Path2D(pathBottomLeft));
-    ctx.fillStyle = frameColor;
-    const q = new Path2D(QUOTE_PATH);
-    ctx.save();
-    ctx.translate(topCenterX, top);
-    ctx.scale(quoteScale, quoteScale);
-    ctx.translate(-34, -27);
-    ctx.fill(q);
-    ctx.translate(36, 0);
-    ctx.fill(q);
-    ctx.restore();
-    ctx.save();
-    ctx.translate(bottomCenterX, bottom);
-    ctx.rotate(Math.PI);
-    ctx.scale(quoteScale, quoteScale);
-    ctx.translate(-34, -27);
-    ctx.fill(q);
-    ctx.translate(36, 0);
-    ctx.fill(q);
-    ctx.restore();
-    ctx.restore();
+    // The frame layout + paint live in quoteFrameLayout /
+    // paintQuoteFrame (above draw) so the picker miniature
+    // (paintQuotesSamples) shares the exact same code.
+    const L = quoteFrameLayout(textFs, maxLw, blockH);
+    paintQuoteFrame(L, cx - L.bw / 2, y - lineHeight / 2 - L.framePadY);
   }
 
   // Box styles (StoryFont, Reza 2026-11-22): a solid or gradient
@@ -2113,7 +2126,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -2124,6 +2137,7 @@ function redraw() {
   paintMsgbubbleSamples();
   paintDropbubbleSamples();
   paintBrushSamples();
+  paintQuotesSamples();
 }
 
 // Caret blink.
@@ -2609,6 +2623,7 @@ function buildStylePicker() {
       // box with grey text did not read as a tweet card at all.
       if (item.id === 'sticker') return '<canvas class="sample-canvas" width="184" height="54"></canvas>';
       if (item.id === 'underline') return '<canvas class="sample-canvas sample-canvas-underline" width="184" height="54"></canvas>';
+      if (item.id === 'quotes') return '<canvas class="sample-canvas sample-canvas-quotes" width="190" height="120"></canvas>';
       if (item.id === 'tweet') return '<canvas class="sample-canvas sample-canvas-tweet" width="190" height="120"></canvas>';
       if (item.id === 'note') return '<canvas class="sample-canvas sample-canvas-note" width="190" height="120"></canvas>';
       if (item.id === 'message') return '<canvas class="sample-canvas sample-canvas-message" width="190" height="120"></canvas>';
@@ -3107,6 +3122,66 @@ function paintBrushSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-brushstroke';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the quotes card preview with the REAL frame code on its small
+// canvas — the two-path teal frame with the gaps and the quote glyph
+// pairs, exactly like the main canvas. A CSS approximation (a closed
+// border) cannot express the gaps or the glyphs (Reza, 2026-11-23:
+// «پیش نمایشش هم درست کن»). Called from redraw(), like the other
+// real-canvas samples. If painting fails, fall back to the CSS box.
+function paintQuotesSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-quotes')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // Lay the sample out exactly like draw() does it, at the real
+        // quotes text size, then fit the whole frame (glyphs included)
+        // into the card with a uniform scale, so nothing is clipped.
+        const textFs = state.size * (sp('quoteTextSize') / 100);
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const L = quoteFrameLayout(textFs, maxLw, blockH);
+        // The glyphs hang ~24.8×scale above the frame's top edge and
+        // below its bottom edge — count that overhang in the fit.
+        const overhang = 24.8 * L.quoteScale * L.u;
+        const scale = Math.min(W / L.bw, H / (L.bh + overhang * 2), 1);
+        lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
+        ctx.save();
+        ctx.translate(W / 2, H / 2);
+        ctx.scale(scale, scale);
+        ctx.translate(-L.bw / 2, -L.bh / 2);
+        paintQuoteFrame(L, 0, 0);
+        // The sample text is centred on the frame (the default centre
+        // alignment); the frame, not the alignment, is what the card
+        // previews. The frame's local origin is its TOP-LEFT (after the
+        // translate above), so the text centre is bw/2 and the first
+        // baseline is framePadY + lineHeight/2 — NOT -bh/2 (that put
+        // the text above the frame, outside it; Reza's screenshot,
+        // 2026-11-23).
+        STYLE_PAINT.quotes(lines[0], L.bw / 2, L.framePadY + lineHeight / 2);
+        ctx.restore();
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-quotes';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
