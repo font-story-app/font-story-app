@@ -81,6 +81,7 @@ const STYLES = [
   { id: 'music', label: 'موزیک' },
   { id: 'frame', label: 'قاب صورتی' },
   { id: 'bell', label: 'زنگوله' },
+  { id: 'hearts', label: 'قلب‌ها' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -389,6 +390,18 @@ const STYLE_CONTROLS = {
     { key: 'bellBadgeC', label: 'رنگ نشان', type: 'color', def: '#f3dcd3' },
     { key: 'bellC', label: 'رنگ زنگوله', type: 'color', def: '#59647a' },
     { key: 'bellLineC', label: 'رنگ خط', type: 'color', def: '#b4bac6' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Hearts tape card (Reza, 2026-11-23 — his createHeartsTapeCard
+  // code): a dark burgundy card with a wavy grey-blue tape strip
+  // carrying three pale hearts at the bottom.
+  hearts: [
+    { key: 'heartsCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'heartsCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'heartsCardC', label: 'رنگ کارت', type: 'color', def: '#3b0b1f' },
+    { key: 'heartsStripC', label: 'رنگ نوار', type: 'color', def: '#a3b2c0' },
+    { key: 'heartsHeartC', label: 'رنگ قلب‌ها', type: 'color', def: '#f3d7ca' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1043,6 +1056,16 @@ const STYLE_PAINT = {
   // readable on the card colour.
   bell: (line, cx, y) => {
     const c = sp('bellCardC') || '#343b40';
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
+    drawWords(line, cx, y);
+  },
+  // Hearts tape card (Reza, 2026-11-23 — his createHeartsTapeCard
+  // code): white text on the dark burgundy card (the card and the
+  // hearts tape strip are painted block-level in draw()). A colour
+  // picked in the رنگ tab wins; otherwise contrastText keeps it
+  // readable on the card colour.
+  hearts: (line, cx, y) => {
+    const c = sp('heartsCardC') || '#3b0b1f';
     ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
     drawWords(line, cx, y);
   },
@@ -2061,6 +2084,86 @@ function paintBellCard(l, fs) {
   paintBellLine(l, fs);
 }
 
+// --- Hearts tape card (Reza, 2026-11-23 — his createHeartsTapeCard
+// code): a dark burgundy card with a wavy grey-blue tape strip carrying
+// three pale hearts at the bottom. The strip is his SVG, drawn with
+// Path2D in a 500x96 viewBox (same technique as the bell badge).
+const HEARTS_STRIP = 'M 2 9 C 68 11.5, 134 5.5, 206 7.8 C 282 10, 384 7.5, 498 4.2 L 498 90 C 414 90.5, 356 93.8, 294 92.6 C 228 91.2, 166 93.2, 102 91.6 C 62 90.6, 30 89.2, 2 91.8 Z';
+const HEARTS_LEFT = 'M 167 74 C 155 67, 134 54, 133 39 C 132 29, 141 24, 149 27 C 155 29, 159 35, 161 39 C 164 33, 169 26, 177 25 C 186 24, 192 31, 190 42 C 188 54, 174 66, 167 74 Z';
+const HEARTS_MID = 'M 246 75 C 235 66, 218 52, 219 38 C 220 29, 228 26, 236 29 C 241 31, 244 36, 246 40 C 250 32, 256 23, 266 23 C 275 23, 279 31, 276 42 C 272 54, 255 67, 246 75 Z';
+const HEARTS_RIGHT = 'M 336 75 C 323 67, 304 54, 304 39 C 304 29, 313 24, 322 27 C 328 29, 333 35, 335 39 C 338 34, 343 26, 352 25 C 361 24, 367 31, 365 42 C 363 54, 347 67, 336 75 Z';
+// Draw the wavy tape strip with its three hearts at the bottom of the
+// card. The strip is 83% of the card width, centred, and its bottom
+// sits bottomPad above the card's bottom edge (his 6.6%).
+function paintHeartsStrip(l) {
+  const stripC = sp('heartsStripC') || '#a3b2c0';
+  const heartC = sp('heartsHeartC') || '#f3d7ca';
+  const stripW = l.w * 0.83;
+  const stripH = stripW * (96 / 500);
+  const stripX = l.x + (l.w - stripW) / 2;
+  const stripY = l.y + l.h - l.bottomPad - stripH;
+  ctx.save();
+  ctx.translate(stripX, stripY);
+  ctx.scale(stripW / 500, stripH / 96);
+  ctx.fillStyle = stripC;
+  ctx.fill(new Path2D(HEARTS_STRIP));
+  ctx.fillStyle = heartC;
+  ctx.fill(new Path2D(HEARTS_LEFT));
+  ctx.fill(new Path2D(HEARTS_MID));
+  ctx.fill(new Path2D(HEARTS_RIGHT));
+  ctx.restore();
+}
+
+// Geometry of the hearts tape card around the text block (Reza,
+// 2026-11-23 — his createHeartsTapeCard code). Unlike the other cards
+// the text is NOT centred in the whole card: it is centred in the area
+// ABOVE the strip (his flex column with space-between). So the padding
+// above and below the text (P) is equal on both sides, and the strip +
+// the bottom padding hang below it. The height floor grows P, so the
+// text stays centred in the area above the strip. The body block's
+// horizontal position follows the alignment buttons, same rule as the
+// note card.
+function heartsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 34;
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('heartsCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const stripW = cardW * 0.83;
+  const stripH = stripW * (96 / 500);
+  const bottomPad = 0.066 * sp('heartsCardH');
+  const contentH = blockH + stripH + bottomPad;
+  const cardH = Math.max(contentH + 2 * 38, sp('heartsCardH'));
+  const P = (cardH - contentH) / 2;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  const cardTop = textTop - P;
+  const cardBottom = textBottom + P + stripH + bottomPad;
+  const r = Math.min(48, cardW * 0.06);
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r,
+    padX, blockShift, rtl, bottomPad, stripH,
+  };
+}
+
+// Paint the hearts tape card: the dark burgundy card (no shadow — his
+// card has none), then the wavy tape strip with its three hearts at
+// the bottom. The text itself is painted per line by
+// STYLE_PAINT.hearts.
+function paintHeartsCard(l) {
+  const cardC = sp('heartsCardC') || '#3b0b1f';
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = cardC;
+  ctx.fill();
+  ctx.restore();
+  paintHeartsStrip(l);
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -2692,6 +2795,12 @@ function draw() {
   // still follows the alignment buttons).
   const bellRTL = state.style === 'bell' ? isRTLText(lines[0] || '') : true;
   const bellL = state.style === 'bell' ? bellLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, bellRTL) : null;
+  // The hearts tape card wraps the block the same way (a dark burgundy
+  // card with the hearts tape strip at the bottom; the body block still
+  // follows the alignment buttons — and sits above the strip, not in
+  // the card's centre).
+  const heartsRTL = state.style === 'hearts' ? isRTLText(lines[0] || '') : true;
+  const heartsL = state.style === 'hearts' ? heartsLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, heartsRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -2713,7 +2822,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -2823,6 +2932,11 @@ function draw() {
   // the top-left corner and the hand-drawn line near the bottom (the
   // text itself is painted per-line below, in white).
   if (bellL) paintBellCard(bellL, chromeFs);
+
+  // Hearts tape card: a dark burgundy card with the wavy tape strip and
+  // its three hearts at the bottom (the text itself is painted per-line
+  // below, in white, above the strip).
+  if (heartsL) paintHeartsCard(heartsL);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -2955,7 +3069,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -2972,6 +3086,7 @@ function redraw() {
   paintMusicSamples();
   paintFrameSamples();
   paintBellSamples();
+  paintHeartsSamples();
 }
 
 // Caret blink.
@@ -3486,6 +3601,7 @@ function buildStylePicker() {
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
       if (item.id === 'frame') return '<canvas class="sample-canvas sample-canvas-frame" width="190" height="120"></canvas>';
       if (item.id === 'bell') return '<canvas class="sample-canvas sample-canvas-bell" width="190" height="120"></canvas>';
+      if (item.id === 'hearts') return '<canvas class="sample-canvas sample-canvas-hearts" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -4075,6 +4191,71 @@ function paintBellSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-bell';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the hearts tape card preview with the REAL hearts code
+// (heartsLayout + paintHeartsCard + the body text) on its small canvas
+// — a miniature of the actual card, same pattern as the bell preview.
+// Called from redraw(), like the bell samples. If painting fails, fall
+// back to the CSS box.
+function paintHeartsSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-hearts')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const heartsRTL = isRTLText(lines[0] || '');
+        const heartsL = heartsLayout(110, maxLw, blockH, lineHeight, 1080, 540, heartsRTL);
+        const blockCx = 540 + heartsL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / heartsL.w, H / heartsL.h);
+        const cardCx = heartsL.x + heartsL.w / 2, cardCy = heartsL.y + heartsL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintHeartsCard(heartsL);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.hearts(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-hearts';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
