@@ -2965,11 +2965,15 @@ function splitWindowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   let bodyTop = textTop - bodyPadTop;
   let bodyBottom = textBottom + bodyPadBottom;
   let headerTop = bodyTop - gap - headerH;
-  // Height floor: the card is at least the set size; the extra space
-  // splits evenly above the header and below the body so the text
-  // stays centred in the body.
+  // Height floor: the card is at least the set size. The extra space
+  // goes ABOVE the header and BELOW the body — the header, the gap
+  // and the body top all move up together, so the gap between the two
+  // cards stays exactly the set gap (12px). (Bug, Reza's screenshot
+  // 2026-11-23: the extra used to push only the header up while the
+  // body stayed put, so the gap ballooned to 12 + extraH/2 = 86px.)
   const extraH = Math.max(0, sp('splitWindowCardH') - (bodyBottom - headerTop));
   headerTop -= extraH / 2;
+  bodyTop -= extraH / 2;
   bodyBottom += extraH / 2;
   return {
     x: cardX, y: headerTop, w: cardW, h: bodyBottom - headerTop,
