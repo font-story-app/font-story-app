@@ -72,6 +72,11 @@ const STYLES = [
   { id: 'underline', label: 'خط زیر' },
   { id: 'pixel', label: 'پیکسلی' },
   { id: 'sticker', label: 'استیکر' },
+  // Reza 2026-11-23: doubleFrame + the two bubbles moved here, right
+  // after the sticker.
+  { id: 'doubleFrame', label: 'قاب دوتایی' },
+  { id: 'msgbubble', label: 'حباب پیام' },
+  { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
@@ -80,9 +85,6 @@ const STYLES = [
   { id: 'frame', label: 'قاب صورتی' },
   { id: 'bell', label: 'زنگوله' },
   { id: 'hearts', label: 'قلب‌ها' },
-  { id: 'doubleFrame', label: 'قاب دوتایی' },
-  { id: 'msgbubble', label: 'حباب پیام' },
-  { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'msgnotif', label: 'اعلان پیام' },
   { id: 'stitched', label: 'دوخت' },
   { id: 'sewingpin', label: 'سنجاق' },
