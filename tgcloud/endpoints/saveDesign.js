@@ -12,7 +12,7 @@ const ALLOWED_FONTS = ['Vazir', 'IRANYekanXNoEn', 'IRAN', 'YekanBakh', 'Vazirmat
 const CUSTOM_FONT_RE = /^custom-[0-9a-f]{8}$/;
 const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
-  'glow', 'gradient', 'stroke', 'brush', 'pastille', 'round',
+  'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes', 'winter', 'rosseta',
   'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke',
   // StoryFont styles (Reza, 2026-11-22).
@@ -49,7 +49,6 @@ const STYLE_PARAMS = {
   pastilleShadow: { min: 0, max: 40 },
   pastilleOutlineC: { color: true },
   pastilleShadowC: { color: true },
-  roundStroke: { min: 4, max: 16 },
   rossetaStroke: { min: 1, max: 8 },
   brushTilt: { min: -10, max: 10 },
   brushBoxC: { color: true },

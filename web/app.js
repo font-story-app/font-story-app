@@ -67,7 +67,6 @@ const STYLES = [
   { id: 'gradient', label: 'گرادیان' },
   { id: 'stroke', label: 'استروک' },
   { id: 'pastille', label: 'دور بنفش' },
-  { id: 'round', label: 'راوند' },
   { id: 'arcadia', label: 'آرکادیا' },
   { id: 'underline', label: 'خط زیر' },
   { id: 'pixel', label: 'پیکسلی' },
@@ -200,18 +199,14 @@ const STYLE_CONTROLS = {
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   pastille: [
-    { key: 'pastilleOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 40, step: 1, def: 25, unit: '٪' },
+    { key: 'pastilleOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 40, step: 1, def: 30, unit: '٪' },
     { key: 'pastilleShadow', label: 'عمق سایه', type: 'range', min: 0, max: 40, step: 1, def: 18, unit: '٪' },
     { key: 'pastilleOutlineC', label: 'رنگ خط دور', type: 'color', def: '#c377f6' },
     { key: 'pastilleShadowC', label: 'رنگ سایه', type: 'color', def: '#4c1878' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
-    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 10, unit: 'px' },
   ],
-  round: [
-    { key: 'roundStroke', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 8, unit: '٪' },
-    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
-    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
-  ],
+  // ('round' was deleted at Reza's request, 2026-11-23.)
   rosseta: [
     { key: 'rossetaStroke', label: 'ضخامت خط دور', type: 'range', min: 1, max: 8, step: 0.5, def: 2.5, unit: 'px' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -445,6 +440,13 @@ const state = {
   // until the user does — so the default stay readable, but the text
   // colour becomes changeable the moment they pick one.
   colorTouched: false,
+  // Has the user moved a word-spacing slider (in a style sheet or the
+  // gear sheet) in this design? The spacing is one shared value across
+  // styles (Reza, 2026-11-22) — but a style may declare its own
+  // default (pastille: 10px), which applies when the style is selected
+  // while the spacing is still untouched. Once the user moves a slider,
+  // the shared value follows them across styles instead.
+  wordSpacingTouched: false,
   aspect: '1:1',
   align: 'center',
   size: 110,
@@ -802,11 +804,7 @@ const STYLE_PAINT = {
     else ctx.fillStyle = '#fff01f';
     drawWords(line, cx, y);
   },
-  round: (line, cx, y, lw, fs) => {
-    ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
-    strokeWords(line, cx, y, '#ffffff', fs * (sp('roundStroke') / 100));
-    ctx.fillStyle = state.color; drawWords(line, cx, y);
-  },
+  // ('round' was deleted at Reza's request, 2026-11-23.)
   arcadia: (line, cx, y, lw, fs) => {
     strokeWords(line, cx, y, '#ffffff', fs * 0.06);
     ctx.fillStyle = textGradient(cx, lw, [[0, sp('arcadiaC1')], [1, sp('arcadiaC2')]]);
@@ -2687,7 +2685,18 @@ function fontCard(item, favs) {
 }
 
 function buildStylePicker() {
-  buildCardPicker($('stylePicker'), STYLES, state.style, (id) => { state.style = id; renderStyleControls(); redraw(); },
+  buildCardPicker($('stylePicker'), STYLES, state.style, (id) => {
+    state.style = id;
+    // Apply the style's default word spacing while the spacing is
+    // still untouched (see wordSpacingTouched above): pastille opens
+    // at 10px, every other style at 0px. A value the user already set
+    // stays put.
+    if (!state.wordSpacingTouched) {
+      const def = STYLE_CONTROLS[id]?.find((c) => c.key === 'wordSpacing')?.def;
+      if (typeof def === 'number') state.wordSpacing = def;
+    }
+    renderStyleControls(); redraw();
+  },
     (item) => {
       // Sticker and tweet are real canvases (see paintStickerSamples /
       // paintTweetSamples): a CSS approximation can never match the
@@ -3362,7 +3371,7 @@ function renderStyleControls() {
         const v = Number(e.target.value);
         // 'wordSpacing' writes the shared global (see sp()), not a
         // per-style parameter.
-        if (c.key === 'wordSpacing') state.wordSpacing = v;
+        if (c.key === 'wordSpacing') { state.wordSpacing = v; state.wordSpacingTouched = true; }
         else state.styleParams[c.key] = v;
         value.textContent = v + (c.unit || '');
         redraw();
@@ -3615,6 +3624,9 @@ function applyDesign(d) {
   state.weight = [400, 500, 600, 700, 800, 900].includes(Number(d.weight)) ? Number(d.weight) : 800;
   state.letterSpacing = clampNum(d.letterSpacing, 0, 40, 0);
   state.wordSpacing = clampNum(d.wordSpacing, 0, 60, 0);
+  // A saved design carries an explicit word spacing, so the style's
+  // default must not override it when the design opens.
+  state.wordSpacingTouched = true;
   state.lineHeight = clampNum(d.lineHeight, 1, 2, 1.4);
   state.rotX = clampNum(d.rotX, -45, 45, 0);
   state.rotY = clampNum(d.rotY, -45, 45, 0);
@@ -4109,7 +4121,7 @@ function bindSetting(rangeId, valueId, format, apply) {
 }
 bindSetting('weightRange', 'weightValue', (v) => String(v), (v) => { state.weight = v; });
 bindSetting('letterRange', 'letterValue', (v) => v + 'px', (v) => { state.letterSpacing = v; });
-bindSetting('wordRange', 'wordValue', (v) => v + 'px', (v) => { state.wordSpacing = v; });
+bindSetting('wordRange', 'wordValue', (v) => v + 'px', (v) => { state.wordSpacing = v; state.wordSpacingTouched = true; });
 bindSetting('lineRange', 'lineValue', (v) => v.toFixed(1), (v) => { state.lineHeight = v; });
 bindSetting('rotXRange', 'rotXValue', (v) => v + '°', (v) => { state.rotX = v; });
 bindSetting('rotYRange', 'rotYValue', (v) => v + '°', (v) => { state.rotY = v; });
