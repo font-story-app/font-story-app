@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -83,6 +83,11 @@ const STYLE_PARAMS = {
   dropbubbleR: { min: 0, max: 60 },
   brushC: { color: true },
   brushShadowC: { color: true },
+  // Pinned note card (Reza, 2026-11-23).
+  pinCardW: { min: 400, max: 900 },
+  pinCardH: { min: 300, max: 800 },
+  pinCardC: { color: true },
+  pinC: { color: true },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
   gradlineC1: { color: true },

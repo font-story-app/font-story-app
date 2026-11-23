@@ -77,6 +77,7 @@ const STYLES = [
   { id: 'message', label: 'پیام' },
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
+  { id: 'pin', label: 'پونز' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -331,6 +332,17 @@ const STYLE_CONTROLS = {
   dropbubble: [
     { key: 'dropbubbleC', label: 'رنگ حباب', type: 'color', def: '#087ffe' },
     { key: 'dropbubbleR', label: 'گردی حباب', type: 'range', min: 0, max: 60, step: 1, def: 50, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Pinned note card (Reza, 2026-11-23 — his createPinnedNoteCard
+  // code): a white card with a realistic 3D red pushpin at the
+  // top-right corner and bold text in the middle.
+  pin: [
+    { key: 'pinCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'pinCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'pinCardC', label: 'رنگ کارت', type: 'color', def: '#FFFFFF' },
+    { key: 'pinC', label: 'رنگ پونز', type: 'color', def: '#df1217' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -932,6 +944,18 @@ const STYLE_PAINT = {
       : c.toUpperCase() === '#E5E5EA' ? '#595355' : contrastText(c);
     drawWords(line, cx, y);
   },
+  // Pinned note card (Reza, 2026-11-23 — his createPinnedNoteCard
+  // code): bold black text on a white card with a realistic 3D red
+  // pushpin at the top-right (the card + pin are painted block-level in
+  // draw(), like the note/message cards). A colour picked in the رنگ tab
+  // wins; otherwise the text is his #0a0a0a on the white card, and
+  // contrastText keeps it readable if the card colour is changed.
+  pin: (line, cx, y) => {
+    const c = sp('pinCardC') || '#FFFFFF';
+    ctx.fillStyle = state.colorTouched ? state.color
+      : c.toUpperCase() === '#FFFFFF' ? '#0a0a0a' : contrastText(c);
+    drawWords(line, cx, y);
+  },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
   // A colour picked in the رنگ tab wins; if the content colour is
@@ -1490,6 +1514,68 @@ function paintMessageCard(l, fs) {
   ctx.restore();
 }
 
+// Geometry of the pinned note card around the text block (Reza,
+// 2026-11-23 — his createPinnedNoteCard code). The card's SIZE is
+// adjustable (pinCardW/pinCardH, same defaults as the note/message
+// cards: a 760x480 floor the content can grow past). The top padding
+// leaves room for the pushpin at the top-right corner; the body
+// block's position follows the alignment buttons, same rule as the
+// note card: right hugs the inner right edge, left the inner left
+// edge, centre sits in the middle; justify keeps the direction-based
+// anchor.
+function pinLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 56;                    // card padding left/right (same as note)
+  const padTop = fs * 0.9;            // room for the pin at the top-right
+  const padBottom = fs * 0.4;         // last line bottom -> card bottom
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('pinCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('pinCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
+    padX, padTop, padBottom, blockShift, rtl,
+  };
+}
+
+// Paint the pinned note card: a rounded card with his soft shadow
+// (0 14px 34px rgba(70, 8, 22, 0.16)) and the realistic 3D pushpin
+// at the top-right corner (his: top 14px, right 18px, size 108px at a
+// 680px card — all scaled by the card width). The text itself is
+// painted per line by STYLE_PAINT.pin, on top of the pin.
+function paintPinCard(l, fs) {
+  const u = l.w / 680; // his reference card width
+  ctx.save();
+  ctx.shadowColor = 'rgba(70, 8, 22, 0.16)';
+  ctx.shadowBlur = 34 * u;
+  ctx.shadowOffsetY = 14 * u;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = sp('pinCardC') || '#FFFFFF';
+  ctx.fill();
+  ctx.restore();
+  const img = getPinImage(sp('pinC') || '#df1217');
+  const pinSize = l.w * 0.16;
+  const pinX = l.x + l.w - 0.026 * l.w - pinSize;
+  const pinY = l.y + 0.021 * l.w;
+  if (img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, pinX, pinY, pinSize, pinSize);
+  }
+  // (No flat fallback — the pin is too detailed to fake with paths;
+  // the data: URL loads immediately and onload redraws.)
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -1700,6 +1786,170 @@ function getBrushImage(brushColor, shadowColor) {
     // On error the fallback below keeps painting the flat shape.
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(brushSvgString(brushColor, shadowColor));
     brushImgCache.set(key, img);
+  }
+  return img;
+}
+
+// Realistic pushpin (Reza 2026-11-23 — his createRealisticPushpin /
+// createPinnedNoteCard code): the pin is his exact SVG, rendered as an
+// image (same pattern as the brushstroke band: the SVG has no external
+// refs, so the canvas export is never tainted). The palette is derived
+// from the pin colour by his buildPinPalette.
+function hexToRgb(hex) {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3
+    ? clean.split('').map((c) => c + c).join('')
+    : clean;
+  const num = parseInt(full, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b]
+    .map((v) => Math.min(255, Math.max(0, Math.round(v))).toString(16).padStart(2, '0'))
+    .join('');
+}
+function buildPinPalette(pinColor) {
+  const [r, g, b] = hexToRgb(pinColor);
+  const darken = (factor) => rgbToHex(r * factor, g * factor, b * factor);
+  const tint = (weight, tr = 255, tg = 246, tb = 244) =>
+    rgbToHex(
+      r + (tr - r) * weight,
+      g + (tg - g) * weight,
+      b + (tb - b) * weight
+    );
+  return {
+    ultraDark: darken(0.36),
+    deepDark: darken(0.50),
+    midDark: darken(0.72),
+    base: pinColor,
+    bright: tint(0.14, 255, 225, 220),
+    coral: tint(0.30, 255, 242, 238),
+    salmon: tint(0.47, 255, 246, 243),
+    softSpec: tint(0.68, 255, 250, 248),
+    rimLight: tint(0.84, 255, 255, 255)
+  };
+}
+function pinSvgString(pinColor) {
+  const uid = 'pin-svg';
+  const c = buildPinPalette(pinColor);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <filter id="${uid}-shadow-soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8.5" />
+    </filter>
+    <filter id="${uid}-shadow-contact" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" />
+    </filter>
+    <filter id="${uid}-gloss-soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3.4" />
+    </filter>
+    <filter id="${uid}-gloss-crisp" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.9" />
+    </filter>
+    <filter id="${uid}-cap-shadow-blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5.5" />
+    </filter>
+    <clipPath id="${uid}-dome-clip">
+      <path d="M -27 -34 C -40 -26, -47.5 -10, -47.2 6 C -46.8 26, -28 44, 0 44 C 28 44, 46.8 26, 47.2 6 C 47.5 -10, 40 -26, 27 -34 C 14 -39, -14 -39, -27 -34 Z" />
+    </clipPath>
+    <clipPath id="${uid}-cap-top-clip">
+      <ellipse cx="0" cy="-61.2" rx="35.0" ry="26.6" />
+    </clipPath>
+    <clipPath id="${uid}-cap-lip-clip">
+      <ellipse cx="0" cy="-56.0" rx="36.6" ry="28.3" />
+    </clipPath>
+    <linearGradient id="${uid}-needle-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5d6068" />
+      <stop offset="30%" stop-color="#878b94" />
+      <stop offset="68%" stop-color="#35383f" />
+      <stop offset="100%" stop-color="#191b1f" />
+    </linearGradient>
+    <radialGradient id="${uid}-dome-base" cx="38%" cy="42%" r="68%">
+      <stop offset="0%" stop-color="${c.base}" />
+      <stop offset="52%" stop-color="${c.midDark}" />
+      <stop offset="86%" stop-color="${c.deepDark}" />
+      <stop offset="100%" stop-color="${c.ultraDark}" />
+    </radialGradient>
+    <linearGradient id="${uid}-dome-left-lobe" x1="12%" y1="8%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="${c.softSpec}" stop-opacity="0.92" />
+      <stop offset="36%" stop-color="${c.salmon}" stop-opacity="0.88" />
+      <stop offset="74%" stop-color="${c.coral}" stop-opacity="0.62" />
+      <stop offset="100%" stop-color="${c.base}" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="${uid}-dome-right-lobe" x1="88%" y1="68%" x2="10%" y2="20%">
+      <stop offset="0%" stop-color="${c.salmon}" stop-opacity="0.84" />
+      <stop offset="50%" stop-color="${c.coral}" stop-opacity="0.62" />
+      <stop offset="85%" stop-color="${c.base}" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="${c.midDark}" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="${uid}-neck-grad" x1="0%" y1="0%" x2="100%" y2="25%">
+      <stop offset="0%" stop-color="${c.coral}" />
+      <stop offset="28%" stop-color="${c.midDark}" />
+      <stop offset="68%" stop-color="${c.deepDark}" />
+      <stop offset="100%" stop-color="${c.ultraDark}" />
+    </linearGradient>
+    <linearGradient id="${uid}-cap-lip-grad" x1="15%" y1="15%" x2="82%" y2="96%">
+      <stop offset="0%" stop-color="${c.base}" />
+      <stop offset="44%" stop-color="${c.midDark}" />
+      <stop offset="78%" stop-color="${c.deepDark}" />
+      <stop offset="100%" stop-color="${c.ultraDark}" />
+    </linearGradient>
+    <linearGradient id="${uid}-cap-top-grad" x1="16%" y1="8%" x2="84%" y2="94%">
+      <stop offset="0%" stop-color="${c.salmon}" />
+      <stop offset="44%" stop-color="${c.coral}" />
+      <stop offset="82%" stop-color="${c.bright}" />
+      <stop offset="100%" stop-color="${c.base}" />
+    </linearGradient>
+    <linearGradient id="${uid}-cap-rim-stroke" x1="15%" y1="5%" x2="85%" y2="95%">
+      <stop offset="0%" stop-color="${c.midDark}" stop-opacity="0.58" />
+      <stop offset="48%" stop-color="${c.deepDark}" stop-opacity="0.52" />
+      <stop offset="100%" stop-color="${c.ultraDark}" stop-opacity="0.65" />
+    </linearGradient>
+  </defs>
+  <ellipse cx="65" cy="145" rx="27" ry="19.5" transform="rotate(-36 65 145)" fill="#262932" opacity="0.29" filter="url(#${uid}-shadow-soft)" />
+  <ellipse cx="69" cy="141" rx="11" ry="7" transform="rotate(-38 69 141)" fill="#1b1d24" opacity="0.32" filter="url(#${uid}-shadow-contact)" />
+  <g transform="translate(103, 102) rotate(42)">
+    <rect x="-4.5" y="38" width="9.0" height="16.2" rx="4.2" fill="url(#${uid}-needle-grad)" />
+    <line x1="-2.1" y1="41" x2="-2.1" y2="51.5" stroke="rgba(255,255,255,0.36)" stroke-width="1.2" stroke-linecap="round" />
+    <ellipse cx="0" cy="52.4" rx="3.9" ry="2.2" fill="#3a3d45" />
+    <ellipse cx="0" cy="52.6" rx="2.5" ry="1.3" fill="#23252b" />
+    <g clip-path="url(#${uid}-dome-clip)">
+      <rect x="-54" y="-44" width="108" height="94" fill="url(#${uid}-dome-base)" />
+      <ellipse cx="0" cy="43.5" rx="11" ry="5.5" fill="${c.ultraDark}" opacity="0.72" filter="url(#${uid}-gloss-soft)" />
+      <path d="M -45 6 C -46 -13, -36 -30, -14 -35 C -1 -37, 4 -24, -5 -13 C -13 -3, -21 4, -30 10 C -39 16, -44 13, -45 6 Z" fill="url(#${uid}-dome-left-lobe)" filter="url(#${uid}-gloss-crisp)" />
+      <ellipse cx="-27" cy="-14" rx="15" ry="10" transform="rotate(-28 -27 -14)" fill="${c.softSpec}" opacity="0.42" filter="url(#${uid}-gloss-soft)" />
+      <path d="M 14 -20 C 29 -24, 45 -11, 46 8 C 46 22, 36 34, 21 38 C 12 40, 9 27, 16 15 C 22 4, 18 -9, 14 -20 Z" fill="url(#${uid}-dome-right-lobe)" filter="url(#${uid}-gloss-soft)" />
+      <path d="M 38 -8 C 44 4, 42 20, 30 31" fill="none" stroke="${c.softSpec}" stroke-width="3.2" stroke-linecap="round" opacity="0.34" filter="url(#${uid}-gloss-soft)" />
+      <path d="M -36 16 C -22 6, -6 -2, 8 -14 C 15 -20, 18 -6, 13 10 C 8 24, -2 38, -16 39 C -30 40, -40 28, -36 16 Z" fill="${c.deepDark}" opacity="0.52" filter="url(#${uid}-gloss-soft)" />
+      <path d="M -44 8 C -42 24, -30 36, -12 41" fill="none" stroke="${c.bright}" stroke-width="2.6" stroke-linecap="round" opacity="0.42" filter="url(#${uid}-gloss-crisp)" />
+      <ellipse cx="1" cy="-24" rx="30" ry="15" fill="${c.ultraDark}" opacity="0.72" filter="url(#${uid}-cap-shadow-blur)" />
+    </g>
+    <path d="M -25 -22 C -20 -30, -19 -36, -24 -44 L 24 -44 C 19 -36, 20 -30, 25 -22 C 14 -12, -14 -12, -25 -22 Z" fill="url(#${uid}-neck-grad)" opacity="0.88" />
+    <ellipse cx="0" cy="-32" rx="24" ry="10" fill="${c.ultraDark}" opacity="0.58" filter="url(#${uid}-gloss-soft)" />
+    <g clip-path="url(#${uid}-cap-lip-clip)">
+      <ellipse cx="0" cy="-56.0" rx="36.6" ry="28.3" fill="url(#${uid}-cap-lip-grad)" />
+      <path d="M -34 -48 C -24 -29, 10 -25, 32 -42 C 26 -28, -18 -24, -34 -48 Z" fill="${c.ultraDark}" opacity="0.68" filter="url(#${uid}-gloss-crisp)" />
+      <path d="M -33 -49 C -26 -37, -14 -31, 0 -30" fill="none" stroke="${c.coral}" stroke-width="2.6" stroke-linecap="round" opacity="0.56" filter="url(#${uid}-gloss-crisp)" />
+    </g>
+    <g clip-path="url(#${uid}-cap-top-clip)">
+      <ellipse cx="0" cy="-61.2" rx="35.0" ry="26.6" fill="url(#${uid}-cap-top-grad)" />
+      <ellipse cx="-4" cy="-68" rx="32" ry="19" transform="rotate(-8 -4 -68)" fill="${c.softSpec}" opacity="0.34" filter="url(#${uid}-gloss-soft)" />
+      <path d="M -32 -54 C -33 -74, -12 -86, 12 -84" fill="none" stroke="${c.rimLight}" stroke-width="2.4" stroke-linecap="round" opacity="0.55" filter="url(#${uid}-gloss-crisp)" />
+      <path d="M -34 -52 C -26 -35, 6 -31, 28 -44 C 14 -36, -18 -38, -32 -56 Z" fill="${c.deepDark}" opacity="0.62" filter="url(#${uid}-gloss-crisp)" />
+    </g>
+    <ellipse cx="0" cy="-61.2" rx="34.9" ry="26.5" fill="none" stroke="url(#${uid}-cap-rim-stroke)" stroke-width="1.2" />
+  </g>
+</svg>`;
+}
+const pinImgCache = new Map();
+function getPinImage(pinColor) {
+  const key = pinColor;
+  let img = pinImgCache.get(key);
+  if (!img) {
+    img = new Image();
+    img.onload = () => { redraw(); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(pinSvgString(pinColor));
+    pinImgCache.set(key, img);
   }
   return img;
 }
@@ -1936,6 +2186,11 @@ function draw() {
   const messageRTL = state.style === 'message' ? isRTLText(lines[0] || '') : true;
   const messageMin = state.style === 'message' ? messageMinSize(chromeFs) : { minW: 0, minBlockH: 0 };
   const messageL = state.style === 'message' ? messageLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, messageMin.minW, messageMin.minBlockH, messageRTL) : null;
+  // The pinned note card wraps the block the same way (its pin sits at
+  // the top-right corner, but the body block still follows the
+  // alignment buttons).
+  const pinRTL = state.style === 'pin' ? isRTLText(lines[0] || '') : true;
+  const pinL = state.style === 'pin' ? pinLayout(textFs, maxLw, blockH, lineHeight, h, cx, pinRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -1957,7 +2212,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -2047,6 +2302,11 @@ function draw() {
   // around the whole text block (the text itself is painted per-line
   // below, in black on pink).
   if (messageL) paintMessageCard(messageL, chromeFs);
+
+  // Pinned note card: white rounded card with the realistic 3D
+  // pushpin at the top-right corner around the whole text block (the
+  // text itself is painted per-line below, in bold black).
+  if (pinL) paintPinCard(pinL, textFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -2179,7 +2439,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -2192,6 +2452,7 @@ function redraw() {
   paintDropbubbleSamples();
   paintBrushSamples();
   paintQuotesSamples();
+  paintPinSamples();
 }
 
 // Caret blink.
@@ -2702,6 +2963,7 @@ function buildStylePicker() {
       if (item.id === 'msgbubble') return '<canvas class="sample-canvas sample-canvas-msgbubble" width="190" height="120"></canvas>';
       if (item.id === 'dropbubble') return '<canvas class="sample-canvas sample-canvas-dropbubble" width="190" height="120"></canvas>';
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
+      if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -3026,6 +3288,71 @@ function paintMessageSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-message';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the pinned note card preview with the REAL pin code (pinLayout
+// + paintPinCard + the body text) on its small canvas — a miniature of
+// the actual card, same pattern as the note preview. Called from
+// redraw(), like the message samples. If painting fails, fall back to
+// the CSS box.
+function paintPinSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-pin')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail (no chrome on this card).
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const pinRTL = isRTLText(lines[0] || '');
+        const pinL = pinLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, pinRTL);
+        const blockCx = 540 + pinL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / pinL.w, H / pinL.h);
+        const cardCx = pinL.x + pinL.w / 2, cardCy = pinL.y + pinL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintPinCard(pinL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.pin(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-pin';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

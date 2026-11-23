@@ -386,6 +386,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-quotes {
   height: 60px;
 }
+/* Pinned note card preview: same miniature treatment as the note card. */
+.pick-card .sample canvas.sample-canvas-pin {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -509,6 +513,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
    white header band over the dusty-pink content area. */
 .sample-note { background: #e5e5ea; color: #595355; border-radius: 8px; padding: 0 6px; }
 .sample-message { background: #e5e5ea; color: #000; border-radius: 8px; padding: 0 6px; }
+.sample-pin { background: #fff; color: #0a0a0a; border-radius: 8px; padding: 0 6px; box-shadow: 0 2px 6px rgba(70, 8, 22, 0.16); }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
