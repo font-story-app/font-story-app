@@ -75,9 +75,9 @@ const STYLES = [
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
+  { id: 'pin', label: 'پونز' },
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
-  { id: 'pin', label: 'پونز' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
