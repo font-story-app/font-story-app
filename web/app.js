@@ -556,15 +556,15 @@ const STYLE_CONTROLS = {
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   // Typed input card (Reza, 2026-11-23 — his createTypedInputCard
-  // code): a lavender card with a thick black border, a stacked 3D
-  // shadow below it, and a tall pink typing-cursor bar right next to
-  // the text (on its end side).
+  // code): a lavender card with a thick black border and a stacked 3D
+  // shadow below it. His tall pink typing-cursor bar next to the text
+  // was REMOVED at his ask the same day («اون خط عمودی آخر هر خط چیه
+  // اونو حذف کن») — the card is now just the text, no cursor.
   typed: [
     { key: 'typedCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
     { key: 'typedCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'typedCardC', label: 'رنگ کارت', type: 'color', def: '#ebaaf0' },
     { key: 'typedBorderC', label: 'رنگ حاشیه و سایه', type: 'color', def: '#000000' },
-    { key: 'typedCursorC', label: 'رنگ نشانگر', type: 'color', def: '#eb7293' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -3336,75 +3336,49 @@ function paintGlassNotifCard(l, fs) {
 }
 
 // --- Typed input card (Reza, 2026-11-23 — his createTypedInputCard
-// code): a lavender card with a thick black border, a stacked 3D
-// shadow below it, and a tall pink typing-cursor bar right next to
-// the text (on its end side).
+// code): a lavender card with a thick black border and a stacked 3D
+// shadow below it. His tall pink typing-cursor bar was removed at his
+// ask the same day — the card is now just the text, no cursor.
 
 // Geometry of the typed input card around the text block. Same shape
 // as the other card layouts (fixed px padding, height floor splitting
-// evenly, blockShift following the alignment buttons), with two
-// differences: the content row is the text PLUS the cursor bar, so
-// the text centre is offset from the row centre by half the
-// cursor+gap, and the cursor is taller than the text — the row height
-// is the taller of the text block and the cursor, and the card wraps
-// that. The cursor scales with the text (his 150px at 72px font, so
-// cursorH = textFs x 150/72 — his cursor and his font both scale
-// with the viewport, so they track each other; the rail replaces the
-// viewport here). His blinkCursor animation is not applicable to the
-// static canvas/export, so the cursor is always drawn solid.
+// evenly, blockShift following the alignment buttons). His
+// blinkCursor animation was never applicable to the static
+// canvas/export.
 function typedInputLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const padX = 48, padTop = 26, padBottom = 26; // his max card padding
   const borderW = 5.5;                            // his max border width
   const shadowDepth = 15;                         // his deepest shadow layer
-  const cursorW = 6, cursorGap = 9;               // his max cursor width/gap
-  const cursorH = fs * (150 / 72);                // his cursor height at 72px font
-  const contentH = Math.max(blockH, cursorH);
-  const contentW = maxLw + cursorGap + cursorW;   // text + gap + cursor
-  const cardW = Math.max(contentW + padX * 2, sp('typedCardW'));
+  const cardW = Math.max(maxLw + padX * 2, sp('typedCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - contentW) / 2;
-  const alignShift = state.align === 'right' ? slack
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
     : state.align === 'left' ? -slack
     : state.align === 'justify' ? (rtl ? slack : -slack)
     : 0;
-  // The text sits on the row's start side (right for RTL, left for
-  // LTR), so its centre is offset from the row centre by half the
-  // cursor+gap.
-  const cursorOffset = (rtl ? 1 : -1) * (cursorW + cursorGap) / 2;
-  const blockShift = alignShift + cursorOffset;
-  const rowTop = h / 2 - contentH / 2;
-  const rowBottom = h / 2 + contentH / 2;
-  let cardTop = rowTop - padTop;
-  let cardBottom = rowBottom + padBottom;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
   // Height floor: the card is at least the set size; the extra space
-  // splits evenly above and below so the row stays centred.
+  // splits evenly above and below so the text stays centred.
   const extraH = Math.max(0, sp('typedCardH') - (cardBottom - cardTop));
   cardTop -= extraH / 2;
   cardBottom += extraH / 2;
-  // The cursor sits next to the text block's end side, vertically
-  // centred on the row.
-  const textCx = cx + blockShift;
-  const cursorX = rtl
-    ? textCx - maxLw / 2 - cursorGap - cursorW
-    : textCx + maxLw / 2 + cursorGap;
-  const cursorY = h / 2 - cursorH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
-    padX, borderW, shadowDepth, cursorW, cursorGap, cursorH,
-    cursorX, cursorY, blockShift, rtl,
+    padX, borderW, shadowDepth, blockShift, rtl,
   };
 }
 
 // Paint the typed input card: the three stacked shadow layers below
 // the card (his box-shadow, all in the border colour, no blur — the
 // three offsets collapse to one solid 15px band below the card), the
-// lavender card, the thick border stroked inside the card bounds, and
-// the tall pink cursor bar next to the text. The text itself is
-// painted per line by STYLE_PAINT.typed.
+// lavender card, and the thick border stroked inside the card bounds.
+// The text itself is painted per line by STYLE_PAINT.typed.
 function paintTypedCard(l, fs) {
   const cardC = sp('typedCardC') || '#ebaaf0';
   const borderC = sp('typedBorderC') || '#000000';
-  const cursorC = sp('typedCursorC') || '#eb7293';
   ctx.fillStyle = borderC;
   for (const dy of [5, 10, 15]) {
     roundRect(l.x, l.y + dy, l.w, l.h, l.r);
@@ -3419,10 +3393,6 @@ function paintTypedCard(l, fs) {
   ctx.lineWidth = l.borderW;
   roundRect(l.x + l.borderW / 2, l.y + l.borderW / 2, l.w - l.borderW, l.h - l.borderW, l.r - l.borderW / 2);
   ctx.stroke();
-  // The cursor: a fully rounded bar (his 999px radius = a capsule).
-  ctx.fillStyle = cursorC;
-  roundRect(l.cursorX, l.cursorY, l.cursorW, l.cursorH, l.cursorW / 2);
-  ctx.fill();
 }
 
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
@@ -4114,10 +4084,9 @@ function draw() {
   // panel still follows the alignment buttons).
   const glassnotifRTL = state.style === 'glassnotif' ? isRTLText(lines[0] || '') : true;
   const glassnotifL = state.style === 'glassnotif' ? glassNotifLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, glassnotifRTL) : null;
-  // The typed input card wraps the block the same way (the text plus
-  // the cursor bar form one row centred in the card; the cursor scales
-  // with the text, so the layout takes textFs, not the fixed chrome
-  // size).
+  // The typed input card wraps the block the same way (the text
+  // centred in the card; the layout takes textFs, like the other
+  // text-sized cards).
   const typedRTL = state.style === 'typed' ? isRTLText(lines[0] || '') : true;
   const typedL = state.style === 'typed' ? typedInputLayout(textFs, maxLw, blockH, lineHeight, h, cx, typedRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
@@ -4308,9 +4277,9 @@ function draw() {
   // per-line below, in white).
   if (glassnotifL) paintGlassNotifCard(glassnotifL, chromeFs);
 
-  // Typed input card: a lavender card with a thick black border, a
-  // stacked 3D shadow below it, and a tall pink cursor bar next to
-  // the text (the text itself is painted per-line below, in black).
+  // Typed input card: a lavender card with a thick black border and
+  // a stacked 3D shadow below it (the text itself is painted per-line
+  // below, in black).
   if (typedL) paintTypedCard(typedL, textFs);
 
   // Message bubble: blue bubble + tail around the whole text block
@@ -6349,7 +6318,7 @@ function paintTypedCardSamples() {
       try {
         ctx.textBaseline = 'middle';
         // The sample text, laid out exactly like draw() does it: the
-        // cursor scales with the rail, the card chrome is fixed.
+        // body size follows the rail, the card chrome is fixed.
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;

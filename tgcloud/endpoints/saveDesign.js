@@ -166,7 +166,6 @@ const STYLE_PARAMS = {
   typedCardH: { min: 300, max: 800 },
   typedCardC: { color: true },
   typedBorderC: { color: true },
-  typedCursorC: { color: true },
   // Hearts tape card (Reza, 2026-11-23).
   heartsCardW: { min: 400, max: 900 },
   heartsCardH: { min: 300, max: 800 },
