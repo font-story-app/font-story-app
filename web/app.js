@@ -83,6 +83,7 @@ const STYLES = [
   { id: 'doubleFrame', label: 'قاب دوتایی' },
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
+  { id: 'msgnotif', label: 'اعلان پیام' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -417,6 +418,21 @@ const STYLE_CONTROLS = {
     { key: 'doubleFrameInnerC', label: 'رنگ قاب میانی', type: 'color', def: '#333333' },
     { key: 'doubleFrameBgC', label: 'رنگ پس‌زمینه', type: 'color', def: '#2d0616' },
     { key: 'doubleFrameT', label: 'ضخامت قاب‌ها', type: 'range', min: 0, max: 40, step: 1, def: 26, unit: 'px' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Message notification card (Reza, 2026-11-23 — his
+  // createMessageNotificationCard code): a light-grey iOS message
+  // notification with two darker cards stacked behind it (peeking out
+  // above), a green iMessage icon + MESSAGE title + "now" time in the
+  // header, and the text centred below.
+  msgnotif: [
+    { key: 'msgnotifCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'msgnotifCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'msgnotifCardC', label: 'رنگ کارت', type: 'color', def: '#e3e4e6' },
+    { key: 'msgnotifHeaderC', label: 'رنگ سربرگ', type: 'color', def: '#55575b' },
+    { key: 'msgnotifTitle', label: 'عنوان برنامه', type: 'text', def: 'MESSAGE', max: 20 },
+    { key: 'msgnotifTime', label: 'زمان', type: 'text', def: 'now', max: 10 },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1092,6 +1108,16 @@ const STYLE_PAINT = {
   // pink-on-burgundy pairing is the look.
   doubleFrame: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ff9ba2';
+    drawWords(line, cx, y);
+  },
+  // Message notification card (Reza, 2026-11-23 — his
+  // createMessageNotificationCard code): black text on the light-grey
+  // card (the stacked layers + header are painted block-level in
+  // draw()). A colour picked in the رنگ tab wins; otherwise
+  // contrastText keeps it readable on the card colour.
+  msgnotif: (line, cx, y) => {
+    const c = sp('msgnotifCardC') || '#e3e4e6';
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -2241,6 +2267,126 @@ function paintDoubleFrameCard(l) {
   ctx.restore();
 }
 
+// --- Message notification card (Reza, 2026-11-23 — his
+// createMessageNotificationCard code): a light-grey iOS message
+// notification with two darker cards stacked behind it, peeking out
+// above the front card, and a green iMessage icon + MESSAGE title +
+// "now" time in the header. His backdrop is the page itself, so there
+// is no blur to skip — the three flat layers ARE the look.
+
+// His white speech-bubble path (the iMessage icon), in a 60x60
+// viewBox, verbatim.
+const MSGNOTIF_IMSG_BUBBLE = 'M 30 13.5 C 41.2 13.5, 50 20.1, 50 28.3 C 50 36.5, 41.2 43.1, 30 43.1 C 27.2 43.1, 24.6 42.7, 22.2 41.9 C 19.6 44.1, 16.2 45.3, 12.8 45.2 C 14.4 43.3, 15.6 41.0, 16.0 38.6 C 12.2 35.9, 10 32.3, 10 28.3 C 10 20.1, 18.8 13.5, 30 13.5 Z';
+
+// His adjustColor helper, verbatim: the stacked layers are the card
+// colour darkened by a fixed delta (-15 for the middle, -31 for the
+// back layer).
+function msgnotifAdjust(hex, delta) {
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return hex;
+  const num = parseInt(clean, 16);
+  const r = Math.min(255, Math.max(0, ((num >> 16) & 255) + delta));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 255) + delta));
+  const b = Math.min(255, Math.max(0, (num & 255) + delta));
+  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+// Geometry of the message notification card around the text block.
+// The front card holds the header (icon + title + time) above the
+// text; the two stacked layers peek out above the front card's top
+// edge (back 84.5% wide, middle 93.5% — his widths). The body block's
+// horizontal position follows the alignment buttons, same rule as the
+// note card. The height floor grows the card evenly above and below,
+// so the text stays centred on the canvas.
+function msgnotifLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 38;                    // his max horizontal padding
+  const padTop = 32, padBottom = 44;  // his max vertical padding
+  const headerH = fs * 0.35;          // icon height (his max 38px)
+  const bodyPadTop = 26, bodyPadBottom = 12; // his max body padding
+  const topPeek = 34;                 // strips visible above the card
+  const midTop = 17, backH = 80, midH = 95; // his max layer sizes
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('msgnotifCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - bodyPadTop - headerH - padTop;
+  let cardBottom = textBottom + bodyPadBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('msgnotifCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
+    padX, padTop, headerH, blockShift, rtl, topPeek, midTop, backH, midH,
+  };
+}
+
+// Paint the message notification card: the back layer (narrowest,
+// darkest), the middle layer, then the front card with its soft
+// shadow — then the header row (LTR, like the note/message chrome):
+// the green iMessage icon + title on the left, the time on the right.
+// The text itself is painted per line by STYLE_PAINT.msgnotif.
+function paintMsgnotifCard(l, fs) {
+  const cardC = sp('msgnotifCardC') || '#e3e4e6';
+  const headerC = sp('msgnotifHeaderC') || '#55575b';
+  const title = (sp('msgnotifTitle') || '').trim() || 'MESSAGE';
+  const time = (sp('msgnotifTime') || '').trim() || 'now';
+  const midC = msgnotifAdjust(cardC, -15);
+  const backC = msgnotifAdjust(cardC, -31);
+  ctx.save();
+  // Back layer (84.5% wide) and middle layer (93.5% wide), both
+  // centred; only the strips above the front card show.
+  roundRect(l.x + (l.w - l.w * 0.845) / 2, l.y - l.topPeek, l.w * 0.845, l.backH, l.r);
+  ctx.fillStyle = backC;
+  ctx.fill();
+  roundRect(l.x + (l.w - l.w * 0.935) / 2, l.y - l.topPeek + l.midTop, l.w * 0.935, l.midH, l.r);
+  ctx.fillStyle = midC;
+  ctx.fill();
+  // Front card with his soft shadow (0 10px 26px rgba(0,0,0,0.08)).
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+  ctx.shadowBlur = 26;
+  ctx.shadowOffsetY = 10;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = cardC;
+  ctx.fill();
+  ctx.restore();
+  // Header row, LTR: icon + title on the left, time on the right.
+  ctx.save();
+  const hy = l.y + l.padTop + l.headerH / 2;
+  const iconSize = l.headerH;
+  const iconX = l.x + l.padX, iconY = hy - iconSize / 2;
+  const grad = ctx.createLinearGradient(iconX, iconY, iconX, iconY + iconSize);
+  grad.addColorStop(0, '#65f67d');
+  grad.addColorStop(1, '#1bc93b');
+  roundRect(iconX, iconY, iconSize, iconSize, iconSize * 13.5 / 60);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.save();
+  ctx.translate(iconX, iconY);
+  ctx.scale(iconSize / 60, iconSize / 60);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill(new Path2D(MSGNOTIF_IMSG_BUBBLE));
+  ctx.restore();
+  const headFont = `600 ${fs * 0.2}px 'Vazir', system-ui, sans-serif`;
+  ctx.font = headFont;
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = headerC;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0.9px'; // his 0.04em
+  ctx.textAlign = 'left';
+  ctx.fillText(title, iconX + iconSize + fs * 0.12, hy);
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  ctx.textAlign = 'right';
+  ctx.fillText(time, l.x + l.w - l.padX, hy);
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -2883,6 +3029,12 @@ function draw() {
   // the alignment buttons).
   const doubleFrameRTL = state.style === 'doubleFrame' ? isRTLText(lines[0] || '') : true;
   const doubleFrameL = state.style === 'doubleFrame' ? doubleFrameLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, doubleFrameRTL) : null;
+  // The message notification card wraps the block the same way (two
+  // darker cards stacked behind the front card, peeking out above it;
+  // the header is fixed LTR, but the body block still follows the
+  // alignment buttons).
+  const msgnotifRTL = state.style === 'msgnotif' ? isRTLText(lines[0] || '') : true;
+  const msgnotifL = state.style === 'msgnotif' ? msgnotifLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, msgnotifRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -2904,7 +3056,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -3024,6 +3176,12 @@ function draw() {
   // and a dark burgundy inner box, all sharp-cornered (the text itself
   // is painted per-line below, in coral pink).
   if (doubleFrameL) paintDoubleFrameCard(doubleFrameL);
+
+  // Message notification card: two darker cards stacked behind the
+  // light-grey front card, peeking out above it, with the green
+  // iMessage icon + MESSAGE title + "now" time in the header (the text
+  // itself is painted per-line below, in black).
+  if (msgnotifL) paintMsgnotifCard(msgnotifL, chromeFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -3156,7 +3314,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -3175,6 +3333,7 @@ function redraw() {
   paintBellSamples();
   paintHeartsSamples();
   paintDoubleFrameSamples();
+  paintMsgnotifSamples();
 }
 
 // Caret blink.
@@ -3691,6 +3850,7 @@ function buildStylePicker() {
       if (item.id === 'bell') return '<canvas class="sample-canvas sample-canvas-bell" width="190" height="120"></canvas>';
       if (item.id === 'hearts') return '<canvas class="sample-canvas sample-canvas-hearts" width="190" height="120"></canvas>';
       if (item.id === 'doubleFrame') return '<canvas class="sample-canvas sample-canvas-doubleFrame" width="190" height="120"></canvas>';
+      if (item.id === 'msgnotif') return '<canvas class="sample-canvas sample-canvas-msgnotif" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -4410,6 +4570,76 @@ function paintDoubleFrameSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-doubleFrame';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the message notification card preview with the REAL msgnotif
+// code (msgnotifLayout + paintMsgnotifCard + the body text) on its
+// small canvas — a miniature of the actual card, same pattern as the
+// double frame preview. Called from redraw(), like the double frame
+// samples. If painting fails, fall back to the CSS box.
+function paintMsgnotifSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-msgnotif')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const msgnotifRTL = isRTLText(lines[0] || '');
+        const msgnotifL = msgnotifLayout(110, maxLw, blockH, lineHeight, 1080, 540, msgnotifRTL);
+        const blockCx = 540 + msgnotifL.blockShift;
+        // Fit the whole card (plus the stacked layers peeking out
+        // above it) into the sample canvas, centred, keeping the
+        // aspect — a uniform scale, so nothing is squashed. The layers
+        // stick out above the card, so the fit box extends past the
+        // card on that side.
+        const fitX = msgnotifL.x, fitY = msgnotifL.y - msgnotifL.topPeek;
+        const fitW = msgnotifL.w, fitH = msgnotifL.h + msgnotifL.topPeek;
+        const s = Math.min(W / fitW, H / fitH);
+        const fitCx = fitX + fitW / 2, fitCy = fitY + fitH / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-fitCx, -fitCy);
+          paintMsgnotifCard(msgnotifL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.msgnotif(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-msgnotif';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

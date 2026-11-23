@@ -410,6 +410,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-doubleFrame {
   height: 60px;
 }
+/* Message notification card preview: same miniature treatment as the double frame card. */
+.pick-card .sample canvas.sample-canvas-msgnotif {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -539,6 +543,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-bell { background: rgba(52, 59, 64, 0.72); color: #fff; border-radius: 8px; padding: 0 6px; }
 .sample-hearts { background: #3b0b1f; color: #fff; border-radius: 8px; padding: 0 6px; }
 .sample-doubleFrame { background: #2d0616; color: #ff9ba2; border: 4px solid #fff; outline: 4px solid #333; padding: 0 6px; }
+.sample-msgnotif { background: #e3e4e6; color: #000; border-radius: 8px; padding: 0 6px; }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
