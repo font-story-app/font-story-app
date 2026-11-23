@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -98,6 +98,13 @@ const STYLE_PARAMS = {
   musicTotal: { text: true, max: 5 },
   musicProgress: { min: 0, max: 100 },
   musicVolume: { min: 0, max: 100 },
+  // Pink frame text card (Reza, 2026-11-23).
+  frameCardW: { min: 400, max: 900 },
+  frameCardH: { min: 300, max: 800 },
+  frameCardC: { color: true },
+  frameAccent: { color: true },
+  frameBorder: { min: 0, max: 60 },
+  frameOutline: { min: 0, max: 40 },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
   gradlineC1: { color: true },

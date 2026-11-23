@@ -79,6 +79,7 @@ const STYLES = [
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'music', label: 'موزیک' },
+  { id: 'frame', label: 'قاب صورتی' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -360,6 +361,19 @@ const STYLE_CONTROLS = {
     { key: 'musicTotal', label: 'زمان کل', type: 'text', def: '2:52', max: 5 },
     { key: 'musicProgress', label: 'پیشرفت پخش', type: 'range', min: 0, max: 100, step: 1, def: 61, unit: '٪' },
     { key: 'musicVolume', label: 'صدا', type: 'range', min: 0, max: 100, step: 1, def: 20, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Pink frame text card (Reza, 2026-11-23 — his createPinkFrameTextCard
+  // code): a white card with sharp corners and a thick pink border,
+  // black text with a thick pink outline (his two-layer trick).
+  frame: [
+    { key: 'frameCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'frameCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'frameCardC', label: 'رنگ کارت', type: 'color', def: '#FFFFFF' },
+    { key: 'frameAccent', label: 'رنگ قاب و خط دور', type: 'color', def: '#ff96aa' },
+    { key: 'frameBorder', label: 'ضخامت قاب', type: 'range', min: 0, max: 60, step: 1, def: 26, unit: 'px' },
+    { key: 'frameOutline', label: 'ضخامت خط دور', type: 'range', min: 0, max: 40, step: 1, def: 20, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -986,6 +1000,25 @@ const STYLE_PAINT = {
   music: (line, cx, y) => {
     const c = sp('musicCardC') || '#1a040d';
     ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
+    drawWords(line, cx, y);
+  },
+  // Pink frame text card (Reza, 2026-11-23 — his createPinkFrameTextCard
+  // code): black text with a thick pink outline on a white card with a
+  // thick pink border (the border is painted block-level in draw()).
+  // His two-layer trick, verbatim in canvas: fill the glyph in the
+  // accent (so the counters stay pink), stroke it in the accent (the
+  // outer half is the visible outline), then fill it in the text colour
+  // on top. The outline width is a % of the font size (his 22px at a
+  // 112px font ≈ 20%). A colour picked in the رنگ tab wins for the
+  // text; otherwise contrastText keeps it readable on the card colour.
+  frame: (line, cx, y, lw, fs) => {
+    const accent = sp('frameAccent') || '#ff96aa';
+    const f = fs || state.size;
+    const sw = f * (sp('frameOutline') ?? 20) / 100;
+    ctx.fillStyle = accent;
+    drawWords(line, cx, y, 0, 0, 'fill', false);
+    strokeWords(line, cx, y, accent, sw);
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(sp('frameCardC') || '#FFFFFF');
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -1839,6 +1872,52 @@ function paintMusicCard(l, fs) {
   ctx.restore();
 }
 
+// --- Pink frame text card (Reza, 2026-11-23 — his createPinkFrameTextCard
+// code): a white card with sharp corners and a thick pink border around
+// the text. The border width is a knob (his 26px); the card padding is
+// his fixed 48px vertical / 56px horizontal (not fs units — it is a
+// card design value, like the note's 56px side padding).
+function frameLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 56;
+  const padTop = 48, padBottom = 48;
+  const bw = sp('frameBorder') ?? 26;
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + (padX + bw) * 2, sp('frameCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - (padX + bw) * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - padTop - bw;
+  let cardBottom = textBottom + padBottom + bw;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('frameCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
+    padX, bw, blockShift, rtl,
+  };
+}
+
+// Paint the pink frame card: the outer rect in the accent colour (the
+// border), the inner rect in the card colour. Sharp corners, radius 0
+// — his design.
+function paintFrameCard(l) {
+  const accent = sp('frameAccent') || '#ff96aa';
+  const cardC = sp('frameCardC') || '#FFFFFF';
+  ctx.save();
+  ctx.fillStyle = accent;
+  ctx.fillRect(l.x, l.y, l.w, l.h);
+  ctx.fillStyle = cardC;
+  ctx.fillRect(l.x + l.bw, l.y + l.bw, l.w - 2 * l.bw, l.h - 2 * l.bw);
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -2460,6 +2539,11 @@ function draw() {
   // 110 like the note/message chrome; only the title follows the rail.
   const musicRTL = state.style === 'music' ? isRTLText(lines[0] || '') : true;
   const musicL = state.style === 'music' ? musicLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, musicRTL) : null;
+  // The pink frame card wraps the block the same way (a thick pink
+  // border around the text, sharp corners; the body block still follows
+  // the alignment buttons).
+  const pinkFrameRTL = state.style === 'frame' ? isRTLText(lines[0] || '') : true;
+  const pinkFrameL = state.style === 'frame' ? frameLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, pinkFrameRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -2481,7 +2565,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -2581,6 +2665,11 @@ function draw() {
   // title and the progress / controls / volume rows below it (the
   // title itself is painted per-line below, in white).
   if (musicL) paintMusicCard(musicL, chromeFs);
+
+  // Pink frame card: a white card with a thick pink border and sharp
+  // corners around the whole text block (the text itself is painted
+  // per-line below, in black with a thick pink outline).
+  if (pinkFrameL) paintFrameCard(pinkFrameL);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -2713,7 +2802,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -2728,6 +2817,7 @@ function redraw() {
   paintQuotesSamples();
   paintPinSamples();
   paintMusicSamples();
+  paintFrameSamples();
 }
 
 // Caret blink.
@@ -3240,6 +3330,7 @@ function buildStylePicker() {
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
+      if (item.id === 'frame') return '<canvas class="sample-canvas sample-canvas-frame" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -3695,6 +3786,71 @@ function paintMusicSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-music';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the pink frame card preview with the REAL frame code
+// (frameLayout + paintFrameCard + the body text) on its small canvas —
+// a miniature of the actual card, same pattern as the music preview.
+// Called from redraw(), like the music samples. If painting fails, fall
+// back to the CSS box.
+function paintFrameSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-frame')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const frameRTL = isRTLText(lines[0] || '');
+        const frameL = frameLayout(110, maxLw, blockH, lineHeight, 1080, 540, frameRTL);
+        const blockCx = 540 + frameL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / frameL.w, H / frameL.h);
+        const cardCx = frameL.x + frameL.w / 2, cardCy = frameL.y + frameL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintFrameCard(frameL);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.frame(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-frame';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
