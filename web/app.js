@@ -3295,15 +3295,18 @@ function paintGlassNotifCard(l, fs) {
   const timeText = sp('glassNotifTime') || 'now';
   const timeC = sp('glassNotifTimeC') || '#ffffff';
   const timeO = sp('glassNotifTimeO') ?? 45;
+  // The time label draws at 25px with its own tracking and alignment
+  // — wrapped in save/restore so none of it leaks into the main text
+  // (without this, the label's 25px font stuck and the size slider
+  // stopped resizing the text — Reza, 2026-11-23).
+  ctx.save();
   ctx.fillStyle = hexToRgba(timeC, timeO / 100);
   ctx.font = `600 ${25}px 'Vazir'`;
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0.25px';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
   ctx.fillText(timeText, l.x + l.w - 42, l.y + 36);
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
+  ctx.restore();
 }
 
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
@@ -4194,6 +4197,16 @@ function draw() {
   // Dry-brush band: navy brush stroke + pale-pink shadow around the
   // whole text block (text painted per-line below, in white).
   if (brushL) paintBrush(brushL, textFs);
+
+  // Re-assert the text font state before painting the lines: the card
+  // paints above may change ctx.font for their chrome (the glass
+  // notification card's time label left the font at 25px, so the size
+  // slider stopped resizing the text — Reza, 2026-11-23). Re-setting
+  // it here means no chrome paint can ever shrink the text again.
+  ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
   for (let li = 0; li < lineRanges.length; li++) {
     const line = lines[li];
