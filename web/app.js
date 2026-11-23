@@ -220,7 +220,10 @@ const STYLE_CONTROLS = {
   ],
   sticker: [
     { key: 'stickerOutline', label: 'ضخامت خط دور', type: 'range', min: 5, max: 20, step: 1, def: 12, unit: '٪' },
-    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
+    { key: 'stickerShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 38, unit: '٪' },
+    { key: 'stickerOutlineC', label: 'رنگ خط دور', type: 'color', def: '#df0b0b' },
+    { key: 'stickerShadowC', label: 'رنگ سایه', type: 'color', def: '#660b0b' },
+    { key: 'stickerC', label: 'رنگ برچسب', type: 'color', def: '#ffffff' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -790,33 +793,42 @@ const STYLE_PAINT = {
     strokeWords(line, cx, y, '#a7f3d0', sp('rossetaStroke'));
   },
   sticker: (line, cx, y, lw, fs) => {
-    // Sticker look, matched to the reference (restored 2026-11-16: Reza
-    // tried the maroon as a concentric ring in v4, liked it, but asked
-    // for the maroon layer back as a shadow): golden fill, red outline
-    // (border 1), a solid maroon shadow (border 2, the darker one) and a
-    // thick white outer outline (border 3) wrapping the whole silhouette.
-    // The maroon is a 3D EXTRUSION — the text shape swept from (0,0) to
-    // (dx,dy), filled solid — so the maroon band hugs the red outline
-    // continuously, exactly filled. A single shifted copy can't do that:
-    // it breaks up below short letters and in word gaps, leaving white
-    // between the maroon and the text. The white ring is stroked at every
-    // sweep step too, so it wraps the swept silhouette uniformly.
+    // Sticker 3D (Reza 2026-11-23 — his createSticker3DTextStyle code,
+    // replacing v5): golden text, a red outline, a maroon 3D extrusion
+    // swept down-left in 18 steps, and a white sticker border wrapping
+    // the whole silhouette. His filter's geometry, as % of fs (his font
+    // is 57.6px on a phone): red outline dilate 3.5px -> stroke 12%
+    // (the existing def), extrusion dx -16 / dy 22 -> dy 38%,
+    // dx/dy -16/22, white dilate 5px -> a ~9% rim beyond the combined
+    // shape. The white ring is stroked at every sweep step too, so it
+    // wraps the swept silhouette uniformly (the v5 technique); the
+    // maroon copies are ALSO stroked (at the red outline width) so the
+    // extrusion carries the outline's shape — exactly like his filter
+    // sweeping redAlpha, not just the bare text. The text follows the
+    // رنگ tab (solid or gradient) once the user picks a colour, else
+    // his gold #ffc224; the layer copies pass textFill=false so a
+    // gradient text colour can never leak into them.
     const w = fs * (sp('stickerOutline') / 100);
     const ww = w * 2.5;
     const dy = fs * (sp('stickerShadow') / 100);
-    const dx = -0.6 * dy;
+    const dx = -(16 / 22) * dy;
     const steps = Math.max(1, Math.min(24, Math.ceil(Math.hypot(dx, dy) / 3)));
+    const white = sp('stickerC');
+    const maroon = sp('stickerShadowC');
+    const red = sp('stickerOutlineC');
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      strokeWords(line, cx, y, '#ffffff', ww, dx * t, dy * t);
+      strokeWords(line, cx, y, white, ww, dx * t, dy * t);
     }
-    for (let i = 0; i <= steps; i++) {
+    for (let i = 1; i <= steps; i++) {
       const t = i / steps;
-      ctx.fillStyle = '#5C1220';
-      drawWords(line, cx, y, dx * t, dy * t);
+      strokeWords(line, cx, y, maroon, w, dx * t, dy * t);
+      ctx.fillStyle = maroon;
+      drawWords(line, cx, y, dx * t, dy * t, 'fill', false);
     }
-    strokeWords(line, cx, y, '#ED1C24', w);
-    ctx.fillStyle = '#FFC531';
+    strokeWords(line, cx, y, red, w);
+    if (state.colorTouched) ctx.fillStyle = textColorFill(line, cx, y, lw);
+    else ctx.fillStyle = '#ffc224';
     drawWords(line, cx, y);
   },
   // StoryFont styles (Reza, 2026-11-22) — colours sampled from his
@@ -2524,7 +2536,7 @@ function paintStickerSamples() {
       try {
         ctx.textBaseline = 'middle';
         // Fit «متن شما» into the canvas, leaving room for the white
-        // ring (30% of fs) and the maroon offset (25% of fs).
+        // ring (30% of fs) and the maroon offset (38% of fs).
         let fs = Math.floor(H * 0.42);
         const setFont = (s) => {
           ctx.font = `${state.weight} ${s}px ${fontFamily()}`;
