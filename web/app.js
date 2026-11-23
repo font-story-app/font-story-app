@@ -96,6 +96,7 @@ const STYLES = [
   { id: 'glassnotif', label: 'اعلان شیشه‌ای' },
   { id: 'typed', label: 'تایپ' },
   { id: 'corner', label: 'کمان گوشه' },
+  { id: 'slantquote', label: 'نقل‌قول مورب' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -579,6 +580,20 @@ const STYLE_CONTROLS = {
     { key: 'cornerCardC', label: 'رنگ کارت', type: 'color', def: '#f2f2f2' },
     { key: 'cornerBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
     { key: 'cornerAccentC', label: 'رنگ کمان', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Slanted quote frame card (Reza, 2026-11-23 — his
+  // createSlantedQuoteFrameCard code): a frameless quote — two white
+  // frame paths with gaps in the top and bottom edges, and a pair of
+  // slanted trapezoid quote marks straddling each gap (top-left,
+  // bottom-right, point-symmetric). No card fill: the page background
+  // shows through, like the quotes style.
+  slantquote: [
+    { key: 'slantQuoteCardW', label: 'عرض کادر', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'slantQuoteCardH', label: 'ارتفاع کادر', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'slantQuoteFrameC', label: 'رنگ کادر', type: 'color', def: '#ffffff' },
+    { key: 'slantQuoteQuoteC', label: 'رنگ گیومه', type: 'color', def: '#ffffff' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1357,6 +1372,17 @@ const STYLE_PAINT = {
   // not contrastText, because the black-on-grey pairing is the look.
   corner: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Slanted quote frame card (Reza, 2026-11-23 — his
+  // createSlantedQuoteFrameCard code): white text on the page
+  // background (the frame paths and quote marks are painted
+  // block-level in draw()). A colour picked in the رنگ tab wins;
+  // otherwise his #ffffff — a fixed design colour, not contrastText,
+  // because the white-on-background pairing is the look, like the
+  // quotes style.
+  slantquote: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -3501,6 +3527,134 @@ function paintCornerCard(l, fs) {
   ctx.stroke();
 }
 
+// --- Slanted quote frame card (Reza, 2026-11-23 — his
+// createSlantedQuoteFrameCard code): a frameless quote — two white
+// frame paths with gaps in the top and bottom edges, and a pair of
+// slanted trapezoid quote marks straddling each gap. No card fill:
+// the page background shows through.
+
+// Geometry of the slanted quote frame around the text block. Same
+// shape as the other card layouts (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons),
+// with his responsive scale s = min(1, max(0.58, w/720)) driving the
+// stroke, radius, gaps and quote marks from the frame width. The
+// frame width follows the text (floored at the card width), so s is
+// 1 whenever the frame is at least 720 wide.
+function slantQuoteLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 52, padTop = 44, padBottom = 44; // his max frame padding
+  const cardW = Math.max(maxLw + padX * 2, sp('slantQuoteCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the frame is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('slantQuoteCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  const w = cardW, fh = cardBottom - cardTop;
+  const s = Math.min(1, Math.max(0.58, w / 720));
+  const sw = 6 * s;
+  const pad = sw / 2;
+  const r = Math.min(36 * s, (fh - sw) / 2.2);
+  const shortSeg = 32 * s;
+  const gapW = Math.min(130 * s, w * 0.34);
+  const topGapStart = pad + r + shortSeg;
+  const topGapEnd = Math.min(w - pad - r - 18 * s, topGapStart + gapW);
+  const botGapEnd = w - pad - r - shortSeg;
+  const botGapStart = Math.max(pad + r + 18 * s, botGapEnd - gapW);
+  return {
+    x: cardX, y: cardTop, w, h: fh, r,
+    padX, blockShift, rtl,
+    s, sw, pad, shortSeg, gapW,
+    topGapStart, topGapEnd, botGapStart, botGapEnd,
+    // Quote-pair centres, in frame-local coords: the top pair
+    // straddles the top edge (just above it), the bottom pair the
+    // bottom edge (just below it), rotated 180°.
+    topCx: (topGapStart + topGapEnd) / 2, topCy: pad - 4 * s,
+    botCx: (botGapStart + botGapEnd) / 2, botCy: fh - pad + 4 * s,
+  };
+}
+
+// One slanted trapezoid quote mark, drawn as a filled polygon around
+// a pair centre. His shape: wider at the bottom (18.5) than the top
+// (14.5), leaning like a forward slash — the top edge is shifted
+// right by the slant (12) relative to the bottom edge. The bottom
+// pair is the same shape rotated 180° (negated offsets), so its
+// bars lean like a backslash.
+function paintSlantQuoteMark(cx, cy, dx, s, rotate180) {
+  const halfH = 26 * s;
+  const wTop = 14.5 * s;
+  const wBot = 18.5 * s;
+  const slant = 12 * s;
+  const pts = [
+    [dx - wTop / 2 + slant / 2, -halfH],
+    [dx + wTop / 2 + slant / 2, -halfH],
+    [dx + wBot / 2 - slant / 2, halfH],
+    [dx - wBot / 2 - slant / 2, halfH],
+  ];
+  ctx.beginPath();
+  pts.forEach(([px, py], i) => {
+    const x = cx + (rotate180 ? -px : px);
+    const y = cy + (rotate180 ? -py : py);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fill();
+}
+
+// Paint the slanted quote frame: the two frame paths (top-right and
+// bottom-left, each a continuous path from one gap to the other with
+// rounded corners, round caps and joins) and the two quote pairs
+// straddling the gaps. The text itself is painted per line by
+// STYLE_PAINT.slantquote.
+function paintSlantQuoteCard(l, fs) {
+  const frameC = sp('slantQuoteFrameC') || '#ffffff';
+  const quoteC = sp('slantQuoteQuoteC') || '#ffffff';
+  const w = l.w, h = l.h, pad = l.pad, r = l.r;
+  ctx.strokeStyle = frameC;
+  ctx.lineWidth = l.sw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  // Top-right path: from the top gap, along the top edge, around the
+  // top-right corner, down the right edge, around the bottom-right
+  // corner, to the bottom gap.
+  ctx.beginPath();
+  ctx.moveTo(l.x + l.topGapEnd, l.y + pad);
+  ctx.lineTo(l.x + w - pad - r, l.y + pad);
+  ctx.arc(l.x + w - pad - r, l.y + pad + r, r, -Math.PI / 2, 0);
+  ctx.lineTo(l.x + w - pad, l.y + h - pad - r);
+  ctx.arc(l.x + w - pad - r, l.y + h - pad - r, r, 0, Math.PI / 2);
+  ctx.lineTo(l.x + l.botGapEnd, l.y + h - pad);
+  ctx.stroke();
+  // Bottom-left path: from the bottom gap, along the bottom edge,
+  // around the bottom-left corner, up the left edge, around the
+  // top-left corner, to the top gap.
+  ctx.beginPath();
+  ctx.moveTo(l.x + l.botGapStart, l.y + h - pad);
+  ctx.lineTo(l.x + pad + r, l.y + h - pad);
+  ctx.arc(l.x + pad + r, l.y + h - pad - r, r, Math.PI / 2, Math.PI);
+  ctx.lineTo(l.x + pad, l.y + pad + r);
+  ctx.arc(l.x + pad + r, l.y + pad + r, r, Math.PI, Math.PI * 1.5);
+  ctx.lineTo(l.x + l.topGapStart, l.y + pad);
+  ctx.stroke();
+  // Quote pairs: two slanted bars each, the top pair upright at the
+  // top gap, the bottom pair rotated 180° at the bottom gap.
+  ctx.fillStyle = quoteC;
+  const off = 24 * l.s;
+  paintSlantQuoteMark(l.x + l.topCx, l.y + l.topCy, -off, l.s, false);
+  paintSlantQuoteMark(l.x + l.topCx, l.y + l.topCy, off, l.s, false);
+  paintSlantQuoteMark(l.x + l.botCx, l.y + l.botCy, -off, l.s, true);
+  paintSlantQuoteMark(l.x + l.botCx, l.y + l.botCy, off, l.s, true);
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -4198,6 +4352,11 @@ function draw() {
   // The corner accent card wraps the block the same way.
   const cornerRTL = state.style === 'corner' ? isRTLText(lines[0] || '') : true;
   const cornerL = state.style === 'corner' ? cornerCardLayout(textFs, maxLw, blockH, lineHeight, h, cx, cornerRTL) : null;
+  // The slanted quote frame wraps the block the same way (the frame
+  // geometry scales with the frame width, not the font — the layout
+  // takes textFs for the shared signature only).
+  const slantQuoteRTL = state.style === 'slantquote' ? isRTLText(lines[0] || '') : true;
+  const slantQuoteL = state.style === 'slantquote' ? slantQuoteLayout(textFs, maxLw, blockH, lineHeight, h, cx, slantQuoteRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -4219,7 +4378,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || slantQuoteL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4397,6 +4556,12 @@ function draw() {
   // in black).
   if (cornerL) paintCornerCard(cornerL, textFs);
 
+  // Slanted quote frame card: two white frame paths with gaps and a
+  // pair of slanted trapezoid quote marks straddling each gap — no
+  // card fill, the page background shows through (the text itself is
+  // painted per-line below, in white).
+  if (slantQuoteL) paintSlantQuoteCard(slantQuoteL, textFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -4538,7 +4703,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintSlantQuoteCardSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -4568,6 +4733,7 @@ function redraw() {
   paintGlassNotifCardSamples();
   paintTypedCardSamples();
   paintCornerCardSamples();
+  paintSlantQuoteCardSamples();
 }
 
 // Caret blink.
@@ -5095,6 +5261,7 @@ function buildStylePicker() {
       if (item.id === 'glassnotif') return '<canvas class="sample-canvas sample-canvas-glassnotif" width="190" height="120"></canvas>';
       if (item.id === 'typed') return '<canvas class="sample-canvas sample-canvas-typed" width="190" height="120"></canvas>';
       if (item.id === 'corner') return '<canvas class="sample-canvas sample-canvas-corner" width="190" height="120"></canvas>';
+      if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -6547,6 +6714,74 @@ function paintCornerCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-corner';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the slanted quote frame preview with the REAL slantquote code
+// (slantQuoteLayout + paintSlantQuoteCard + the body text) on its
+// small canvas — a miniature of the actual frame, same pattern as
+// the corner preview. Called from redraw(), like the corner samples.
+// If painting fails, fall back to the CSS box.
+function paintSlantQuoteCardSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-slantquote')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the frame geometry follows the
+        // frame width.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const slantQuoteRTL = isRTLText(lines[0] || '');
+        const slantQuoteL = slantQuoteLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, slantQuoteRTL);
+        const blockCx = 540 + slantQuoteL.blockShift;
+        // Fit the whole frame PLUS the quote marks' 27px overhang
+        // above and below into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const fitW = slantQuoteL.w, fitH = slantQuoteL.h + 54;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = slantQuoteL.x + slantQuoteL.w / 2, cardCy = slantQuoteL.y + slantQuoteL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintSlantQuoteCard(slantQuoteL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.slantquote(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-slantquote';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
