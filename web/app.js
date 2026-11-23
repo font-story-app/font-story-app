@@ -138,6 +138,8 @@ const STYLE_CONTROLS = {
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   quotes: [
+    { key: 'quoteC', label: 'رنگ قاب', type: 'color', def: '#34f5df' },
+    { key: 'quoteStroke', label: 'ضخامت قاب', type: 'range', min: 4, max: 20, step: 1, def: 10, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -715,6 +717,18 @@ function strokeWords(line, cx, y, color, width, dx = 0, dy = 0) {
   drawWords(line, cx, y, dx, dy, 'stroke');
   ctx.restore();
 }
+
+// The quotes style's single-quote glyph (Reza 2026-11-23 — his
+// createQuoteFrameStyle code, verbatim). One curved comma-like mark in
+// a ~34x50 box; the frame draws it as a pair (two side by side) at the
+// top gap and the same pair rotated 180° at the bottom gap.
+const QUOTE_PATH =
+  'M 26.5 4.2 C 28.5 2.8, 31.2 4.4, 30.0 6.8 ' +
+  'C 26.8 13.0, 22.8 17.5, 20.5 23.2 ' +
+  'C 26.2 24.4, 30.2 29.6, 29.8 35.8 ' +
+  'C 29.3 43.2, 23.0 48.8, 15.5 48.4 ' +
+  'C 7.5 48.0, 1.8 41.2, 2.2 32.5 ' +
+  'C 2.8 20.2, 11.2 10.2, 26.5 4.2 Z';
 
 const STYLE_PAINT = {
   bold: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
@@ -1846,19 +1860,77 @@ function draw() {
   // Quotes style: teal border around the whole text block, with quote
   // marks in the corners (the text itself is painted per-line below).
   if (state.style === 'quotes') {
-    const pad = 48;
-    const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
-    const top = y - lineHeight / 2 - pad / 2;
+    // Quote frame (Reza 2026-11-23 — his createQuoteFrameStyle code):
+    // a teal rounded frame drawn as TWO stroked paths (not a closed
+    // rect) with a gap in the top edge and a gap in the bottom edge,
+    // a pair of quote glyphs straddling each gap (the bottom pair
+    // rotated 180°). His geometry is in CSS px at a 57.6px font, so
+    // everything is computed in his px (u = fontSize/57.6 canvas px
+    // per his px) and rendered under a scale(u) transform — the path
+    // strings below are his exact formulas, and the quote glyph path
+    // (QUOTE_PATH) is verbatim. isSmall is his w < 460 threshold in
+    // his px (a narrow frame gets the compact stroke/scale/radius).
+    // The frame-to-text gaps come from his container padding (35px
+    // horizontal, 51px vertical) minus the frame insets.
+    const u = fontSize / 57.6;
+    const framePadX = 30 * u;
+    const bw = Math.max(...lines.map((l) => lineWidth(l))) + framePadX * 2;
+    const W = bw / u;
+    const isSmall = W < 460;
+    const strokePx = fontSize * (sp('quoteStroke') / 100) / u;
+    const swPx = isSmall ? Math.max(4, strokePx - 1.5) : strokePx;
+    const quoteScale = isSmall ? 0.72 : 1.02;
+    const padY = 28 * quoteScale;
+    const framePadY = (51 - padY) * u;
+    const bh = blockH + framePadY * 2;
+    const H = bh / u;
+    const padX = Math.ceil(swPx / 2) + 2;
+    const left = padX;
+    const right = W - padX;
+    const top = padY;
+    const bottom = H - padY;
+    const r = Math.min(isSmall ? 30 : 48, (bottom - top) * 0.32, (right - left) * 0.18);
+    const stub = Math.min(isSmall ? 18 : 34, (right - left) * 0.05);
+    const gapWidth = 112 * quoteScale;
+    const topGapStart = left + r + stub;
+    const topGapEnd = Math.min(right - r - 8, topGapStart + gapWidth);
+    const topCenterX = (topGapStart + topGapEnd) / 2;
+    const bottomGapEnd = right - r - stub;
+    const bottomGapStart = Math.max(left + r + 8, bottomGapEnd - gapWidth);
+    const bottomCenterX = (bottomGapStart + bottomGapEnd) / 2;
+    const fx = cx - bw / 2;
+    const fy = y - lineHeight / 2 - framePadY;
+    const frameColor = sp('quoteC');
+    const pathTopRight = `M ${topGapEnd} ${top} L ${right - r} ${top} A ${r} ${r} 0 0 1 ${right} ${top + r} L ${right} ${bottom - r} A ${r} ${r} 0 0 1 ${right - r} ${bottom} L ${bottomGapEnd} ${bottom}`;
+    const pathBottomLeft = `M ${bottomGapStart} ${bottom} L ${left + r} ${bottom} A ${r} ${r} 0 0 1 ${left} ${bottom - r} L ${left} ${top + r} A ${r} ${r} 0 0 1 ${left + r} ${top} L ${topGapStart} ${top}`;
     ctx.save();
-    ctx.strokeStyle = state.styleColor;
-    ctx.lineWidth = 4;
-    roundRect(cx - bw / 2, top, bw, blockH + pad, state.borderRadius);
-    ctx.stroke();
-    ctx.fillStyle = state.styleColor;
-    ctx.font = `${fontSize}px ${fontFamily()}`;
-    ctx.textAlign = 'center';
-    ctx.fillText('“', cx + bw / 2 - 24, top + fontSize * 0.75);
-    ctx.fillText('”', cx - bw / 2 + 24, top + blockH + pad - 12);
+    ctx.translate(fx, fy);
+    ctx.scale(u, u);
+    ctx.strokeStyle = frameColor;
+    ctx.lineWidth = swPx;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke(new Path2D(pathTopRight));
+    ctx.stroke(new Path2D(pathBottomLeft));
+    ctx.fillStyle = frameColor;
+    const q = new Path2D(QUOTE_PATH);
+    ctx.save();
+    ctx.translate(topCenterX, top);
+    ctx.scale(quoteScale, quoteScale);
+    ctx.translate(-34, -27);
+    ctx.fill(q);
+    ctx.translate(36, 0);
+    ctx.fill(q);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(bottomCenterX, bottom);
+    ctx.rotate(Math.PI);
+    ctx.scale(quoteScale, quoteScale);
+    ctx.translate(-34, -27);
+    ctx.fill(q);
+    ctx.translate(36, 0);
+    ctx.fill(q);
+    ctx.restore();
     ctx.restore();
   }
 
@@ -3036,7 +3108,7 @@ function paintBrushSamples() {
 // radius — the «استایل» section in the per-style sheet only shows for
 // these (Reza, 2026-11-21); the other styles never read styleColor or
 // borderRadius, so the knobs would do nothing there.
-const BOX_STYLES = ['highlight', 'quotes'];
+const BOX_STYLES = ['highlight'];
 // Build the «تنظیمات این استایل» controls for the current style.
 // Rebuilt on style change, on opening the sheet, and on applying a
 // saved design — so the sheet always shows the current style's knobs.
@@ -3165,12 +3237,13 @@ function renderStyleControls() {
   // The «استایل» section moved here from the text settings (gear) sheet
   // (Reza, 2026-11-21): the style colour and the corner radius live
   // with the style's own knobs now. They are global state — not
-  // per-style params — and they only show for the two box styles that
-  // still paint with them (highlight, quotes); glass and brush have
+  // per-style params — and they only show for the one box style that
+  // still paints with them (highlight); glass, brush and quotes have
   // their own colour/radius knobs (glassC/glassR, brushBoxC/brushBoxR,
-  // Reza 2026-11-23), so they are not in this list. For every other
-  // style the section is not shown at all. Same ids and wiring as
-  // before, so the saved-design restore (applyDesign) needs no change.
+  // quoteC/quoteStroke, Reza 2026-11-23), so they are not in this
+  // list. For every other style the section is not shown at all. Same
+  // ids and wiring as before, so the saved-design restore (applyDesign)
+  // needs no change.
   if (BOX_STYLES.includes(state.style)) {
     const sub = document.createElement('div');
     sub.className = 'settings-sub';
@@ -3349,6 +3422,12 @@ function applyDesign(d) {
   if (state.style === 'brush') {
     if (!state.styleParams.brushBoxC && typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor)) state.styleParams.brushBoxC = d.styleColor;
     if (state.styleParams.brushBoxR == null && Number.isFinite(Number(d.borderRadius))) state.styleParams.brushBoxR = clampNum(d.borderRadius, 0, 40, 18);
+  }
+  // Quotes used the global style colour until 2026-11-23; same
+  // carry-over (the frame colour only — the new frame's stroke width
+  // and radius are computed from the frame size, not saved).
+  if (state.style === 'quotes') {
+    if (!state.styleParams.quoteC && typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor)) state.styleParams.quoteC = d.styleColor;
   }
   textInput.value = state.text;
   $('colorPicker').value = flatColor(state.color);
