@@ -91,6 +91,7 @@ const STYLES = [
   { id: 'splitwindow', label: 'پنجره دو تکه' },
   { id: 'macwindow', label: 'پنجره مک' },
   { id: 'heart', label: 'قلب پایین' },
+  { id: 'glassnotif', label: 'اعلان شیشه‌ای' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -533,6 +534,21 @@ const STYLE_CONTROLS = {
     { key: 'heartCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'heartCardC', label: 'رنگ کارت', type: 'color', def: '#eabcc5' },
     { key: 'heartAccentC', label: 'رنگ خط و قلب', type: 'color', def: '#415a6c' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Glass notification card (Reza, 2026-11-23 — his
+  // createGlassNotificationCard code): a translucent glass panel
+  // with a small time label in the top-right corner and the text
+  // centred in it.
+  glassnotif: [
+    { key: 'glassNotifCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'glassNotifCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'glassNotifCardC', label: 'رنگ کارت', type: 'color', def: '#ffffff' },
+    { key: 'glassNotifCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 34, unit: '٪' },
+    { key: 'glassNotifTime', label: 'زمان', type: 'text', def: 'now', max: 10 },
+    { key: 'glassNotifTimeC', label: 'رنگ زمان', type: 'color', def: '#ffffff' },
+    { key: 'glassNotifTimeO', label: 'غلظت زمان', type: 'range', min: 10, max: 100, step: 1, def: 45, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1282,6 +1298,16 @@ const STYLE_PAINT = {
   // contrastText, because the black-on-pink pairing is the look.
   heart: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Glass notification card (Reza, 2026-11-23 — his
+  // createGlassNotificationCard code): white text on the translucent
+  // glass panel (the panel + time label are painted block-level in
+  // draw()). A colour picked in the رنگ tab wins; otherwise his
+  // #ffffff — a fixed design colour, not contrastText, because the
+  // white-on-glass pairing is the look.
+  glassnotif: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -3215,6 +3241,71 @@ function paintHeartCard(l, fs) {
   ctx.restore();
 }
 
+// --- Glass notification card (Reza, 2026-11-23 — his
+// createGlassNotificationCard code): a translucent glass panel with
+// a small time label in the top-right corner and the text centred in
+// it.
+
+// Geometry of the glass notification card around the text block. Same
+// shape as the other card layouts (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons). The
+// text is centred in the panel; the time label sits in the top-right
+// corner.
+function glassNotifLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 46;                    // his max card padding left/right
+  const padTop = 94, padBottom = 72;  // his max card padding top/bottom
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('glassNotifCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred in the
+  // panel.
+  const extraH = Math.max(0, sp('glassNotifCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the glass notification card: the translucent panel (his rgba
+// tint at 0.34) and the small time label in the top-right corner
+// (his Inter 600, 25px, 0.01em tracking, white at 0.45 — drawn in
+// Vazir, like the other chrome latin text in the app, since Inter is
+// not loaded). NOTE: his backdrop-filter blur(12px) cannot be drawn
+// on canvas — the tint reads as glass over the page's smooth gradient
+// backgrounds, the same as the music and bell cards. The text itself
+// is painted per line by STYLE_PAINT.glassnotif.
+function paintGlassNotifCard(l, fs) {
+  const cardC = sp('glassNotifCardC') || '#ffffff';
+  const cardO = sp('glassNotifCardO') ?? 34;
+  ctx.fillStyle = hexToRgba(cardC, cardO / 100);
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+  const timeText = sp('glassNotifTime') || 'now';
+  const timeC = sp('glassNotifTimeC') || '#ffffff';
+  const timeO = sp('glassNotifTimeO') ?? 45;
+  ctx.fillStyle = hexToRgba(timeC, timeO / 100);
+  ctx.font = `600 ${25}px 'Vazir'`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0.25px';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText(timeText, l.x + l.w - 42, l.y + 36);
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -3899,6 +3990,11 @@ function draw() {
   // block still follows the alignment buttons).
   const heartRTL = state.style === 'heart' ? isRTLText(lines[0] || '') : true;
   const heartL = state.style === 'heart' ? heartLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, heartRTL) : null;
+  // The glass notification card wraps the block the same way (the text
+  // centred in the panel, the time label in the top-right corner; the
+  // panel still follows the alignment buttons).
+  const glassnotifRTL = state.style === 'glassnotif' ? isRTLText(lines[0] || '') : true;
+  const glassnotifL = state.style === 'glassnotif' ? glassNotifLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, glassnotifRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -3920,7 +4016,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4082,6 +4178,11 @@ function draw() {
   // in it (the text itself is painted per-line below, in black).
   if (heartL) paintHeartCard(heartL, chromeFs);
 
+  // Glass notification card: a translucent glass panel with a small
+  // time label in the top-right corner (the text itself is painted
+  // per-line below, in white).
+  if (glassnotifL) paintGlassNotifCard(glassnotifL, chromeFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -4213,7 +4314,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -4240,6 +4341,7 @@ function redraw() {
   paintSplitWindowCardSamples();
   paintMacWindowCardSamples();
   paintHeartCardSamples();
+  paintGlassNotifCardSamples();
 }
 
 // Caret blink.
@@ -4764,6 +4866,7 @@ function buildStylePicker() {
       if (item.id === 'splitwindow') return '<canvas class="sample-canvas sample-canvas-splitwindow" width="190" height="120"></canvas>';
       if (item.id === 'macwindow') return '<canvas class="sample-canvas sample-canvas-macwindow" width="190" height="120"></canvas>';
       if (item.id === 'heart') return '<canvas class="sample-canvas sample-canvas-heart" width="190" height="120"></canvas>';
+      if (item.id === 'glassnotif') return '<canvas class="sample-canvas sample-canvas-glassnotif" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -6017,6 +6120,71 @@ function paintHeartCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-heart';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the glass notification card preview with the REAL glass code
+// (glassNotifLayout + paintGlassNotifCard + the body text) on its
+// small canvas — a miniature of the actual card, same pattern as the
+// heart preview. Called from redraw(), like the heart samples. If
+// painting fails, fall back to the CSS box.
+function paintGlassNotifCardSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-glassnotif')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const glassnotifRTL = isRTLText(lines[0] || '');
+        const glassnotifL = glassNotifLayout(110, maxLw, blockH, lineHeight, 1080, 540, glassnotifRTL);
+        const blockCx = 540 + glassnotifL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / glassnotifL.w, H / glassnotifL.h);
+        const cardCx = glassnotifL.x + glassnotifL.w / 2, cardCy = glassnotifL.y + glassnotifL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintGlassNotifCard(glassnotifL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.glassnotif(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-glassnotif';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
