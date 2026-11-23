@@ -484,7 +484,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-brush { background: #03008d; border-radius: 8px; padding: 0 6px; }
 .sample-pastille { color: #fff01f; -webkit-text-stroke: 1.5px #c377f6; text-shadow: 2px 3px 0 #4c1878; }
 .sample-arcadia { background: linear-gradient(90deg, #ff7a18, #ff2e63); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 0.5px #fff; }
-.sample-underline { color: #fff; background: linear-gradient(180deg, transparent 0 60%, #7a4bfb 60%); border-radius: 4px; padding: 0 8px; }
+.sample-underline { color: #fff; background: linear-gradient(180deg, transparent 0 56%, #7349f9 56%); text-shadow: -1px 2px 0 #4b28b5; border-radius: 4px; padding: 0 8px; }
 .sample-pixel { font-family: monospace; letter-spacing: 1px; }
 .sample-quotes { border: 2px solid #34f5df; border-radius: 8px; padding: 0 6px; }
 .sample-winter { color: #4ade80; text-shadow: 0 0 12px #22ff88; }

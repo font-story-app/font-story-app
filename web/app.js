@@ -225,9 +225,8 @@ const STYLE_CONTROLS = {
     { key: 'brushBoxR', label: 'گردی کادر', type: 'range', min: 0, max: 40, step: 1, def: 18, unit: 'px' },
   ],
   underline: [
-    { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 20, max: 80, step: 1, def: 40, unit: '٪' },
-    { key: 'underlineC1', label: 'رنگ اول خط زیر', type: 'color', def: '#7A4BFB' },
-    { key: 'underlineC2', label: 'رنگ دوم خط زیر', type: 'color', def: '#7A4BFB' },
+    { key: 'underlineC', label: 'رنگ خط زیر', type: 'color', def: '#7349f9' },
+    { key: 'underlineShadowC', label: 'رنگ سایه', type: 'color', def: '#4b28b5' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -811,32 +810,48 @@ const STYLE_PAINT = {
     drawWords(line, cx, y);
   },
   underline: (line, cx, y, lw, fs) => {
-    // Reference (Reza, 2026-11-22): the text sits ON a thick violet
-    // bar like on a shelf — the bar's top edge is at the baseline, the
-    // letters rest on it — with a soft drop shadow under the bar and a
-    // soft shadow under the letters. The bar is solid #7A4BFB by
-    // default (both gradient stops the same); the two colour knobs can
-    // still make it a gradient. Bar height is the «ضخامت» knob as a %
-    // of the font size (default 40%).
-    const barH = fs * (sp('underlineWidth') / 100);
-    const barW = lw + fs * 0.7;
-    const barTop = y + fs * 0.3;
+    // Highlight bar (Reza 2026-11-23 — his createHighlightBarTextStyle
+    // code, replacing the 2026-11-22 shelf bar): the text sits ON a
+    // thick violet bar; a dark-purple copy of the text, clipped to the
+    // bar and offset down (and slightly left), reads as a shadow inside
+    // the bar; the bar itself carries a soft drop shadow. His geometry,
+    // from the text's bbox (measured here with actualBoundingBoxAscent
+    // / Descent): the bar runs 0.34x fs past the text on each side,
+    // its top is 56% down the bbox, its bottom 0.15x fs below the bbox
+    // bottom. The text is white by default and follows the رنگ tab once
+    // the user picks a colour.
+    const m = ctx.measureText(line);
+    const a = m.actualBoundingBoxAscent || fs * 0.8;
+    const d = m.actualBoundingBoxDescent || fs * 0.2;
+    const bboxH = a + d;
+    const barW = lw + fs * 0.68;
+    const barTop = y + bboxH * 0.06;
+    const barBottom = y + bboxH * 0.5 + fs * 0.15;
+    const barH = Math.max(fs * 0.21, barBottom - barTop);
+    const barX = cx - barW / 2;
+    // The bar + its drop shadow (his feDropShadow: dy 11% of fs, blur
+    // 8.5% of fs, #1a020e at 0.52).
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = fs * 0.15;
-    ctx.shadowOffsetY = fs * 0.08;
-    ctx.fillStyle = textGradient(cx, barW, [[0, sp('underlineC1')], [1, sp('underlineC2')]]);
-    roundRect(cx - barW / 2, barTop, barW, barH, fs * 0.05);
-    ctx.fill();
+    ctx.shadowColor = 'rgba(26, 2, 14, 0.52)';
+    ctx.shadowBlur = fs * 0.085;
+    ctx.shadowOffsetY = fs * 0.11;
+    ctx.fillStyle = sp('underlineC');
+    ctx.fillRect(barX, barTop, barW, barH);
     ctx.restore();
+    // The shadow text, clipped to the bar and offset down-left
+    // (his dx -1.5% / dy 13% of fs). textFill=false so a gradient text
+    // colour can never leak into it.
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = fs * 0.06;
-    ctx.shadowOffsetY = fs * 0.04;
-    ctx.shadowOffsetX = fs * 0.02;
-    ctx.fillStyle = state.color;
+    ctx.beginPath();
+    ctx.rect(barX, barTop, barW, barH);
+    ctx.clip();
+    ctx.fillStyle = sp('underlineShadowC');
+    drawWords(line, cx, y, -fs * 0.015, fs * 0.13, 'fill', false);
+    ctx.restore();
+    // The text on top (white by default).
+    if (state.colorTouched) ctx.fillStyle = textColorFill(line, cx, y, lw);
+    else ctx.fillStyle = '#ffffff';
     drawWords(line, cx, y);
-    ctx.restore();
   },
   pixel: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
   quotes: (line, cx, y) => { ctx.fillStyle = state.color; drawWords(line, cx, y); },
@@ -2814,7 +2829,7 @@ function paintUnderlineSamples() {
       try {
         ctx.textBaseline = 'middle';
         // Fit «متن شما» into the canvas, leaving room for the bar
-        // (0.7x fs below the line centre) and its shadow.
+        // (its bottom is ~0.65x fs below the line centre) and its shadow.
         let fs = Math.floor(H * 0.5);
         const setFont = (s) => {
           ctx.font = `${state.weight} ${s}px ${fontFamily()}`;
