@@ -90,6 +90,7 @@ const STYLES = [
   { id: 'windowcard', label: 'پنجره' },
   { id: 'splitwindow', label: 'پنجره دو تکه' },
   { id: 'macwindow', label: 'پنجره مک' },
+  { id: 'heart', label: 'قلب پایین' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -520,6 +521,18 @@ const STYLE_CONTROLS = {
     { key: 'macWindowDot1C', label: 'دایره سبز', type: 'color', def: '#4cb050' },
     { key: 'macWindowDot2C', label: 'دایره زرد', type: 'color', def: '#ffea3a' },
     { key: 'macWindowDot3C', label: 'دایره قرمز', type: 'color', def: '#f54336' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Heart footer card (Reza, 2026-11-23 — his createHeartFooterCard
+  // code): a pink card with the text in the upper part, a thin dark
+  // teal divider line across the full width, and a footer bar with a
+  // filled heart icon centred in it.
+  heart: [
+    { key: 'heartCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'heartCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'heartCardC', label: 'رنگ کارت', type: 'color', def: '#eabcc5' },
+    { key: 'heartAccentC', label: 'رنگ خط و قلب', type: 'color', def: '#415a6c' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1259,6 +1272,15 @@ const STYLE_PAINT = {
   // tab wins; otherwise his #000000 — a fixed design colour, not
   // contrastText, because the black-on-white pairing is the look.
   macwindow: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Heart footer card (Reza, 2026-11-23 — his createHeartFooterCard
+  // code): black text on the pink card (the divider + heart are
+  // painted block-level in draw()). A colour picked in the رنگ tab
+  // wins; otherwise his #000000 — a fixed design colour, not
+  // contrastText, because the black-on-pink pairing is the look.
+  heart: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -3122,6 +3144,77 @@ function paintMacWindowCard(l, fs) {
   ctx.restore();
 }
 
+// --- Heart footer card (Reza, 2026-11-23 — his createHeartFooterCard
+// code): a pink card with the text in the upper part, a thin dark
+// teal divider line across the full width, and a footer bar with a
+// filled heart icon centred in it.
+
+// His heart SVG path, verbatim (24x24 viewBox).
+const HEART_PATH = 'M12 21.2 C10.5 18.9 4.2 14.2 4.2 8.8 C4.2 5.7 6.5 3.5 9.1 3.5 C10.6 3.5 11.6 4.5 12 5.8 C12.4 4.5 13.4 3.5 14.9 3.5 C17.5 3.5 19.8 5.7 19.8 8.8 C19.8 14.2 13.5 18.9 12 21.2 Z';
+
+// Geometry of the heart footer card around the text block. Same shape
+// as the window card layout (fixed px padding, height floor splitting
+// evenly, blockShift following the alignment buttons), but the chrome
+// hangs BELOW the text instead of above it: the text is centred in
+// the body (the upper part), then the divider and the footer follow.
+function heartLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 40;                    // his max body padding left/right
+  const bodyPadTop = 44, bodyPadBottom = 44; // his max body padding
+  const dividerH = 4;                 // his max divider height
+  const footerH = 48;                 // his max footer height
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('heartCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - bodyPadTop;
+  let cardBottom = textBottom + bodyPadBottom + dividerH + footerH;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred in the
+  // body.
+  const extraH = Math.max(0, sp('heartCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 20,
+    padX, dividerH, footerH, blockShift, rtl,
+  };
+}
+
+// Paint the heart footer card: the rounded pink card clipped
+// (overflow hidden), the thin accent divider across the full width
+// above the footer, and his heart path filled with the accent colour,
+// centred in the footer. The text itself is painted per line by
+// STYLE_PAINT.heart.
+function paintHeartCard(l, fs) {
+  const cardC = sp('heartCardC') || '#eabcc5';
+  const accentC = sp('heartAccentC') || '#415a6c';
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.clip();
+  ctx.fillStyle = cardC;
+  ctx.fillRect(l.x, l.y, l.w, l.h);
+  const dividerY = l.y + l.h - l.footerH - l.dividerH;
+  ctx.fillStyle = accentC;
+  ctx.fillRect(l.x, dividerY, l.w, l.dividerH);
+  const heartSize = 25; // his max heart size
+  const footerY = l.y + l.h - l.footerH;
+  const heartX = l.x + (l.w - heartSize) / 2;
+  const heartY = footerY + (l.footerH - heartSize) / 2;
+  ctx.save();
+  ctx.translate(heartX, heartY);
+  ctx.scale(heartSize / 24, heartSize / 24);
+  ctx.fillStyle = accentC;
+  ctx.fill(new Path2D(HEART_PATH));
+  ctx.restore();
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -3801,6 +3894,11 @@ function draw() {
   // the body block still follows the alignment buttons).
   const macwindowRTL = state.style === 'macwindow' ? isRTLText(lines[0] || '') : true;
   const macwindowL = state.style === 'macwindow' ? macWindowLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, macwindowRTL) : null;
+  // The heart footer card wraps the block the same way (the text
+  // centred in the body, the divider + footer below it; the body
+  // block still follows the alignment buttons).
+  const heartRTL = state.style === 'heart' ? isRTLText(lines[0] || '') : true;
+  const heartL = state.style === 'heart' ? heartLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, heartRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -3822,7 +3920,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -3979,6 +4077,11 @@ function draw() {
   // is painted per-line below, in black).
   if (macwindowL) paintMacWindowCard(macwindowL, chromeFs);
 
+  // Heart footer card: a pink card with the text in the upper part, a
+  // thin accent divider, and a footer bar with a filled heart centred
+  // in it (the text itself is painted per-line below, in black).
+  if (heartL) paintHeartCard(heartL, chromeFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -4110,7 +4213,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -4136,6 +4239,7 @@ function redraw() {
   paintWindowCardSamples();
   paintSplitWindowCardSamples();
   paintMacWindowCardSamples();
+  paintHeartCardSamples();
 }
 
 // Caret blink.
@@ -4659,6 +4763,7 @@ function buildStylePicker() {
       if (item.id === 'windowcard') return '<canvas class="sample-canvas sample-canvas-windowcard" width="190" height="120"></canvas>';
       if (item.id === 'splitwindow') return '<canvas class="sample-canvas sample-canvas-splitwindow" width="190" height="120"></canvas>';
       if (item.id === 'macwindow') return '<canvas class="sample-canvas sample-canvas-macwindow" width="190" height="120"></canvas>';
+      if (item.id === 'heart') return '<canvas class="sample-canvas sample-canvas-heart" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -5847,6 +5952,71 @@ function paintMacWindowCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-macwindow';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the heart footer card preview with the REAL heart code
+// (heartLayout + paintHeartCard + the body text) on its small canvas
+// — a miniature of the actual card, same pattern as the Mac window
+// preview. Called from redraw(), like the Mac window samples. If
+// painting fails, fall back to the CSS box.
+function paintHeartCardSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-heart')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const heartRTL = isRTLText(lines[0] || '');
+        const heartL = heartLayout(110, maxLw, blockH, lineHeight, 1080, 540, heartRTL);
+        const blockCx = 540 + heartL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / heartL.w, H / heartL.h);
+        const cardCx = heartL.x + heartL.w / 2, cardCy = heartL.y + heartL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintHeartCard(heartL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.heart(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-heart';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -151,6 +151,10 @@ const STYLE_PARAMS = {
   macWindowDot1C: { color: true },
   macWindowDot2C: { color: true },
   macWindowDot3C: { color: true },
+  heartCardW: { min: 400, max: 900 },
+  heartCardH: { min: 300, max: 800 },
+  heartCardC: { color: true },
+  heartAccentC: { color: true },
   // Hearts tape card (Reza, 2026-11-23).
   heartsCardW: { min: 400, max: 900 },
   heartsCardH: { min: 300, max: 800 },

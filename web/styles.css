@@ -438,6 +438,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-macwindow {
   height: 60px;
 }
+/* Heart footer card preview: same miniature treatment as the Mac window card. */
+.pick-card .sample canvas.sample-canvas-heart {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -574,6 +578,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-windowcard { background: #fff; color: #000; border-top: 12px solid #db977d; border-radius: 8px; padding: 0 6px; }
 .sample-splitwindow { background: #591f2b; color: #fff; border-top: 10px solid #fcb181; border-radius: 8px; padding: 0 6px; }
 .sample-macwindow { background: #fff; color: #000; border-top: 12px solid #683bb7; border-radius: 8px; padding: 0 6px; }
+.sample-heart { background: #eabcc5; color: #000; border-bottom: 10px solid #415a6c; border-radius: 8px; padding: 0 6px; }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
