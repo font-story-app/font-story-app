@@ -94,6 +94,7 @@ const STYLES = [
   { id: 'macwindow', label: 'پنجره مک' },
   { id: 'heart', label: 'قلب پایین' },
   { id: 'glassnotif', label: 'اعلان شیشه‌ای' },
+  { id: 'typed', label: 'تایپ' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -551,6 +552,19 @@ const STYLE_CONTROLS = {
     { key: 'glassNotifTime', label: 'زمان', type: 'text', def: 'now', max: 10 },
     { key: 'glassNotifTimeC', label: 'رنگ زمان', type: 'color', def: '#ffffff' },
     { key: 'glassNotifTimeO', label: 'غلظت زمان', type: 'range', min: 10, max: 100, step: 1, def: 45, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Typed input card (Reza, 2026-11-23 — his createTypedInputCard
+  // code): a lavender card with a thick black border, a stacked 3D
+  // shadow below it, and a tall pink typing-cursor bar right next to
+  // the text (on its end side).
+  typed: [
+    { key: 'typedCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'typedCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'typedCardC', label: 'رنگ کارت', type: 'color', def: '#ebaaf0' },
+    { key: 'typedBorderC', label: 'رنگ حاشیه و سایه', type: 'color', def: '#000000' },
+    { key: 'typedCursorC', label: 'رنگ نشانگر', type: 'color', def: '#eb7293' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1310,6 +1324,16 @@ const STYLE_PAINT = {
   // white-on-glass pairing is the look.
   glassnotif: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
+  },
+  // Typed input card (Reza, 2026-11-23 — his createTypedInputCard
+  // code): black text on the lavender card (the card, border, shadow
+  // and cursor are painted block-level in draw()). A colour picked in
+  // the رنگ tab wins; otherwise his #000000 — a fixed design colour,
+  // not contrastText, because the black-on-lavender pairing is the
+  // look.
+  typed: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -3311,6 +3335,96 @@ function paintGlassNotifCard(l, fs) {
   ctx.restore();
 }
 
+// --- Typed input card (Reza, 2026-11-23 — his createTypedInputCard
+// code): a lavender card with a thick black border, a stacked 3D
+// shadow below it, and a tall pink typing-cursor bar right next to
+// the text (on its end side).
+
+// Geometry of the typed input card around the text block. Same shape
+// as the other card layouts (fixed px padding, height floor splitting
+// evenly, blockShift following the alignment buttons), with two
+// differences: the content row is the text PLUS the cursor bar, so
+// the text centre is offset from the row centre by half the
+// cursor+gap, and the cursor is taller than the text — the row height
+// is the taller of the text block and the cursor, and the card wraps
+// that. The cursor scales with the text (his 150px at 72px font, so
+// cursorH = textFs x 150/72 — his cursor and his font both scale
+// with the viewport, so they track each other; the rail replaces the
+// viewport here). His blinkCursor animation is not applicable to the
+// static canvas/export, so the cursor is always drawn solid.
+function typedInputLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 48, padTop = 26, padBottom = 26; // his max card padding
+  const borderW = 5.5;                            // his max border width
+  const shadowDepth = 15;                         // his deepest shadow layer
+  const cursorW = 6, cursorGap = 9;               // his max cursor width/gap
+  const cursorH = fs * (150 / 72);                // his cursor height at 72px font
+  const contentH = Math.max(blockH, cursorH);
+  const contentW = maxLw + cursorGap + cursorW;   // text + gap + cursor
+  const cardW = Math.max(contentW + padX * 2, sp('typedCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - contentW) / 2;
+  const alignShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  // The text sits on the row's start side (right for RTL, left for
+  // LTR), so its centre is offset from the row centre by half the
+  // cursor+gap.
+  const cursorOffset = (rtl ? 1 : -1) * (cursorW + cursorGap) / 2;
+  const blockShift = alignShift + cursorOffset;
+  const rowTop = h / 2 - contentH / 2;
+  const rowBottom = h / 2 + contentH / 2;
+  let cardTop = rowTop - padTop;
+  let cardBottom = rowBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the row stays centred.
+  const extraH = Math.max(0, sp('typedCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  // The cursor sits next to the text block's end side, vertically
+  // centred on the row.
+  const textCx = cx + blockShift;
+  const cursorX = rtl
+    ? textCx - maxLw / 2 - cursorGap - cursorW
+    : textCx + maxLw / 2 + cursorGap;
+  const cursorY = h / 2 - cursorH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
+    padX, borderW, shadowDepth, cursorW, cursorGap, cursorH,
+    cursorX, cursorY, blockShift, rtl,
+  };
+}
+
+// Paint the typed input card: the three stacked shadow layers below
+// the card (his box-shadow, all in the border colour, no blur — the
+// three offsets collapse to one solid 15px band below the card), the
+// lavender card, the thick border stroked inside the card bounds, and
+// the tall pink cursor bar next to the text. The text itself is
+// painted per line by STYLE_PAINT.typed.
+function paintTypedCard(l, fs) {
+  const cardC = sp('typedCardC') || '#ebaaf0';
+  const borderC = sp('typedBorderC') || '#000000';
+  const cursorC = sp('typedCursorC') || '#eb7293';
+  ctx.fillStyle = borderC;
+  for (const dy of [5, 10, 15]) {
+    roundRect(l.x, l.y + dy, l.w, l.h, l.r);
+    ctx.fill();
+  }
+  ctx.fillStyle = cardC;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+  // The border sits inside the card bounds (his border-box), so the
+  // stroke is inset by half its width.
+  ctx.strokeStyle = borderC;
+  ctx.lineWidth = l.borderW;
+  roundRect(l.x + l.borderW / 2, l.y + l.borderW / 2, l.w - l.borderW, l.h - l.borderW, l.r - l.borderW / 2);
+  ctx.stroke();
+  // The cursor: a fully rounded bar (his 999px radius = a capsule).
+  ctx.fillStyle = cursorC;
+  roundRect(l.cursorX, l.cursorY, l.cursorW, l.cursorH, l.cursorW / 2);
+  ctx.fill();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -4000,6 +4114,12 @@ function draw() {
   // panel still follows the alignment buttons).
   const glassnotifRTL = state.style === 'glassnotif' ? isRTLText(lines[0] || '') : true;
   const glassnotifL = state.style === 'glassnotif' ? glassNotifLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, glassnotifRTL) : null;
+  // The typed input card wraps the block the same way (the text plus
+  // the cursor bar form one row centred in the card; the cursor scales
+  // with the text, so the layout takes textFs, not the fixed chrome
+  // size).
+  const typedRTL = state.style === 'typed' ? isRTLText(lines[0] || '') : true;
+  const typedL = state.style === 'typed' ? typedInputLayout(textFs, maxLw, blockH, lineHeight, h, cx, typedRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -4021,7 +4141,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4188,6 +4308,11 @@ function draw() {
   // per-line below, in white).
   if (glassnotifL) paintGlassNotifCard(glassnotifL, chromeFs);
 
+  // Typed input card: a lavender card with a thick black border, a
+  // stacked 3D shadow below it, and a tall pink cursor bar next to
+  // the text (the text itself is painted per-line below, in black).
+  if (typedL) paintTypedCard(typedL, textFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -4329,7 +4454,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -4357,6 +4482,7 @@ function redraw() {
   paintMacWindowCardSamples();
   paintHeartCardSamples();
   paintGlassNotifCardSamples();
+  paintTypedCardSamples();
 }
 
 // Caret blink.
@@ -4882,6 +5008,7 @@ function buildStylePicker() {
       if (item.id === 'macwindow') return '<canvas class="sample-canvas sample-canvas-macwindow" width="190" height="120"></canvas>';
       if (item.id === 'heart') return '<canvas class="sample-canvas sample-canvas-heart" width="190" height="120"></canvas>';
       if (item.id === 'glassnotif') return '<canvas class="sample-canvas sample-canvas-glassnotif" width="190" height="120"></canvas>';
+      if (item.id === 'typed') return '<canvas class="sample-canvas sample-canvas-typed" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -6200,6 +6327,73 @@ function paintGlassNotifCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glassnotif';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the typed input card preview with the REAL typed code
+// (typedInputLayout + paintTypedCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the glass
+// preview. Called from redraw(), like the glass samples. If painting
+// fails, fall back to the CSS box.
+function paintTypedCardSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-typed')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // cursor scales with the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const typedRTL = isRTLText(lines[0] || '');
+        const typedL = typedInputLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, typedRTL);
+        const blockCx = 540 + typedL.blockShift;
+        // Fit the whole card PLUS its 15px shadow into the sample
+        // canvas, centred, keeping the aspect — a uniform scale, so
+        // nothing is squashed.
+        const fitH = typedL.h + typedL.shadowDepth;
+        const s = Math.min(W / typedL.w, H / fitH);
+        const cardCx = typedL.x + typedL.w / 2, cardCy = typedL.y + typedL.h / 2 + typedL.shadowDepth / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintTypedCard(typedL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.typed(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-typed';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
