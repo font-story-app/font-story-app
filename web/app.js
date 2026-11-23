@@ -138,6 +138,7 @@ const STYLE_CONTROLS = {
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
   quotes: [
+    { key: 'quoteTextSize', label: 'اندازه فونت متن', type: 'range', min: 50, max: 150, step: 5, def: 100, unit: '٪' },
     { key: 'quoteC', label: 'رنگ قاب', type: 'color', def: '#34f5df' },
     { key: 'quoteStroke', label: 'ضخامت قاب', type: 'range', min: 4, max: 20, step: 1, def: 10, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -1767,7 +1768,7 @@ function draw() {
   // message card too (MESSAGE_CHROME_FS).
   // Wrapping, line height, caret and the editor overlay all follow
   // the body size.
-  const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : fontSize;
+  const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : state.style === 'quotes' ? fontSize * (sp('quoteTextSize') / 100) : fontSize;
   const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : state.style === 'note' ? NOTE_CHROME_FS : state.style === 'message' ? MESSAGE_CHROME_FS : fontSize;
   ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
   // Native letter spacing where the WebView supports it (Chrome 99+,
@@ -1865,23 +1866,31 @@ function draw() {
     // rect) with a gap in the top edge and a gap in the bottom edge,
     // a pair of quote glyphs straddling each gap (the bottom pair
     // rotated 180°). His geometry is in CSS px at a 57.6px font, so
-    // everything is computed in his px (u = fontSize/57.6 canvas px
+    // everything is computed in his px (u = textFs/57.6 canvas px
     // per his px) and rendered under a scale(u) transform — the path
     // strings below are his exact formulas, and the quote glyph path
     // (QUOTE_PATH) is verbatim. isSmall is his w < 460 threshold in
     // his px (a narrow frame gets the compact stroke/scale/radius).
     // The frame-to-text gaps come from his container padding (35px
-    // horizontal, 51px vertical) minus the frame insets.
-    const u = fontSize / 57.6;
+    // horizontal, 51px vertical) minus the frame insets — EXCEPT the
+    // vertical gap: his (51 − padY) leaves the quote glyphs (which
+    // hang 21.8×scale below the frame's top edge) with ~zero clearance
+    // over the text in the wide variant, and the letters rise ~0.2×fs
+    // above the line-box top, so a long text (wide frame) landed the
+    // glyphs ON the letters (Reza's screenshot, 2026-11-23). The
+    // vertical gap is therefore the max of his value and the clearance
+    // the glyphs need — the frame grows taller instead of the glyphs
+    // touching the text.
+    const u = textFs / 57.6;
     const framePadX = 30 * u;
     const bw = Math.max(...lines.map((l) => lineWidth(l))) + framePadX * 2;
     const W = bw / u;
     const isSmall = W < 460;
-    const strokePx = fontSize * (sp('quoteStroke') / 100) / u;
+    const strokePx = textFs * (sp('quoteStroke') / 100) / u;
     const swPx = isSmall ? Math.max(4, strokePx - 1.5) : strokePx;
     const quoteScale = isSmall ? 0.72 : 1.02;
     const padY = 28 * quoteScale;
-    const framePadY = (51 - padY) * u;
+    const framePadY = Math.max(51 - padY, padY + 21.8 * quoteScale + 15.5) * u;
     const bh = blockH + framePadY * 2;
     const H = bh / u;
     const padX = Math.ceil(swPx / 2) + 2;

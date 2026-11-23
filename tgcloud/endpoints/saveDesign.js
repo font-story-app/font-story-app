@@ -36,6 +36,7 @@ const STYLE_PARAMS = {
   glassR: { min: 0, max: 40 },
   quoteC: { color: true },
   quoteStroke: { min: 4, max: 20 },
+  quoteTextSize: { min: 50, max: 150 },
   retroOffset: { min: 0, max: 30 },
   shadowBlur: { min: 0, max: 40 },
   shadowOffset: { min: 0, max: 30 },
