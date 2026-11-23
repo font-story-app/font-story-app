@@ -49,6 +49,7 @@ const STYLES = [
   { id: 'glass', label: 'شیشه‌ای' },
   { id: 'brush', label: 'قلم‌مو' },
   { id: 'quotes', label: 'نقل‌قول' },
+  { id: 'slantquote', label: 'نقل‌قول مورب' },
   // StoryFont styles (Reza, 2026-11-22): the six canvas looks from his
   // screenshots, colours sampled from the shots. 'pastille' was briefly
   // labelled «دور بنفش» (2026-11-23, when it was only a purple outline);
@@ -96,7 +97,6 @@ const STYLES = [
   { id: 'glassnotif', label: 'اعلان شیشه‌ای' },
   { id: 'typed', label: 'تایپ' },
   { id: 'corner', label: 'کمان گوشه' },
-  { id: 'slantquote', label: 'نقل‌قول مورب' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
