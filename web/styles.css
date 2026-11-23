@@ -390,6 +390,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-pin {
   height: 60px;
 }
+/* Music player card preview: same miniature treatment as the pin card. */
+.pick-card .sample canvas.sample-canvas-music {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -514,6 +518,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-note { background: #e5e5ea; color: #595355; border-radius: 8px; padding: 0 6px; }
 .sample-message { background: #e5e5ea; color: #000; border-radius: 8px; padding: 0 6px; }
 .sample-pin { background: #fff; color: #0a0a0a; border-radius: 8px; padding: 0 6px; box-shadow: 0 2px 6px rgba(70, 8, 22, 0.16); }
+.sample-music { background: rgba(26, 4, 13, 0.48); color: #fff; border-radius: 8px; padding: 0 6px; }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */

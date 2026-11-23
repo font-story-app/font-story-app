@@ -78,6 +78,7 @@ const STYLES = [
   { id: 'pin', label: 'پونز' },
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
+  { id: 'music', label: 'موزیک' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -343,6 +344,22 @@ const STYLE_CONTROLS = {
     { key: 'pinCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
     { key: 'pinCardC', label: 'رنگ کارت', type: 'color', def: '#FFFFFF' },
     { key: 'pinC', label: 'رنگ پونز', type: 'color', def: '#df1217' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Music player card (Reza, 2026-11-23 — his createMusicPlayerCard
+  // code): a dark glass card with a subtitle, the title, a progress
+  // bar with times, play controls, and a volume row.
+  music: [
+    { key: 'musicCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'musicCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'musicCardC', label: 'رنگ کارت', type: 'color', def: '#1a040d' },
+    { key: 'musicCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 48, unit: '٪' },
+    { key: 'musicSubtitle', label: 'زیرعنوان', type: 'text', def: 'Music By StoryFont', max: 40 },
+    { key: 'musicCurrent', label: 'زمان فعلی', type: 'text', def: '2:00', max: 5 },
+    { key: 'musicTotal', label: 'زمان کل', type: 'text', def: '2:52', max: 5 },
+    { key: 'musicProgress', label: 'پیشرفت پخش', type: 'range', min: 0, max: 100, step: 1, def: 61, unit: '٪' },
+    { key: 'musicVolume', label: 'صدا', type: 'range', min: 0, max: 100, step: 1, def: 20, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -957,6 +974,18 @@ const STYLE_PAINT = {
     const c = sp('pinCardC') || '#FFFFFF';
     ctx.fillStyle = state.colorTouched ? state.color
       : c.toUpperCase() === '#FFFFFF' ? '#0a0a0a' : contrastText(c);
+    drawWords(line, cx, y);
+  },
+  // Music player card (Reza, 2026-11-23 — his createMusicPlayerCard
+  // code): the title in white on the dark glass card (the card + the
+  // player chrome are painted block-level in draw(), like the
+  // note/message cards). A colour picked in the رنگ tab wins (a
+  // gradient paints the title via drawWords); otherwise the text is
+  // white on the dark card, and contrastText keeps it readable if the
+  // card colour is changed to something light.
+  music: (line, cx, y) => {
+    const c = sp('musicCardC') || '#1a040d';
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -1579,6 +1608,237 @@ function paintPinCard(l, fs) {
   // the data: URL loads immediately and onload redraws.)
 }
 
+// --- Music player card (Reza, 2026-11-23 — his createMusicPlayerCard
+// code): a dark glass card with a subtitle, the title, a progress bar
+// with times, play controls, and a volume row. The icons are his SVG
+// paths, drawn with Path2D (same technique as the bubble tails).
+const MUSIC_REWIND_TRI = 'M21.2 4.6c1.2-.8 2.8.1 2.8 1.5v15.8c0 1.4-1.6 2.3-2.8 1.5L7.8 15.5c-1.1-.7-1.1-2.3 0-3l13.4-7.9z';
+const MUSIC_FORWARD_TRI = 'M22.8 4.6c-1.2-.8-2.8.1-2.8 1.5v15.8c0 1.4 1.6 2.3 2.8 1.5l13.4-7.9c1.1-.7 1.1-2.3 0-3L22.8 4.6z';
+const MUSIC_VOL_LOW_SPEAKER = 'M2.6 8.5h4.2l5.4-4.6c.8-.7 2-.1 2 1v14.2c0 1.1-1.2 1.7-2 1l-5.4-4.6H2.6c-.9 0-1.6-.7-1.6-1.6v-3.8c0-.9.7-1.6 1.6-1.6z';
+const MUSIC_VOL_LOW_ARC = 'M18.2 8.8c1.4 1.8 1.4 4.6 0 6.4';
+const MUSIC_VOL_HIGH_SPEAKER = 'M2.2 9.5h4.0l5.1-4.3c.8-.6 1.9-.1 1.9.9v13.8c0 1-1.1 1.5-1.9.9l-5.1-4.3H2.2c-.8 0-1.5-.7-1.5-1.5v-4c0-.8.7-1.5 1.5-1.5z';
+const MUSIC_VOL_HIGH_ARCS = ['M16.8 9.8c1.3 1.7 1.3 4.7 0 6.4', 'M20.4 7.0c2.5 3.3 2.5 8.7 0 12.0', 'M24.2 4.3c3.8 5.0 3.8 12.4 0 17.4'];
+// Set up the transform so his viewBox (vbW x vbH) fits a `size` box
+// centred at (cx, cy) — the SVG "meet" fit: scale by the constraining
+// side, centred on the other. The caller draws in viewBox units and
+// restores.
+function musicIconTransform(vbW, vbH, cx, cy, size) {
+  const s = Math.min(size / vbW, size / vbH);
+  const w = vbW * s, h = vbH * s;
+  ctx.save();
+  ctx.translate(cx - w / 2, cy - h / 2);
+  ctx.scale(s, s);
+}
+function paintMusicRewind(cx, cy, size, ink) {
+  musicIconTransform(44, 28, cx, cy, size);
+  ctx.fillStyle = ink;
+  ctx.save(); ctx.translate(17, 0); ctx.fill(new Path2D(MUSIC_REWIND_TRI)); ctx.restore();
+  ctx.save(); ctx.translate(-3.5, 0); ctx.fill(new Path2D(MUSIC_REWIND_TRI)); ctx.restore();
+  ctx.restore();
+}
+function paintMusicForward(cx, cy, size, ink) {
+  musicIconTransform(44, 28, cx, cy, size);
+  ctx.fillStyle = ink;
+  ctx.save(); ctx.translate(-17, 0); ctx.fill(new Path2D(MUSIC_FORWARD_TRI)); ctx.restore();
+  ctx.save(); ctx.translate(3.5, 0); ctx.fill(new Path2D(MUSIC_FORWARD_TRI)); ctx.restore();
+  ctx.restore();
+}
+function paintMusicPause(cx, cy, size, ink) {
+  musicIconTransform(32, 36, cx, cy, size);
+  ctx.fillStyle = ink;
+  roundRect(4, 3, 9.2, 30, 2.6); ctx.fill();
+  roundRect(18.8, 3, 9.2, 30, 2.6); ctx.fill();
+  ctx.restore();
+}
+function paintMusicVolLow(cx, cy, size, ink) {
+  musicIconTransform(28, 24, cx, cy, size);
+  ctx.fillStyle = ink;
+  ctx.fill(new Path2D(MUSIC_VOL_LOW_SPEAKER));
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.stroke(new Path2D(MUSIC_VOL_LOW_ARC));
+  ctx.restore();
+}
+function paintMusicVolHigh(cx, cy, size, ink) {
+  musicIconTransform(34, 26, cx, cy, size);
+  ctx.fillStyle = ink;
+  ctx.fill(new Path2D(MUSIC_VOL_HIGH_SPEAKER));
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 1.9;
+  ctx.lineCap = 'round';
+  for (const d of MUSIC_VOL_HIGH_ARCS) ctx.stroke(new Path2D(d));
+  ctx.restore();
+}
+// His hexToRgba (card colour + opacity -> rgba string), reusing the
+// pin's hexToRgb.
+function hexToRgba(hex, alpha) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+// The chrome ink (subtitle, progress, controls, volume): the رنگ tab
+// wins once a colour is picked (flat — a gradient's first stop, since
+// the chrome is painted with fillStyle, not drawWords); otherwise the
+// text stays readable on the card colour via contrastText.
+function musicInk() {
+  if (state.colorTouched) return flatColor(state.color);
+  return contrastText(sp('musicCardC') || '#1a040d');
+}
+
+// Geometry of the music player card around the text block (Reza,
+// 2026-11-23 — his createMusicPlayerCard code). The card's SIZE is
+// adjustable (musicCardW/musicCardH, same defaults as the note/message
+// cards: a 760x480 floor the content can grow past). The subtitle sits
+// above the title and the progress / controls / volume rows below it;
+// the body block's position follows the alignment buttons, same rule
+// as the note card. The section centres are anchored to the text
+// block, so they never move when the height floor adds space.
+function musicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 56;                    // card padding left/right (same as note)
+  const subtitleFs = fs * 0.15;       // «Music By StoryFont», his ~16px
+  const gapSubtitleText = fs * 0.3;   // subtitle -> title
+  const gapTextProgress = fs * 0.35;  // title -> progress bar
+  const trackH = fs * 0.045;          // progress track height, his 5px
+  const timeFs = fs * 0.14;           // time labels, his ~15px
+  const gapTrackTime = fs * 0.055;    // track -> time row
+  const gapProgressControls = fs * 0.18; // time row -> controls
+  const controlsH = fs * 0.5;         // controls row, his ~54px rewind
+  const gapControlsVolume = fs * 0.3; // controls -> volume row
+  const volumeH = fs * 0.29;          // volume row, his ~32px high icon
+  const padTop = fs * 0.24;           // card top -> subtitle
+  const padBottom = fs * 0.25;        // volume row -> card bottom
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('musicCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  const subtitleY = textTop - gapSubtitleText - subtitleFs / 2;
+  const progressTrackY = textBottom + gapTextProgress + trackH / 2;
+  const timeY = progressTrackY + trackH / 2 + gapTrackTime + timeFs / 2;
+  const controlsY = timeY + timeFs / 2 + gapProgressControls + controlsH / 2;
+  const volumeY = controlsY + controlsH / 2 + gapControlsVolume + volumeH / 2;
+  let cardTop = textTop - gapSubtitleText - subtitleFs - padTop;
+  let cardBottom = volumeY + volumeH / 2 + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('musicCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 40,
+    padX, blockShift, rtl,
+    subtitleFs, subtitleY, progressTrackY, trackH, timeFs, timeY,
+    controlsY, controlsH, volumeY, volumeH,
+  };
+}
+
+// Paint the music player card: the dark glass card (his cardColor at
+// cardOpacity — the backdrop blur is skipped: the page backgrounds are
+// smooth gradients, so a blur would change almost nothing, and the
+// tint alone reads as glass), then the subtitle, the progress bar with
+// its times, the play controls, and the volume row. The title itself
+// is painted per line by STYLE_PAINT.music.
+function paintMusicCard(l, fs) {
+  const ink = musicInk();
+  const cardC = sp('musicCardC') || '#1a040d';
+  const cardO = (sp('musicCardO') || 48) / 100;
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = hexToRgba(cardC, cardO);
+  ctx.fill();
+  ctx.restore();
+  // Subtitle (top, centred, latin, white at 0.72 opacity).
+  ctx.save();
+  ctx.fillStyle = ink;
+  ctx.globalAlpha = 0.72;
+  ctx.font = `400 ${l.subtitleFs}px 'Vazir', system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((sp('musicSubtitle') || '').trim() || 'Music By StoryFont', l.x + l.w / 2, l.subtitleY);
+  ctx.restore();
+  // Progress: a white track at 0.42 opacity, a white fill to the
+  // progress %, and a white knob with a soft shadow at its end.
+  const progX0 = l.x + l.padX, progX1 = l.x + l.w - l.padX;
+  const progW = progX1 - progX0;
+  const prog = Math.max(0, Math.min(100, sp('musicProgress') ?? 61)) / 100;
+  ctx.save();
+  ctx.fillStyle = ink;
+  ctx.globalAlpha = 0.42;
+  roundRect(progX0, l.progressTrackY - l.trackH / 2, progW, l.trackH, l.trackH / 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.fillStyle = ink;
+  roundRect(progX0, l.progressTrackY - l.trackH / 2, progW * prog, l.trackH, l.trackH / 2);
+  ctx.fill();
+  ctx.restore();
+  const knobX = progX0 + progW * prog;
+  const knobR = l.trackH * 1.5;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = ink;
+  ctx.beginPath();
+  ctx.arc(knobX, l.progressTrackY, knobR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  // Times: current (left) and total (right), latin, white at 0.88.
+  ctx.save();
+  ctx.fillStyle = ink;
+  ctx.globalAlpha = 0.88;
+  ctx.font = `400 ${l.timeFs}px 'Vazir', system-ui, sans-serif`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText((sp('musicCurrent') || '').trim() || '2:00', progX0, l.timeY);
+  ctx.textAlign = 'right';
+  ctx.fillText((sp('musicTotal') || '').trim() || '2:52', progX1, l.timeY);
+  ctx.restore();
+  // Controls: rewind, pause, forward — white icons, centred on the card.
+  const gap = fs * 0.37;
+  const rwSize = fs * 0.5;
+  const ppSize = fs * 0.42;
+  const ppW = ppSize * (32 / 36); // pause viewBox is 32x36 (taller than wide)
+  const totalW = rwSize + gap + ppW + gap + rwSize;
+  let cx = l.x + l.w / 2 - totalW / 2;
+  paintMusicRewind(cx + rwSize / 2, l.controlsY, rwSize, ink);
+  cx += rwSize + gap;
+  paintMusicPause(cx + ppW / 2, l.controlsY, ppSize, ink);
+  cx += ppW + gap;
+  paintMusicForward(cx + rwSize / 2, l.controlsY, rwSize, ink);
+  // Volume: low icon, a solid white track with a knob at the volume %,
+  // high icon.
+  const volGap = fs * 0.13;
+  const volLowSize = fs * 0.23, volHighSize = fs * 0.26;
+  const volTrackH = fs * 0.05;
+  const volKnobR = fs * 0.1;
+  const vol = Math.max(0, Math.min(100, sp('musicVolume') ?? 20)) / 100;
+  const trackX0 = l.x + l.padX + volLowSize + volGap;
+  const trackX1 = l.x + l.w - l.padX - volHighSize - volGap;
+  const trackW = trackX1 - trackX0;
+  paintMusicVolLow(l.x + l.padX + volLowSize / 2, l.volumeY, volLowSize, ink);
+  paintMusicVolHigh(l.x + l.w - l.padX - volHighSize / 2, l.volumeY, volHighSize, ink);
+  ctx.save();
+  ctx.fillStyle = ink;
+  roundRect(trackX0, l.volumeY - volTrackH / 2, trackW, volTrackH, volTrackH / 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = ink;
+  ctx.beginPath();
+  ctx.arc(trackX0 + trackW * vol, l.volumeY, volKnobR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -2194,6 +2454,12 @@ function draw() {
   // alignment buttons).
   const pinRTL = state.style === 'pin' ? isRTLText(lines[0] || '') : true;
   const pinL = state.style === 'pin' ? pinLayout(textFs, maxLw, blockH, lineHeight, h, cx, pinRTL) : null;
+  // The music player card wraps the block the same way (its subtitle
+  // sits above the title and the player rows below it, but the body
+  // block still follows the alignment buttons). The chrome is fixed at
+  // 110 like the note/message chrome; only the title follows the rail.
+  const musicRTL = state.style === 'music' ? isRTLText(lines[0] || '') : true;
+  const musicL = state.style === 'music' ? musicLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, musicRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -2215,7 +2481,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -2310,6 +2576,11 @@ function draw() {
   // pushpin at the top-right corner around the whole text block (the
   // text itself is painted per-line below, in bold black).
   if (pinL) paintPinCard(pinL, textFs);
+
+  // Music player card: dark glass card with the subtitle above the
+  // title and the progress / controls / volume rows below it (the
+  // title itself is painted per-line below, in white).
+  if (musicL) paintMusicCard(musicL, chromeFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -2442,7 +2713,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -2456,6 +2727,7 @@ function redraw() {
   paintBrushSamples();
   paintQuotesSamples();
   paintPinSamples();
+  paintMusicSamples();
 }
 
 // Caret blink.
@@ -2967,6 +3239,7 @@ function buildStylePicker() {
       if (item.id === 'dropbubble') return '<canvas class="sample-canvas sample-canvas-dropbubble" width="190" height="120"></canvas>';
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
+      if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -3356,6 +3629,72 @@ function paintPinSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-pin';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the music player card preview with the REAL music code
+// (musicLayout + paintMusicCard + the body text) on its small canvas —
+// a miniature of the actual card, same pattern as the note preview.
+// Called from redraw(), like the pin samples. If painting fails, fall
+// back to the CSS box.
+function paintMusicSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-music')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the chrome stays fixed at 110.
+        const chromeFs = 110;
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const musicRTL = isRTLText(lines[0] || '');
+        const musicL = musicLayout(chromeFs, maxLw, blockH, lineHeight, 1080, 540, musicRTL);
+        const blockCx = 540 + musicL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / musicL.w, H / musicL.h);
+        const cardCx = musicL.x + musicL.w / 2, cardCy = musicL.y + musicL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintMusicCard(musicL, chromeFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.music(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-music';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
