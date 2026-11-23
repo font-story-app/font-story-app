@@ -80,6 +80,7 @@ const STYLES = [
   { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'music', label: 'موزیک' },
   { id: 'frame', label: 'قاب صورتی' },
+  { id: 'bell', label: 'زنگوله' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -374,6 +375,20 @@ const STYLE_CONTROLS = {
     { key: 'frameAccent', label: 'رنگ قاب و خط دور', type: 'color', def: '#ff96aa' },
     { key: 'frameBorder', label: 'ضخامت قاب', type: 'range', min: 0, max: 60, step: 1, def: 26, unit: 'px' },
     { key: 'frameOutline', label: 'ضخامت خط دور', type: 'range', min: 0, max: 40, step: 1, def: 20, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Bell note card (Reza, 2026-11-23 — his createBellNoteCard code): a
+  // dark slate glass card with a bell badge sticking out of the
+  // top-left corner and a hand-drawn line near the bottom.
+  bell: [
+    { key: 'bellCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'bellCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'bellCardC', label: 'رنگ کارت', type: 'color', def: '#343b40' },
+    { key: 'bellCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 72, unit: '٪' },
+    { key: 'bellBadgeC', label: 'رنگ نشان', type: 'color', def: '#f3dcd3' },
+    { key: 'bellC', label: 'رنگ زنگوله', type: 'color', def: '#59647a' },
+    { key: 'bellLineC', label: 'رنگ خط', type: 'color', def: '#b4bac6' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1019,6 +1034,16 @@ const STYLE_PAINT = {
     drawWords(line, cx, y, 0, 0, 'fill', false);
     strokeWords(line, cx, y, accent, sw);
     ctx.fillStyle = state.colorTouched ? state.color : contrastText(sp('frameCardC') || '#FFFFFF');
+    drawWords(line, cx, y);
+  },
+  // Bell note card (Reza, 2026-11-23 — his createBellNoteCard code):
+  // white text on the dark slate glass card (the card, the bell badge
+  // and the hand-drawn line are painted block-level in draw()). A
+  // colour picked in the رنگ tab wins; otherwise contrastText keeps it
+  // readable on the card colour.
+  bell: (line, cx, y) => {
+    const c = sp('bellCardC') || '#343b40';
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -1918,6 +1943,124 @@ function paintFrameCard(l) {
   ctx.restore();
 }
 
+// --- Bell note card (Reza, 2026-11-23 — his createBellNoteCard code):
+// a dark slate glass card with a bell badge sticking out of the
+// top-left corner and a hand-drawn line near the bottom. The badge is
+// his SVG, drawn with Path2D in a 200x200 viewBox (same technique as
+// the music icons).
+const BELL_INNER_CIRCLE = 'M 102 18 C 148 17, 182 51, 182 99 C 182 146, 146 182, 98 181 C 51 180, 18 147, 19 100 C 20 52, 54 19, 102 18 Z';
+const BELL_KNOB = 'M 91 55 C 90 47, 94 42, 100 42 C 106 42, 110 47, 109 55 C 105 54, 95 54, 91 55 Z';
+const BELL_BODY = 'M 100 59 C 118 59, 128 72, 131 94 C 134 111, 138 119, 146 125 C 149 128, 147 134, 141 136 C 126 141, 74 141, 59 136 C 53 134, 51 128, 54 125 C 62 119, 66 111, 69 94 C 72 72, 82 59, 100 59 Z';
+const BELL_HEART = 'M 100 121 C 96 118, 78 105, 78 92 C 78 84, 85 80, 92 82 C 96 83, 99 87, 100 90 C 101 87, 104 83, 108 82 C 115 80, 122 84, 122 92 C 122 105, 104 118, 100 121 Z';
+const BELL_CLAPPER = 'M 89 144 C 94 145, 106 145, 111 144 C 112 152, 107 157, 100 157 C 93 157, 88 152, 89 144 Z';
+const BELL_LINE = 'M 4 10 C 74 6.5, 152 7.4, 232 8.4 C 306 9.2, 368 8.8, 416 7.4';
+// Draw the bell badge in a d x d box centred at (cx, cy). The outer
+// ring is the translucent card bg (darker where it overlaps the card,
+// like his SVG); the inner circle and the heart are the badge colour;
+// the knob, body and clapper are the bell colour. Draw order matches
+// his SVG append order.
+function paintBellBadge(cx, cy, d, cardBg, badgeBg, bellC) {
+  const s = d / 200;
+  ctx.save();
+  ctx.translate(cx - d / 2, cy - d / 2);
+  ctx.scale(s, s);
+  ctx.fillStyle = cardBg;
+  ctx.beginPath();
+  ctx.arc(100, 100, 96, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = badgeBg;
+  ctx.fill(new Path2D(BELL_INNER_CIRCLE));
+  ctx.fillStyle = bellC;
+  ctx.fill(new Path2D(BELL_KNOB));
+  ctx.fill(new Path2D(BELL_BODY));
+  ctx.fillStyle = badgeBg;
+  ctx.fill(new Path2D(BELL_HEART));
+  ctx.fillStyle = bellC;
+  ctx.fill(new Path2D(BELL_CLAPPER));
+  ctx.restore();
+}
+// Draw the hand-drawn line near the bottom of the card. His SVG uses
+// preserveAspectRatio="none", so the 420x16 viewBox is stretched
+// non-uniformly into the line's box — the canvas scale does the same,
+// and the 3.5px stroke distorts the same way.
+function paintBellLine(l, fs) {
+  const lineC = sp('bellLineC') || '#b4bac6';
+  const lineW = l.w * 0.71;
+  const lineH = fs * 0.11;
+  const lineX = l.x + l.w * 0.165;
+  const lineTop = l.y + l.h - l.h * 0.082 - lineH;
+  ctx.save();
+  ctx.translate(lineX, lineTop);
+  ctx.scale(lineW / 420, lineH / 16);
+  ctx.strokeStyle = lineC;
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
+  ctx.stroke(new Path2D(BELL_LINE));
+  ctx.restore();
+}
+
+// Geometry of the bell note card around the text block (Reza,
+// 2026-11-23 — his createBellNoteCard code). The card padding is his
+// fixed max values (64px top, 68px bottom, 48px sides — card design
+// values, not fs units, like the frame card). The badge overhangs the
+// top-left corner: 24.8% of the card width wide, its left edge 8.2% of
+// the card width left of the card, its top edge 12.2% of the card
+// height above the card. The body block's position follows the
+// alignment buttons, same rule as the note card.
+function bellLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 48;
+  const padTop = 64, padBottom = 68;
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('bellCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('bellCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  const r = Math.min(44, cardW * 0.06);
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the bell note card: the dark glass card (his cardColor at
+// cardOpacity — the backdrop blur is skipped, same as the music card:
+// the page backgrounds are smooth gradients, so a blur would change
+// almost nothing), then the bell badge overhanging the top-left corner
+// and the hand-drawn line near the bottom. The text itself is painted
+// per line by STYLE_PAINT.bell.
+function paintBellCard(l, fs) {
+  const cardC = sp('bellCardC') || '#343b40';
+  const cardO = (sp('bellCardO') || 72) / 100;
+  const cardBg = hexToRgba(cardC, cardO);
+  const badgeBg = sp('bellBadgeC') || '#f3dcd3';
+  const bellC = sp('bellC') || '#59647a';
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+  ctx.shadowBlur = 34;
+  ctx.shadowOffsetY = 14;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = cardBg;
+  ctx.fill();
+  ctx.restore();
+  const badgeD = l.w * 0.248;
+  const badgeX = l.x - l.w * 0.082;
+  const badgeY = l.y - l.h * 0.122;
+  paintBellBadge(badgeX + badgeD / 2, badgeY + badgeD / 2, badgeD, cardBg, badgeBg, bellC);
+  paintBellLine(l, fs);
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -2544,6 +2687,11 @@ function draw() {
   // the alignment buttons).
   const pinkFrameRTL = state.style === 'frame' ? isRTLText(lines[0] || '') : true;
   const pinkFrameL = state.style === 'frame' ? frameLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, pinkFrameRTL) : null;
+  // The bell note card wraps the block the same way (a dark glass card
+  // with the bell badge overhanging the top-left corner; the body block
+  // still follows the alignment buttons).
+  const bellRTL = state.style === 'bell' ? isRTLText(lines[0] || '') : true;
+  const bellL = state.style === 'bell' ? bellLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, bellRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -2565,7 +2713,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -2670,6 +2818,11 @@ function draw() {
   // corners around the whole text block (the text itself is painted
   // per-line below, in black with a thick pink outline).
   if (pinkFrameL) paintFrameCard(pinkFrameL);
+
+  // Bell note card: a dark glass card with the bell badge overhanging
+  // the top-left corner and the hand-drawn line near the bottom (the
+  // text itself is painted per-line below, in white).
+  if (bellL) paintBellCard(bellL, chromeFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -2802,7 +2955,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -2818,6 +2971,7 @@ function redraw() {
   paintPinSamples();
   paintMusicSamples();
   paintFrameSamples();
+  paintBellSamples();
 }
 
 // Caret blink.
@@ -3331,6 +3485,7 @@ function buildStylePicker() {
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
       if (item.id === 'frame') return '<canvas class="sample-canvas sample-canvas-frame" width="190" height="120"></canvas>';
+      if (item.id === 'bell') return '<canvas class="sample-canvas sample-canvas-bell" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -3851,6 +4006,75 @@ function paintFrameSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-frame';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the bell note card preview with the REAL bell code
+// (bellLayout + paintBellCard + the body text) on its small canvas —
+// a miniature of the actual card, same pattern as the frame preview.
+// Called from redraw(), like the frame samples. If painting fails, fall
+// back to the CSS box.
+function paintBellSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-bell')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const bellRTL = isRTLText(lines[0] || '');
+        const bellL = bellLayout(110, maxLw, blockH, lineHeight, 1080, 540, bellRTL);
+        const blockCx = 540 + bellL.blockShift;
+        // Fit the whole card (plus the badge overhang) into the sample
+        // canvas, centred, keeping the aspect — a uniform scale, so
+        // nothing is squashed. The badge sticks out of the top-left, so
+        // the fit box extends past the card on that side.
+        const fitX = bellL.x - bellL.w * 0.082, fitY = bellL.y - bellL.h * 0.122;
+        const fitW = bellL.w + bellL.w * 0.082, fitH = bellL.h + bellL.h * 0.122;
+        const s = Math.min(W / fitW, H / fitH);
+        const fitCx = fitX + fitW / 2, fitCy = fitY + fitH / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-fitCx, -fitCy);
+          paintBellCard(bellL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.bell(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-bell';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

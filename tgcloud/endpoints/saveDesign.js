@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -105,6 +105,14 @@ const STYLE_PARAMS = {
   frameAccent: { color: true },
   frameBorder: { min: 0, max: 60 },
   frameOutline: { min: 0, max: 40 },
+  // Bell note card (Reza, 2026-11-23).
+  bellCardW: { min: 400, max: 900 },
+  bellCardH: { min: 300, max: 800 },
+  bellCardC: { color: true },
+  bellCardO: { min: 10, max: 100 },
+  bellBadgeC: { color: true },
+  bellC: { color: true },
+  bellLineC: { color: true },
   tweetTextSize: { min: 50, max: 150 },
   // StoryFont styles (Reza, 2026-11-22).
   gradlineC1: { color: true },
