@@ -475,7 +475,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-glow { color: #fff; text-shadow: 0 0 10px #fff, 0 0 22px #fff; }
 .sample-gradient { background: linear-gradient(90deg, #ff2e88, #ff7a3d, #f4d93e); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .sample-stroke { color: #fff; -webkit-text-stroke: 1.5px #111; }
-.sample-brush { background: #232347; border-radius: 8px; padding: 0 6px; }
+.sample-brush { background: #03008d; border-radius: 8px; padding: 0 6px; }
 .sample-pastille { color: #ffe45e; -webkit-text-stroke: 1.5px #7c3aed; }
 .sample-round { color: #a855f7; -webkit-text-stroke: 1px #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.4); }
 .sample-arcadia { background: linear-gradient(90deg, #ff7a18, #ff2e63); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 0.5px #fff; }

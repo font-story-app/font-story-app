@@ -215,6 +215,13 @@ const STYLE_CONTROLS = {
     { key: 'brushTilt', label: 'کجی قلم‌مو', type: 'range', min: -10, max: 10, step: 1, def: -2, unit: '°' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+    // The box colour and corner radius are the brush style's OWN knobs
+    // now (Reza 2026-11-23: default box colour #03008D) — they used to
+    // be the global style colour/radius shared by the box styles, whose
+    // defaults (#F4D93E / 18) are the highlight style's signature look
+    // and must not change. (Same split as glass/glassC/glassR.)
+    { key: 'brushBoxC', label: 'رنگ قلم‌مو', type: 'color', def: '#03008D' },
+    { key: 'brushBoxR', label: 'گردی کادر', type: 'range', min: 0, max: 40, step: 1, def: 18, unit: 'px' },
   ],
   underline: [
     { key: 'underlineWidth', label: 'ضخامت خط زیر', type: 'range', min: 20, max: 80, step: 1, def: 40, unit: '٪' },
@@ -746,9 +753,9 @@ const STYLE_PAINT = {
   },
   brush: (line, cx, y, lw, fs) => {
     ctx.save(); ctx.translate(cx, y); ctx.rotate((sp('brushTilt') * Math.PI) / 180);
-    ctx.fillStyle = state.styleColor;
-    roundRect(-lw / 2 - 30, -fs * 0.62, lw + 60, fs * 1.24, state.borderRadius); ctx.fill(); ctx.restore();
-    ctx.fillStyle = state.colorTouched ? state.color : contrastText(state.styleColor); drawWords(line, cx, y);
+    ctx.fillStyle = sp('brushBoxC');
+    roundRect(-lw / 2 - 30, -fs * 0.62, lw + 60, fs * 1.24, sp('brushBoxR')); ctx.fill(); ctx.restore();
+    ctx.fillStyle = state.colorTouched ? state.color : contrastText(sp('brushBoxC')); drawWords(line, cx, y);
   },
   pastille: (line, cx, y, lw, fs) => {
     strokeWords(line, cx, y, '#7c3aed', fs * (sp('pastilleStroke') / 100));
@@ -3029,7 +3036,7 @@ function paintBrushSamples() {
 // radius — the «استایل» section in the per-style sheet only shows for
 // these (Reza, 2026-11-21); the other styles never read styleColor or
 // borderRadius, so the knobs would do nothing there.
-const BOX_STYLES = ['highlight', 'brush', 'quotes'];
+const BOX_STYLES = ['highlight', 'quotes'];
 // Build the «تنظیمات این استایل» controls for the current style.
 // Rebuilt on style change, on opening the sheet, and on applying a
 // saved design — so the sheet always shows the current style's knobs.
@@ -3158,12 +3165,12 @@ function renderStyleControls() {
   // The «استایل» section moved here from the text settings (gear) sheet
   // (Reza, 2026-11-21): the style colour and the corner radius live
   // with the style's own knobs now. They are global state — not
-  // per-style params — and they only show for the three box styles that
-  // actually paint with them (highlight, brush, quotes); glass has its
-  // own colour/radius knobs (glassC/glassR, Reza 2026-11-23), so it is
-  // not in this list. For every other style the section is not shown
-  // at all. Same ids and wiring as before, so the saved-design restore
-  // (applyDesign) needs no change.
+  // per-style params — and they only show for the two box styles that
+  // still paint with them (highlight, quotes); glass and brush have
+  // their own colour/radius knobs (glassC/glassR, brushBoxC/brushBoxR,
+  // Reza 2026-11-23), so they are not in this list. For every other
+  // style the section is not shown at all. Same ids and wiring as
+  // before, so the saved-design restore (applyDesign) needs no change.
   if (BOX_STYLES.includes(state.style)) {
     const sub = document.createElement('div');
     sub.className = 'settings-sub';
@@ -3335,6 +3342,13 @@ function applyDesign(d) {
   if (state.style === 'glass') {
     if (!state.styleParams.glassC && typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor)) state.styleParams.glassC = d.styleColor;
     if (state.styleParams.glassR == null && Number.isFinite(Number(d.borderRadius))) state.styleParams.glassR = clampNum(d.borderRadius, 0, 40, 25);
+  }
+  // Brush used the global style colour/radius until 2026-11-23; same
+  // carry-over as glass (see above) so old saved brush designs keep
+  // their colours.
+  if (state.style === 'brush') {
+    if (!state.styleParams.brushBoxC && typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor)) state.styleParams.brushBoxC = d.styleColor;
+    if (state.styleParams.brushBoxR == null && Number.isFinite(Number(d.borderRadius))) state.styleParams.brushBoxR = clampNum(d.borderRadius, 0, 40, 18);
   }
   textInput.value = state.text;
   $('colorPicker').value = flatColor(state.color);
