@@ -84,6 +84,7 @@ const STYLES = [
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'msgnotif', label: 'اعلان پیام' },
+  { id: 'stitched', label: 'دوخت' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -433,6 +434,19 @@ const STYLE_CONTROLS = {
     { key: 'msgnotifHeaderC', label: 'رنگ سربرگ', type: 'color', def: '#55575b' },
     { key: 'msgnotifTitle', label: 'عنوان برنامه', type: 'text', def: 'MESSAGE', max: 20 },
     { key: 'msgnotifTime', label: 'زمان', type: 'text', def: 'now', max: 10 },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Stitched card (Reza, 2026-11-23 — his createStitchedCard code):
+  // a dusty-rose card with a dashed stitch border (like sewing
+  // stitches) whose dash cycle is fitted to the border's exact
+  // perimeter, so it closes seamlessly at the corners.
+  stitched: [
+    { key: 'stitchedCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'stitchedCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'stitchedCardC', label: 'رنگ کارت', type: 'color', def: '#da778b' },
+    { key: 'stitchedCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 94, unit: '٪' },
+    { key: 'stitchedStitchC', label: 'رنگ دوخت', type: 'color', def: '#71333d' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1118,6 +1132,15 @@ const STYLE_PAINT = {
   msgnotif: (line, cx, y) => {
     const c = sp('msgnotifCardC') || '#e3e4e6';
     ctx.fillStyle = state.colorTouched ? state.color : contrastText(c);
+    drawWords(line, cx, y);
+  },
+  // Stitched card (Reza, 2026-11-23 — his createStitchedCard code):
+  // dark brown-red text on the dusty-rose card (the card + stitch
+  // border are painted block-level in draw()). A colour picked in the
+  // رنگ tab wins; otherwise his #6e1904 — a fixed design colour, not
+  // contrastText, because the brown-red-on-rose pairing is the look.
+  stitched: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#6e1904';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -2387,6 +2410,79 @@ function paintMsgnotifCard(l, fs) {
   ctx.restore();
 }
 
+// --- Stitched card (Reza, 2026-11-23 — his createStitchedCard
+// code): a dusty-rose card with a dashed stitch border around the
+// inside edge, like sewing stitches. The dash cycle is fitted to the
+// border's exact perimeter (his updateStitchFrame math, verbatim), so
+// the dashes close seamlessly at the start point instead of breaking
+// at a corner.
+
+// Geometry of the stitched card around the text block. Same shape as
+// the bell layout (fixed px padding, height floor splitting evenly,
+// blockShift following the alignment buttons).
+function stitchedLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 46;                    // his max horizontal padding
+  const padTop = 56, padBottom = 56;  // his max vertical padding
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('stitchedCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('stitchedCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the stitched card: the dusty-rose card at its opacity, then
+// the stitch border — a dashed rounded rect inset from the card edge.
+// The dash cycle comes from his perimeter math: inset, stroke width,
+// corner radius and the target cycle all scale with the card's smaller
+// side, and the dash count is rounded so the pattern closes exactly.
+// The text itself is painted per line by STYLE_PAINT.stitched.
+function paintStitchedCard(l, fs) {
+  const cardC = sp('stitchedCardC') || '#da778b';
+  const cardO = (sp('stitchedCardO') || 94) / 100;
+  const stitchC = sp('stitchedStitchC') || '#71333d';
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fillStyle = hexToRgba(cardC, cardO);
+  ctx.fill();
+  ctx.restore();
+  const base = Math.min(l.w, l.h);
+  const inset = Math.max(14, Math.min(26, base * 0.056));
+  const strokeWidth = Math.max(3.4, Math.min(5.5, base * 0.0125));
+  const innerW = Math.max(10, l.w - inset * 2);
+  const innerH = Math.max(10, l.h - inset * 2);
+  const rx = Math.max(14, Math.min(28, base * 0.064));
+  const perimeter = 2 * (innerW + innerH - 4 * rx) + 2 * Math.PI * rx;
+  const targetCycle = Math.max(20, Math.min(31, base * 0.068));
+  const dashCount = Math.max(12, Math.round(perimeter / targetCycle));
+  const cycle = perimeter / dashCount;
+  const dashLen = cycle * 0.56;
+  const gapLen = cycle - dashLen;
+  ctx.save();
+  ctx.strokeStyle = stitchC;
+  ctx.lineWidth = strokeWidth;
+  ctx.lineCap = 'butt';
+  ctx.setLineDash([dashLen, gapLen]);
+  roundRect(l.x + inset, l.y + inset, innerW, innerH, rx);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -3035,6 +3131,11 @@ function draw() {
   // alignment buttons).
   const msgnotifRTL = state.style === 'msgnotif' ? isRTLText(lines[0] || '') : true;
   const msgnotifL = state.style === 'msgnotif' ? msgnotifLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, msgnotifRTL) : null;
+  // The stitched card wraps the block the same way (a dusty-rose card
+  // with a dashed stitch border inside the edge; the body block still
+  // follows the alignment buttons).
+  const stitchedRTL = state.style === 'stitched' ? isRTLText(lines[0] || '') : true;
+  const stitchedL = state.style === 'stitched' ? stitchedLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, stitchedRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -3056,7 +3157,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -3182,6 +3283,11 @@ function draw() {
   // iMessage icon + MESSAGE title + "now" time in the header (the text
   // itself is painted per-line below, in black).
   if (msgnotifL) paintMsgnotifCard(msgnotifL, chromeFs);
+
+  // Stitched card: a dusty-rose card with a dashed stitch border
+  // inside the edge (the text itself is painted per-line below, in
+  // dark brown-red).
+  if (stitchedL) paintStitchedCard(stitchedL, chromeFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -3314,7 +3420,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -3334,6 +3440,7 @@ function redraw() {
   paintHeartsSamples();
   paintDoubleFrameSamples();
   paintMsgnotifSamples();
+  paintStitchedSamples();
 }
 
 // Caret blink.
@@ -3851,6 +3958,7 @@ function buildStylePicker() {
       if (item.id === 'hearts') return '<canvas class="sample-canvas sample-canvas-hearts" width="190" height="120"></canvas>';
       if (item.id === 'doubleFrame') return '<canvas class="sample-canvas sample-canvas-doubleFrame" width="190" height="120"></canvas>';
       if (item.id === 'msgnotif') return '<canvas class="sample-canvas sample-canvas-msgnotif" width="190" height="120"></canvas>';
+      if (item.id === 'stitched') return '<canvas class="sample-canvas sample-canvas-stitched" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -4640,6 +4748,71 @@ function paintMsgnotifSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-msgnotif';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the stitched card preview with the REAL stitched code
+// (stitchedLayout + paintStitchedCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the
+// message notification preview. Called from redraw(), like the
+// msgnotif samples. If painting fails, fall back to the CSS box.
+function paintStitchedSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-stitched')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const stitchedRTL = isRTLText(lines[0] || '');
+        const stitchedL = stitchedLayout(110, maxLw, blockH, lineHeight, 1080, 540, stitchedRTL);
+        const blockCx = 540 + stitchedL.blockShift;
+        // Fit the whole card into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const s = Math.min(W / stitchedL.w, H / stitchedL.h);
+        const cardCx = stitchedL.x + stitchedL.w / 2, cardCy = stitchedL.y + stitchedL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintStitchedCard(stitchedL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.stitched(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-stitched';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
