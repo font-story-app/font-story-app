@@ -41,42 +41,45 @@ const FONTS = [
 
 const STYLES = [
   { id: 'bold', label: 'پررنگ' },
+  // Reza 2026-11-23: these eleven come first, right after bold, in
+  // this exact order — highlight, glass, brush, quotes, roundline,
+  // gradline, squarebox, lightbox, shadowline, halo, brushstroke.
   { id: 'highlight', label: 'هایلایت' },
-  { id: 'neon', label: 'نئون' },
   { id: 'glass', label: 'شیشه‌ای' },
+  { id: 'brush', label: 'قلم‌مو' },
+  { id: 'quotes', label: 'نقل‌قول' },
+  // StoryFont styles (Reza, 2026-11-22): the six canvas looks from his
+  // screenshots, colours sampled from the shots. 'pastille' below used to
+  // be labelled «پاستیل» — it is only a purple outline, so it is now
+  // «دور بنفش» and the real Pastille lives below as 'pastille3d'.
+  // 'violet' and 'bubble' were removed at Reza's request the same day.
+  { id: 'roundline', label: 'خط گرد' },
+  { id: 'gradline', label: 'خط گرادینت' },
+  { id: 'squarebox', label: 'باکس مشکی' },
+  { id: 'lightbox', label: 'باکس سفید' },
+  { id: 'shadowline', label: 'خط سایه‌دار' },
+  { id: 'halo', label: 'هاله' },
+  { id: 'brushstroke', label: 'براش' },
+  { id: 'neon', label: 'نئون' },
   { id: 'retro', label: 'رترو' },
   { id: 'shadow', label: 'سایه‌دار' },
   { id: 'glow', label: 'درخشان' },
   { id: 'gradient', label: 'گرادیان' },
   { id: 'stroke', label: 'استروک' },
-  { id: 'brush', label: 'قلم‌مو' },
   { id: 'pastille', label: 'دور بنفش' },
   { id: 'round', label: 'راوند' },
   { id: 'arcadia', label: 'آرکادیا' },
   { id: 'underline', label: 'خط زیر' },
   { id: 'pixel', label: 'پیکسلی' },
-  { id: 'quotes', label: 'نقل‌قول' },
   { id: 'winter', label: 'زمستانی' },
   { id: 'rosseta', label: 'رُزتا' },
   { id: 'sticker', label: 'استیکر' },
-  // StoryFont styles (Reza, 2026-11-22): the six canvas looks from his
-  // screenshots, colours sampled from the shots. 'pastille' above used to
-  // be labelled «پاستیل» — it is only a purple outline, so it is now
-  // «دور بنفش» and the real Pastille lives below as 'pastille3d'.
-  // 'violet' and 'bubble' were removed at Reza's request the same day.
-  { id: 'roundline', label: 'خط گرد' },
   { id: 'pastille3d', label: 'پاستیل' },
-  { id: 'gradline', label: 'خط گرادینت' },
-  { id: 'squarebox', label: 'باکس مشکی' },
-  { id: 'lightbox', label: 'باکس سفید' },
-  { id: 'shadowline', label: 'خط سایه‌دار' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
-  { id: 'halo', label: 'هاله' },
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
-  { id: 'brushstroke', label: 'براش' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
