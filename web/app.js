@@ -88,6 +88,7 @@ const STYLES = [
   { id: 'sewingpin', label: 'سنجاق' },
   { id: 'spiral', label: 'دفترچه' },
   { id: 'windowcard', label: 'پنجره' },
+  { id: 'splitwindow', label: 'پنجره دو تکه' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -489,6 +490,19 @@ const STYLE_CONTROLS = {
     { key: 'windowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#db977d' },
     { key: 'windowBodyC', label: 'رنگ بدنه', type: 'color', def: '#ffffff' },
     { key: 'windowIconC', label: 'رنگ آیکون‌ها', type: 'color', def: '#ffffff' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Split window card (Reza, 2026-11-23 — his createSplitWindowCard
+  // code): a desktop window split in two — a peach title bar on top
+  // with three hollow black circles on the right, a gap, then a dark
+  // burgundy body card with the text centred in it.
+  splitwindow: [
+    { key: 'splitWindowCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'splitWindowCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'splitWindowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#fcb181' },
+    { key: 'splitWindowBodyC', label: 'رنگ بدنه', type: 'color', def: '#591f2b' },
+    { key: 'splitWindowCircleC', label: 'رنگ دایره‌ها', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1210,6 +1224,16 @@ const STYLE_PAINT = {
   // contrastText, because the black-on-white pairing is the look.
   windowcard: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Split window card (Reza, 2026-11-23 — his createSplitWindowCard
+  // code): white text on the dark burgundy body (the title bar + body
+  // + circles are painted block-level in draw()). A colour picked in
+  // the رنگ tab wins; otherwise his #ffffff — a fixed design colour,
+  // not contrastText, because the white-on-burgundy pairing is the
+  // look.
+  splitwindow: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -2907,6 +2931,88 @@ function paintWindowCard(l, fs) {
   ctx.restore();
 }
 
+// --- Split window card (Reza, 2026-11-23 — his createSplitWindowCard
+// code): a desktop window split in two — a peach title bar on top
+// with three hollow black circles on the right, a gap, then a dark
+// burgundy body card with the text centred in it. The circles are
+// his SVG (44x44 viewBox: a circle r=18.2 centred in the box,
+// stroked 3.8) drawn with canvas arcs.
+
+// Geometry of the split window card around the text block. Same shape
+// as the window card layout (fixed px padding, height floor splitting
+// evenly, blockShift following the alignment buttons), but the card
+// is two separate pieces: the header bar, a 12px gap, then the body
+// card. The text is centred in the BODY — the extra height splits
+// evenly between the top of the header and the bottom of the body, so
+// the text stays centred in the body.
+function splitWindowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 44;                    // his max body padding left/right
+  const headerH = 74;                 // his max header height
+  const headerR = 26;                 // his max header radius
+  const gap = 12;                     // his max gap between header and body
+  const bodyPadTop = 46, bodyPadBottom = 46; // his max body padding
+  const bodyR = 28;                   // his max body radius
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('splitWindowCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  let bodyTop = textTop - bodyPadTop;
+  let bodyBottom = textBottom + bodyPadBottom;
+  let headerTop = bodyTop - gap - headerH;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above the header and below the body so the text
+  // stays centred in the body.
+  const extraH = Math.max(0, sp('splitWindowCardH') - (bodyBottom - headerTop));
+  headerTop -= extraH / 2;
+  bodyBottom += extraH / 2;
+  return {
+    x: cardX, y: headerTop, w: cardW, h: bodyBottom - headerTop,
+    headerY: headerTop, headerH, headerR,
+    bodyY: bodyTop, bodyH: bodyBottom - bodyTop, bodyR,
+    padX, gap, blockShift, rtl,
+  };
+}
+
+// Paint the split window card: the peach header bar (radius 26) with
+// three hollow circles on the right end, a gap, then the dark
+// burgundy body card (radius 28). The text itself is painted per line
+// by STYLE_PAINT.splitwindow.
+function paintSplitWindowCard(l, fs) {
+  const headerC = sp('splitWindowHeaderC') || '#fcb181';
+  const bodyC = sp('splitWindowBodyC') || '#591f2b';
+  const circleC = sp('splitWindowCircleC') || '#000000';
+  // Header bar.
+  ctx.fillStyle = headerC;
+  roundRect(l.x, l.headerY, l.w, l.headerH, l.headerR);
+  ctx.fill();
+  // Body card.
+  ctx.fillStyle = bodyC;
+  roundRect(l.x, l.bodyY, l.w, l.bodyH, l.bodyR);
+  ctx.fill();
+  // Three hollow circles on the right end of the header (his SVG,
+  // 44x44 viewBox: a circle r=18.2 centred in the box, stroked 3.8).
+  const circleSize = 44; // his max circle size
+  const gap = 13;        // his max gap between circles
+  const padRight = 22;   // his max header padding
+  const circleY = l.headerY + (l.headerH - circleSize) / 2;
+  const c3x = l.x + l.w - padRight - circleSize;
+  const c2x = c3x - gap - circleSize;
+  const c1x = c2x - gap - circleSize;
+  ctx.strokeStyle = circleC;
+  ctx.lineWidth = 3.8;
+  for (const cx of [c1x, c2x, c3x]) {
+    ctx.beginPath();
+    ctx.arc(cx + 22, circleY + 22, 18.2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -3576,6 +3682,11 @@ function draw() {
   // follows the alignment buttons).
   const windowcardRTL = state.style === 'windowcard' ? isRTLText(lines[0] || '') : true;
   const windowcardL = state.style === 'windowcard' ? windowLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, windowcardRTL) : null;
+  // The split window card wraps the block the same way (a separate
+  // title bar above, the text centred in the body card below it; the
+  // body block still follows the alignment buttons).
+  const splitwindowRTL = state.style === 'splitwindow' ? isRTLText(lines[0] || '') : true;
+  const splitwindowL = state.style === 'splitwindow' ? splitWindowLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, splitwindowRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -3597,7 +3708,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -3744,6 +3855,11 @@ function draw() {
   // per-line below, in black).
   if (windowcardL) paintWindowCard(windowcardL, chromeFs);
 
+  // Split window card: a peach title bar with three hollow circles on
+  // the right, a gap, then a dark burgundy body card (the text itself
+  // is painted per-line below, in white).
+  if (splitwindowL) paintSplitWindowCard(splitwindowL, chromeFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -3875,7 +3991,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -3899,6 +4015,7 @@ function redraw() {
   paintSewingPinSamples();
   paintSpiralSamples();
   paintWindowCardSamples();
+  paintSplitWindowCardSamples();
 }
 
 // Caret blink.
@@ -4420,6 +4537,7 @@ function buildStylePicker() {
       if (item.id === 'sewingpin') return '<canvas class="sample-canvas sample-canvas-sewingpin" width="190" height="120"></canvas>';
       if (item.id === 'spiral') return '<canvas class="sample-canvas sample-canvas-spiral" width="190" height="120"></canvas>';
       if (item.id === 'windowcard') return '<canvas class="sample-canvas sample-canvas-windowcard" width="190" height="120"></canvas>';
+      if (item.id === 'splitwindow') return '<canvas class="sample-canvas sample-canvas-splitwindow" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -5477,6 +5595,72 @@ function paintWindowCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-windowcard';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the split window card preview with the REAL split window code
+// (splitWindowLayout + paintSplitWindowCard + the body text) on its
+// small canvas — a miniature of the actual card, same pattern as the
+// window card preview. Called from redraw(), like the window samples.
+// If painting fails, fall back to the CSS box.
+function paintSplitWindowCardSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-splitwindow')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const splitwindowRTL = isRTLText(lines[0] || '');
+        const splitwindowL = splitWindowLayout(110, maxLw, blockH, lineHeight, 1080, 540, splitwindowRTL);
+        const blockCx = 540 + splitwindowL.blockShift;
+        // Fit the whole card (title bar + gap + body) into the sample
+        // canvas, centred, keeping the aspect — a uniform scale, so
+        // nothing is squashed.
+        const s = Math.min(W / splitwindowL.w, H / splitwindowL.h);
+        const cardCx = splitwindowL.x + splitwindowL.w / 2, cardCy = splitwindowL.y + splitwindowL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintSplitWindowCard(splitwindowL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.splitwindow(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-splitwindow';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
