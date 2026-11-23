@@ -86,6 +86,7 @@ const STYLES = [
   { id: 'msgnotif', label: 'اعلان پیام' },
   { id: 'stitched', label: 'دوخت' },
   { id: 'sewingpin', label: 'سنجاق' },
+  { id: 'spiral', label: 'دفترچه' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -461,6 +462,19 @@ const STYLE_CONTROLS = {
     { key: 'sewingpinCardC', label: 'رنگ کارت', type: 'color', def: '#b2a148' },
     { key: 'sewingpinBorderC', label: 'رنگ قاب', type: 'color', def: '#ffffff' },
     { key: 'sewingpinHeadC', label: 'رنگ سر سنجاق', type: 'color', def: '#e34a59' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Spiral notepad card (Reza, 2026-11-23 — his createSpiralNotepadCard
+  // code): an orange paper page with a black frame and a spiral wire
+  // binding along the top edge — 14 wire loops arching above the page
+  // and diving into punched holes below it.
+  spiral: [
+    { key: 'spiralCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
+    { key: 'spiralCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'spiralPaperC', label: 'رنگ کاغذ', type: 'color', def: '#f9ad7b' },
+    { key: 'spiralWireC', label: 'رنگ فنر و کادر', type: 'color', def: '#000000' },
+    { key: 'spiralCoils', label: 'تعداد حلقه‌ها', type: 'range', min: 2, max: 24, step: 1, def: 14 },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1164,6 +1178,15 @@ const STYLE_PAINT = {
   // not contrastText, because the white-on-olive pairing is the look.
   sewingpin: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
+  },
+  // Spiral notepad card (Reza, 2026-11-23 — his createSpiralNotepadCard
+  // code): black text on the orange paper (the paper + black frame +
+  // spiral binding are painted block-level in draw()). A colour picked
+  // in the رنگ tab wins; otherwise his #000000 — a fixed design colour,
+  // not contrastText, because the black-on-orange pairing is the look.
+  spiral: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
@@ -2680,6 +2703,97 @@ function paintSewingPinCard(l, fs) {
   // the data: URL loads immediately and onload redraws.)
 }
 
+// --- Spiral notepad card (Reza, 2026-11-23 — his
+// createSpiralNotepadCard code): an orange paper page with a black
+// frame and a spiral wire binding along the top edge. The coils are
+// his exact viewBox geometry (480x62, paper top edge at y=26), drawn
+// with Path2D under a scale transform — each loop arches above the
+// paper's top edge and dives into its punched hole below it.
+
+// Geometry of the spiral notepad card around the text block. Same
+// shape as the other card layouts (fixed px padding, blockShift
+// following the alignment buttons) — with one difference: his text
+// sits in the UPPER part of the page (flex-start + a deep bottom
+// padding), so the height floor's extra space goes entirely BELOW
+// the text instead of splitting evenly, and the text stays 96px
+// below the paper top.
+function spiralLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 44;                    // his max horizontal padding
+  const padTop = 96, padBottom = 175; // his max vertical padding
+  const bodyH = blockH;
+  const cardW = Math.max(maxLw + padX * 2, sp('spiralCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - bodyH / 2;
+  const textBottom = h / 2 + bodyH / 2;
+  const cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // goes below the text (see above), so the text stays put.
+  const extraH = Math.max(0, sp('spiralCardH') - (cardBottom - cardTop));
+  cardBottom += extraH;
+  // How far the wire loops arch above the paper top: the loop's cubic
+  // peaks at viewBox y=5.75 (its control points sit at -1, but the
+  // curve only reaches 5.75), so 20.25 of the 480-wide viewBox sticks
+  // out above the edge at y=26.
+  const coilOverhang = (20.25 / 480) * cardW;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
+    padX, blockShift, rtl, coilOverhang,
+  };
+}
+
+// Paint the spiral notepad card: the orange paper (sharp corners,
+// radius 0 — a plain rect, like the pink frame card), the black frame
+// drawn inside the paper bounds, then the spiral binding — the wire
+// loops and their punched holes, in his viewBox units scaled to the
+// paper width. The text itself is painted per line by
+// STYLE_PAINT.spiral.
+function paintSpiralCard(l, fs) {
+  const paperC = sp('spiralPaperC') || '#f9ad7b';
+  const wireC = sp('spiralWireC') || '#000000';
+  const bw = 3.2; // his max border width
+  ctx.fillStyle = paperC;
+  ctx.fillRect(l.x, l.y, l.w, l.h);
+  ctx.save();
+  ctx.strokeStyle = wireC;
+  ctx.lineWidth = bw;
+  ctx.strokeRect(l.x + bw / 2, l.y + bw / 2, l.w - bw, l.h - bw);
+  ctx.restore();
+  const s = l.w / 480;
+  const count = Math.max(2, Math.round(sp('spiralCoils') || 14));
+  const startX = 18, endX = 480 - 18;
+  const step = (endX - startX) / (count - 1);
+  const halfW = Math.min(13, step * 0.39);
+  ctx.save();
+  ctx.translate(l.x, l.y - 26 * s);
+  ctx.scale(s, s);
+  ctx.fillStyle = wireC;
+  ctx.strokeStyle = wireC;
+  ctx.lineWidth = 2.7;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let i = 0; i < count; i++) {
+    const cx = startX + i * step;
+    const leftX = cx - halfW;
+    const rightX = cx + halfW;
+    const holeX = cx - halfW * 0.22;
+    const holeY = 52;
+    ctx.beginPath();
+    ctx.ellipse(holeX, holeY, 3.4, 4.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke(new Path2D(
+      `M ${leftX.toFixed(2)} 26 C ${leftX.toFixed(2)} -1, ${rightX.toFixed(2)} -1, ${rightX.toFixed(2)} 26 ` +
+      `C ${rightX.toFixed(2)} 41, ${(cx + halfW * 0.45).toFixed(2)} 52, ${holeX.toFixed(2)} 52`
+    ));
+  }
+  ctx.restore();
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -3338,6 +3452,12 @@ function draw() {
   // still follows the alignment buttons).
   const sewingpinRTL = state.style === 'sewingpin' ? isRTLText(lines[0] || '') : true;
   const sewingpinL = state.style === 'sewingpin' ? sewingPinLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, sewingpinRTL) : null;
+  // The spiral notepad card wraps the block the same way (an orange
+  // paper page with a spiral binding along the top; the body block
+  // still follows the alignment buttons, sitting in the upper part of
+  // the page).
+  const spiralRTL = state.style === 'spiral' ? isRTLText(lines[0] || '') : true;
+  const spiralL = state.style === 'spiral' ? spiralLayout(chromeFs, maxLw, blockH, lineHeight, h, cx, spiralRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -3359,7 +3479,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -3496,6 +3616,11 @@ function draw() {
   // white).
   if (sewingpinL) paintSewingPinCard(sewingpinL, chromeFs);
 
+  // Spiral notepad card: an orange paper page with a black frame and a
+  // spiral binding along the top edge (the text itself is painted
+  // per-line below, in black).
+  if (spiralL) paintSpiralCard(spiralL, chromeFs);
+
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
   if (msgbubbleL) paintMsgbubble(msgbubbleL, textFs);
@@ -3627,7 +3752,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -3649,6 +3774,7 @@ function redraw() {
   paintMsgnotifSamples();
   paintStitchedSamples();
   paintSewingPinSamples();
+  paintSpiralSamples();
 }
 
 // Caret blink.
@@ -4168,6 +4294,7 @@ function buildStylePicker() {
       if (item.id === 'msgnotif') return '<canvas class="sample-canvas sample-canvas-msgnotif" width="190" height="120"></canvas>';
       if (item.id === 'stitched') return '<canvas class="sample-canvas sample-canvas-stitched" width="190" height="120"></canvas>';
       if (item.id === 'sewingpin') return '<canvas class="sample-canvas sample-canvas-sewingpin" width="190" height="120"></canvas>';
+      if (item.id === 'spiral') return '<canvas class="sample-canvas sample-canvas-spiral" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -5089,6 +5216,77 @@ function paintSewingPinSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sewingpin';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the spiral notepad preview with the REAL spiral code
+// (spiralLayout + paintSpiralCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the
+// sewing pin preview. Called from redraw(), like the sewing pin
+// samples. The fit box includes the coil overhang above the paper
+// (the wire loops arch above the top edge), or the loops would be
+// clipped by the sample canvas. If painting fails, fall back to the
+// CSS box.
+function paintSpiralSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-spiral')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const spiralRTL = isRTLText(lines[0] || '');
+        const spiralL = spiralLayout(110, maxLw, blockH, lineHeight, 1080, 540, spiralRTL);
+        const blockCx = 540 + spiralL.blockShift;
+        // Fit the whole card (paper + the wire loops above it) into
+        // the sample canvas, centred, keeping the aspect — a uniform
+        // scale, so nothing is squashed.
+        const fitX = spiralL.x, fitY = spiralL.y - spiralL.coilOverhang;
+        const fitW = spiralL.w, fitH = spiralL.h + spiralL.coilOverhang;
+        const s = Math.min(W / fitW, H / fitH);
+        const fitCx = fitX + fitW / 2, fitCy = fitY + fitH / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-fitCx, -fitCy);
+          paintSpiralCard(spiralL, 110);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.spiral(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-spiral';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
