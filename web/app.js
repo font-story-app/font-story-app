@@ -41,9 +41,10 @@ const FONTS = [
 
 const STYLES = [
   { id: 'bold', label: 'پررنگ' },
-  // Reza 2026-11-23: these eleven come first, right after bold, in
-  // this exact order — highlight, glass, brush, quotes, roundline,
+  // Reza 2026-11-23: these ten come first, right after bold, in
+  // this exact order — highlight, glass, brush, quotes,
   // gradline, squarebox, lightbox, shadowline, halo, brushstroke.
+  // 'roundline' was deleted at Reza's request the same day.
   { id: 'highlight', label: 'هایلایت' },
   { id: 'glass', label: 'شیشه‌ای' },
   { id: 'brush', label: 'قلم‌مو' },
@@ -53,7 +54,6 @@ const STYLES = [
   // be labelled «پاستیل» — it is only a purple outline, so it is now
   // «دور بنفش» and the real Pastille lives below as 'pastille3d'.
   // 'violet' and 'bubble' were removed at Reza's request the same day.
-  { id: 'roundline', label: 'خط گرد' },
   { id: 'gradline', label: 'خط گرادینت' },
   { id: 'squarebox', label: 'باکس مشکی' },
   { id: 'lightbox', label: 'باکس سفید' },
@@ -249,11 +249,7 @@ const STYLE_CONTROLS = {
   ],
   // StoryFont styles (Reza, 2026-11-22): knobs for the new looks.
   // Colours are the sampled defaults from his screenshots.
-  roundline: [
-    { key: 'roundlineC', label: 'رنگ خط', type: 'color', def: '#FF5152' },
-    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
-    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
-  ],
+  // ('roundline' was deleted at Reza's request, 2026-11-23.)
   pastille3d: [
     { key: 'pastille3dOutline', label: 'ضخامت خط دور', type: 'range', min: 4, max: 16, step: 1, def: 10, unit: '٪' },
     { key: 'pastille3dShadow', label: 'فاصله سایه', type: 'range', min: 0, max: 40, step: 1, def: 25, unit: '٪' },
@@ -866,14 +862,7 @@ const STYLE_PAINT = {
   // StoryFont styles (Reza, 2026-11-22) — colours sampled from his
   // screenshots. Each one's fill follows the رنگ tab once the user picks
   // a colour, else the signature colour from the reference.
-  roundline: (line, cx, y, lw, fs) => {
-    // A coral pill behind each line (the text rides slightly high on it,
-    // like the reference), white text with a black outline on top.
-    bgBox(cx, y + fs * 0.06, lw, fs, { fill: sp('roundlineC'), radius: fs * 0.62, padX: 28 });
-    strokeWords(line, cx, y, '#111111', fs * 0.08);
-    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
-    drawWords(line, cx, y);
-  },
+  // ('roundline' was deleted at Reza's request, 2026-11-23.)
   pastille3d: (line, cx, y, lw, fs) => {
     // Yellow fill, light-purple outline, dark-purple 3D extrusion
     // shadow — the same sweep technique as the sticker's maroon
@@ -1806,7 +1795,7 @@ function quoteFrameLayout(fs, maxLw, blockH) {
   const bottomGapEnd = right - r - stub;
   const bottomGapStart = Math.max(left + r + 8, bottomGapEnd - gapWidth);
   const bottomCenterX = (bottomGapStart + bottomGapEnd) / 2;
-  return { u, bw, bh, W, H, isSmall, swPx, quoteScale, padY, framePadY, padX, left, right, top, bottom, r, stub, gapWidth, topGapStart, topGapEnd, topCenterX, bottomGapEnd, bottomGapStart, bottomCenterX };
+  return { u, bw, bh, W, H, isSmall, swPx, quoteScale, padY, framePadY, framePadX, padX, left, right, top, bottom, r, stub, gapWidth, topGapStart, topGapEnd, topCenterX, bottomGapEnd, bottomGapStart, bottomCenterX };
 }
 
 // Paint a quotes frame from quoteFrameLayout, with the frame's top-left
