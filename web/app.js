@@ -115,6 +115,7 @@ const STYLES = [
   { id: 'fading', label: 'محو سایه‌دار' },
   { id: 'shinygold', label: 'طلایی براق' },
   { id: 'liftedshadow', label: 'سایه برجسته' },
+  { id: 'centerdrop', label: 'سایه مرکزی' },
   { id: 'sheenribbon', label: 'نوار درخشان' },
   { id: 'emeraldgradient', label: 'گرادیان زمردی' },
   { id: 'sharphighlight', label: 'هایلایت تیز' },
@@ -896,6 +897,19 @@ const STYLE_CONTROLS = {
     { key: 'liftedCardC', label: 'رنگ کارت', type: 'color', def: '#ffffff' },
     { key: 'liftedShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
     { key: 'liftedShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 75, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  centerdrop: [
+    { key: 'centerCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'centerCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'centerPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 67, unit: 'px', editable: true },
+    { key: 'centerPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 67, unit: 'px', editable: true },
+    { key: 'centerPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 53, unit: 'px', editable: true },
+    { key: 'centerPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 53, unit: 'px', editable: true },
+    { key: 'centerCardC', label: 'رنگ کارت', type: 'color', def: '#ffffff' },
+    { key: 'centerShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
+    { key: 'centerShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 86, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2079,6 +2093,14 @@ const STYLE_PAINT = {
   // arched shadow under the card is painted block-level by
   // paintLiftedShadowCard.
   liftedshadow: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Centre drop shadow card (Reza, 2026-11-24 — his
+  // createCenterDropShadowCard code): plain black text, no shadow —
+  // the V-shaped shadow under the card is painted block-level by
+  // paintCenterDropCard.
+  centerdrop: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -5766,6 +5788,107 @@ function paintLiftedShadowCard(l, fs) {
   ctx.fill();
 }
 
+// Geometry of the centre drop shadow card around the text block.
+// Same shape as the lifted shadow layout (height floor splitting
+// evenly, blockShift following the alignment buttons), but the
+// padding is px-based in his code, so the knobs are px: his
+// clamp(42px, 8.8vw, 74px) vertical and clamp(28px, 7vw, 60px)
+// horizontal, evaluated at the 760px canvas width (67/53). The
+// card hugs the text by default (CardW/CardH 0); his 580px is a
+// max-width, not a fixed width. The V-shaped shadow hangs 56px
+// below the card (his bottom -56px, height 58px, top overlapping
+// the card bottom by 2px); the radius is his 8px cap. The
+// wrapper's 28px bottom margin is outside spacing with nothing
+// below it on the canvas, so it is not reproduced.
+function centerDropLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padLeft = Math.max(0, sp('centerPadLeft') ?? 53);
+  const padRight = Math.max(0, sp('centerPadRight') ?? 53);
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, sp('centerPadTop') ?? 67);
+  const padBottom = Math.max(0, sp('centerPadBottom') ?? 67);
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('centerCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('centerCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 8,
+    padX, padLeft, padRight, blockShift, rtl, shadowBelow: 56,
+  };
+}
+
+// Paint the centre drop shadow card: the white rounded card, plus
+// the V-shaped shadow beneath it. The shadow is his SVG layer
+// translated to canvas: the same three polygons in the same 400x72
+// viewBox, mapped onto the card width x 58px (preserveAspectRatio
+// none, like his SVG), filled solid with his opacities (0.32 / 0.68
+// / 0.92 x intensity). Each polygon gets its own feGaussianBlur
+// stdDeviation (12 / 6.8 / 2.2 in viewBox units); canvas has no
+// per-axis blur, so each layer is blurred with a single px value —
+// the stdDeviation scaled by the mean of the X/Y scales — via
+// ctx.filter on an offscreen canvas (the yellow-bars precedent,
+// guarded the same way, so an old WebView without it just draws
+// the shadow sharper). The shadow is drawn first and the card on
+// top of it (his zIndex 0/1).
+function paintCenterDropCard(l, fs) {
+  const cardC = sp('centerCardC') || '#ffffff';
+  const shadowC = sp('centerShadowC') || '#000000';
+  const s = Math.max(0, Math.min(1, (sp('centerShadowO') ?? 86) / 100));
+  if (s > 0) {
+    // The SVG box: left 1.2% of the card width, 97.6% wide, its top
+    // 2px above the card's bottom edge (bottom -56px, height 58px).
+    const sx = l.x + l.w * 0.012, sy = l.y + l.h - 2, sw = l.w * 0.976, sh = 58;
+    // Non-uniform viewBox 400x72 -> shadow box scale.
+    const kx = sw / 400, ky = sh / 72;
+    const blur = (stdDev) => stdDev * (kx + ky) / 2;
+    // His three polygons, in viewBox units: the wide soft halo, the
+    // main triangle, and the shallow contact line at the card edge.
+    const layers = [
+      { pts: [[18, 3], [382, 3], [200, 38]], opacity: 0.32, stdDev: 12 },
+      { pts: [[10, 2], [390, 2], [200, 26]], opacity: 0.68, stdDev: 6.8 },
+      { pts: [[4, 1], [396, 1], [364, 6], [200, 11], [36, 6]], opacity: 0.92, stdDev: 2.2 },
+    ];
+    // One offscreen canvas for the whole shadow, with a margin for
+    // the widest blur so no blurred edge is clipped.
+    const m = Math.ceil(blur(12)) * 3 + 4;
+    const ow = Math.max(2, Math.round(sw) + m * 2), oh = Math.max(2, Math.round(sh) + m * 2);
+    const off = document.createElement('canvas');
+    off.width = ow; off.height = oh;
+    const octx = off.getContext('2d');
+    for (const layer of layers) {
+      octx.save();
+      if ('filter' in octx) octx.filter = `blur(${blur(layer.stdDev).toFixed(1)}px)`;
+      octx.fillStyle = hexToRgba(shadowC, layer.opacity * s);
+      octx.beginPath();
+      layer.pts.forEach(([px, py], i) => {
+        const X = m + px * kx, Y = m + py * ky;
+        if (i === 0) octx.moveTo(X, Y); else octx.lineTo(X, Y);
+      });
+      octx.closePath();
+      octx.fill();
+      octx.restore();
+    }
+    ctx.save();
+    ctx.drawImage(off, sx - m, sy - m, sw + m * 2, sh + m * 2);
+    ctx.restore();
+  }
+  // The card itself, on top of the shadow.
+  ctx.fillStyle = cardC;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+}
+
 // --- Fading sheen ribbon (Reza, 2026-11-24 — his
 // createFadingSheenRibbonStyle code): a horizontal ribbon whose
 // gradient fades to transparent at both ends and glows vivid at the
@@ -7104,6 +7227,10 @@ function draw() {
   // arched shadow hanging below it).
   const liftedShadowRTL = state.style === 'liftedshadow' ? isRTLText(lines[0] || '') : true;
   const liftedShadowL = state.style === 'liftedshadow' ? liftedShadowLayout(textFs, maxLw, blockH, lineHeight, h, cx, liftedShadowRTL) : null;
+  // The centre drop shadow card wraps the block the same way (white
+  // card, V-shaped shadow hanging below it).
+  const centerDropRTL = state.style === 'centerdrop' ? isRTLText(lines[0] || '') : true;
+  const centerDropL = state.style === 'centerdrop' ? centerDropLayout(textFs, maxLw, blockH, lineHeight, h, cx, centerDropRTL) : null;
   // The fading sheen ribbon wraps the block the same way (horizontal
   // gradient ribbon, sharp edges, fading ends).
   const sheenRibbonRTL = state.style === 'sheenribbon' ? isRTLText(lines[0] || '') : true;
@@ -7154,7 +7281,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -7351,6 +7478,7 @@ function draw() {
   if (gradShadowL) paintGradShadowCard(gradShadowL, textFs);
   if (shinyGoldL) paintShinyGoldCard(shinyGoldL, textFs);
   if (liftedShadowL) paintLiftedShadowCard(liftedShadowL, textFs);
+  if (centerDropL) paintCenterDropCard(centerDropL, textFs);
   if (sheenRibbonL) paintSheenRibbonCard(sheenRibbonL, textFs);
   if (emeraldL) paintEmeraldGradientCard(emeraldL, textFs);
   if (sharpL) paintSharpHighlightCard(sharpL, textFs);
@@ -7549,7 +7677,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -7589,6 +7717,7 @@ function redraw() {
   paintFadingSamples();
   paintShinyGoldSamples();
   paintLiftedShadowSamples();
+  paintCenterDropSamples();
   paintSheenRibbonSamples();
   paintEmeraldGradientSamples();
   paintSharpHighlightSamples();
@@ -8138,6 +8267,7 @@ function buildStylePicker() {
       if (item.id === 'fading') return '<canvas class="sample-canvas sample-canvas-fading" width="190" height="120"></canvas>';
       if (item.id === 'shinygold') return '<canvas class="sample-canvas sample-canvas-shinygold" width="190" height="120"></canvas>';
       if (item.id === 'liftedshadow') return '<canvas class="sample-canvas sample-canvas-liftedshadow" width="190" height="120"></canvas>';
+      if (item.id === 'centerdrop') return '<canvas class="sample-canvas sample-canvas-centerdrop" width="190" height="120"></canvas>';
       if (item.id === 'sheenribbon') return '<canvas class="sample-canvas sample-canvas-sheenribbon" width="190" height="120"></canvas>';
       if (item.id === 'emeraldgradient') return '<canvas class="sample-canvas sample-canvas-emeraldgradient" width="190" height="120"></canvas>';
       if (item.id === 'sharphighlight') return '<canvas class="sample-canvas sample-canvas-sharphighlight" width="190" height="120"></canvas>';
@@ -10284,6 +10414,72 @@ function paintLiftedShadowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-liftedshadow';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the centre drop preview with the REAL centerdrop code
+// (centerDropLayout + paintCenterDropCard + the body text) on its
+// small canvas — a miniature of the actual card, same pattern as
+// the lifted shadow preview. Called from redraw(), like the lifted
+// shadow samples. If painting fails, fall back to the CSS box.
+function paintCenterDropSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-centerdrop')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const centerDropRTL = isRTLText(lines[0] || '');
+        const centerDropL = centerDropLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, centerDropRTL);
+        const blockCx = 540 + centerDropL.blockShift;
+        // Fit the whole card PLUS the V-shaped shadow hanging below
+        // it into the sample canvas, centred on the card+shadow
+        // unit, keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const fitW = centerDropL.w + 96, fitH = centerDropL.h + centerDropL.shadowBelow + 120;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = centerDropL.x + centerDropL.w / 2, cardCy = centerDropL.y + centerDropL.h / 2 + centerDropL.shadowBelow / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintCenterDropCard(centerDropL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.centerdrop(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-centerdrop';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow', 'vibrantshadow', 'glossyglass', 'gradientshadow', 'fading', 'shinygold', 'liftedshadow', 'sheenribbon', 'emeraldgradient', 'sharphighlight', 'glassoutline', 'layeredgold', 'metallicgold', 'neonglow',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow', 'vibrantshadow', 'glossyglass', 'gradientshadow', 'fading', 'shinygold', 'liftedshadow', 'centerdrop', 'sheenribbon', 'emeraldgradient', 'sharphighlight', 'glassoutline', 'layeredgold', 'metallicgold', 'neonglow',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -395,6 +395,16 @@ const STYLE_PARAMS = {
   liftedCardC: { color: true },
   liftedShadowC: { color: true },
   liftedShadowO: { min: 0, max: 100 },
+  // Centre drop shadow card (Reza, 2026-11-24).
+  centerCardW: { min: 0, max: 900 },
+  centerCardH: { min: 0, max: 800 },
+  centerPadTop: { min: 0, max: 300 },
+  centerPadBottom: { min: 0, max: 300 },
+  centerPadRight: { min: 0, max: 300 },
+  centerPadLeft: { min: 0, max: 300 },
+  centerCardC: { color: true },
+  centerShadowC: { color: true },
+  centerShadowO: { min: 0, max: 100 },
   // Fading sheen ribbon (Reza, 2026-11-24).
   sheenCardW: { min: 0, max: 900 },
   sheenCardH: { min: 0, max: 800 },
