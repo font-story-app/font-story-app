@@ -112,6 +112,7 @@ const STYLES = [
   { id: 'shinygold', label: 'طلایی براق' },
   { id: 'liftedshadow', label: 'سایه برجسته' },
   { id: 'sheenribbon', label: 'نوار درخشان' },
+  { id: 'emeraldgradient', label: 'گرادیان زمردی' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -833,6 +834,18 @@ const STYLE_CONTROLS = {
     { key: 'sheenCenterC', label: 'رنگ مرکز', type: 'color', def: '#ff1272' },
     { key: 'sheenEdgeC', label: 'رنگ لبه', type: 'color', def: '#6b0c2c' },
     { key: 'sheenShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 50, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  emeraldgradient: [
+    { key: 'emeraldCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'emeraldCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'emeraldPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 82, unit: '٪', editable: true },
+    { key: 'emeraldPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 86, unit: '٪', editable: true },
+    { key: 'emeraldTopC', label: 'رنگ بالا', type: 'color', def: '#021811' },
+    { key: 'emeraldBottomC', label: 'رنگ پایین', type: 'color', def: '#00dc99' },
+    { key: 'emeraldBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
+    { key: 'emeraldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 65, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1959,6 +1972,38 @@ const STYLE_PAINT = {
     const shadows = [
       { ox: 0.018 * em, oy: 0.04 * em, blur: 0.065 * em, a: 0.72 * s },
       { ox: 0, oy: 0.015 * em, blur: 0.025 * em, a: 0.45 * s },
+    ];
+    for (const sh of shadows) {
+      ctx.save();
+      ctx.shadowColor = `rgba(0, 0, 0, ${sh.a.toFixed(3)})`;
+      ctx.shadowBlur = sh.blur;
+      ctx.shadowOffsetX = sh.ox;
+      ctx.shadowOffsetY = sh.oy;
+      ctx.fillStyle = fill;
+      drawWords(line, cx, y);
+      ctx.restore();
+    }
+  },
+  // Emerald gradient card (Reza, 2026-11-24 — his
+  // createEmeraldGradientCard code): white text with his two-layer
+  // deep shadow — 0/0.06em, blur 0.085em, alpha 0.84 x intensity,
+  // plus 0/0.025em, blur 0.03em, alpha 0.62 x intensity. Canvas takes
+  // one shadow per pass, so the two layers are two drawWords passes
+  // (the fading style's pattern). One knob (emeraldShadowO) drives
+  // both this text shadow and the card's drop shadow, like his single
+  // shadowIntensity.
+  emeraldgradient: (line, cx, y, lw, fs) => {
+    const s = Math.max(0, Math.min(1, (sp('emeraldShadowO') ?? 65) / 100));
+    const fill = state.colorTouched ? state.color : '#ffffff';
+    if (s <= 0) {
+      ctx.fillStyle = fill;
+      drawWords(line, cx, y);
+      return;
+    }
+    const em = fs || 100;
+    const shadows = [
+      { ox: 0, oy: 0.06 * em, blur: 0.085 * em, a: 0.84 * s },
+      { ox: 0, oy: 0.025 * em, blur: 0.03 * em, a: 0.62 * s },
     ];
     for (const sh of shadows) {
       ctx.save();
@@ -5058,6 +5103,99 @@ function paintSheenRibbonCard(l, fs) {
   ctx.fillRect(l.x, l.y, l.w, l.h);
 }
 
+// --- Emerald gradient card (Reza, 2026-11-24 — his
+// createEmeraldGradientCard code): a vertical gradient card, dark
+// emerald at the top and vivid green at the bottom, with a thin black
+// border and a soft two-layer drop shadow.
+
+// Geometry of the emerald gradient card around the text block. Same
+// shape as the other card layouts (height floor splitting evenly,
+// blockShift following the alignment buttons), but the padding is
+// em-based in his code, so it scales with the text size: 1.38em on
+// the sides, 0.82em above, 0.86em below, radius 0.42em. The top and
+// bottom space are knobs (emeraldPadTop/emeraldPadBottom, % of the
+// font size, defaults 82/86 = his 0.82em/0.86em), like the other card
+// styles.
+function emeraldGradientLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 1.38 * fs;
+  const padTop = Math.max(0, (sp('emeraldPadTop') ?? 82) / 100) * fs;
+  const padBottom = Math.max(0, (sp('emeraldPadBottom') ?? 86) / 100) * fs;
+  const cardW = Math.max(maxLw + padX * 2, sp('emeraldCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('emeraldCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0.42 * fs,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the emerald gradient card: his vertical gradient (dark at the
+// top, vivid at the bottom, with his exact stops), a thin black
+// border, and his two-layer drop shadow. Canvas takes one shadow per
+// pass, so the card is filled once per shadow layer (the shiny gold
+// pattern) with the same gradient fill each time; when the intensity
+// is 0 there is a single plain fill. The border is stroked last, on
+// the same rounded path, at his 0.075em width — his DOM border sits
+// inside the box (border-box) while a canvas stroke is centred on
+// the edge, so half its width falls just outside the card; at this
+// thickness the difference is not visible.
+function paintEmeraldGradientCard(l, fs) {
+  const topC = sp('emeraldTopC') || '#021811';
+  const bottomC = sp('emeraldBottomC') || '#00dc99';
+  const borderC = sp('emeraldBorderC') || '#000000';
+  const s = Math.max(0, Math.min(1, (sp('emeraldShadowO') ?? 65) / 100));
+  const [tr, tg, tb] = hexToRgb(topC);
+  const [br, bg, bb] = hexToRgb(bottomC);
+  const stops = [[0, 0], [0.22, 0.14], [0.54, 0.42], [0.82, 0.78], [1, 1]];
+  const g = ctx.createLinearGradient(0, l.y, 0, l.y + l.h);
+  for (const [o, ratio] of stops) {
+    const r = Math.round(tr + (br - tr) * ratio);
+    const gg = Math.round(tg + (bg - tg) * ratio);
+    const b = Math.round(tb + (bb - tb) * ratio);
+    g.addColorStop(o, `rgb(${r}, ${gg}, ${b})`);
+  }
+  const fillOnce = (shadow) => {
+    ctx.save();
+    if (shadow) {
+      ctx.shadowColor = `rgba(0, 0, 0, ${shadow.a.toFixed(3)})`;
+      ctx.shadowBlur = shadow.blur;
+      ctx.shadowOffsetX = shadow.ox;
+      ctx.shadowOffsetY = shadow.oy;
+    }
+    ctx.fillStyle = g;
+    roundRect(l.x, l.y, l.w, l.h, l.r);
+    ctx.fill();
+    ctx.restore();
+  };
+  if (s > 0) {
+    // His two box-shadow layers, each its own fill pass.
+    fillOnce({ ox: 0, oy: 0.14 * fs, blur: 0.36 * fs, a: 0.55 * s });
+    fillOnce({ ox: 0, oy: 0.04 * fs, blur: 0.12 * fs, a: 0.36 * s });
+  } else {
+    fillOnce(null);
+  }
+  // The border, on top of the fills.
+  ctx.save();
+  ctx.lineWidth = 0.075 * fs;
+  ctx.strokeStyle = borderC;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -6152,6 +6290,10 @@ function draw() {
   // gradient ribbon, sharp edges, fading ends).
   const sheenRibbonRTL = state.style === 'sheenribbon' ? isRTLText(lines[0] || '') : true;
   const sheenRibbonL = state.style === 'sheenribbon' ? sheenRibbonLayout(textFs, maxLw, blockH, lineHeight, h, cx, sheenRibbonRTL) : null;
+  // The emerald gradient card wraps the block the same way (vertical
+  // gradient, thin black border, soft drop shadow).
+  const emeraldRTL = state.style === 'emeraldgradient' ? isRTLText(lines[0] || '') : true;
+  const emeraldL = state.style === 'emeraldgradient' ? emeraldGradientLayout(textFs, maxLw, blockH, lineHeight, h, cx, emeraldRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -6190,7 +6332,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || sheenRibbonL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || sheenRibbonL || emeraldL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -6381,6 +6523,7 @@ function draw() {
   if (shinyGoldL) paintShinyGoldCard(shinyGoldL, textFs);
   if (liftedShadowL) paintLiftedShadowCard(liftedShadowL, textFs);
   if (sheenRibbonL) paintSheenRibbonCard(sheenRibbonL, textFs);
+  if (emeraldL) paintEmeraldGradientCard(emeraldL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -6576,7 +6719,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -6617,6 +6760,7 @@ function redraw() {
   paintShinyGoldSamples();
   paintLiftedShadowSamples();
   paintSheenRibbonSamples();
+  paintEmeraldGradientSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -7160,6 +7304,7 @@ function buildStylePicker() {
       if (item.id === 'shinygold') return '<canvas class="sample-canvas sample-canvas-shinygold" width="190" height="120"></canvas>';
       if (item.id === 'liftedshadow') return '<canvas class="sample-canvas sample-canvas-liftedshadow" width="190" height="120"></canvas>';
       if (item.id === 'sheenribbon') return '<canvas class="sample-canvas sample-canvas-sheenribbon" width="190" height="120"></canvas>';
+      if (item.id === 'emeraldgradient') return '<canvas class="sample-canvas sample-canvas-emeraldgradient" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -9365,6 +9510,73 @@ function paintSheenRibbonSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sheenribbon';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the emerald gradient preview with the REAL emeraldgradient
+// code (emeraldGradientLayout + paintEmeraldGradientCard + the body
+// text) on its small canvas — a miniature of the actual card, same
+// pattern as the sheen ribbon preview. Called from redraw(), like the
+// sheen samples. If painting fails, fall back to the CSS box.
+function paintEmeraldGradientSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-emeraldgradient')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const emeraldRTL = isRTLText(lines[0] || '');
+        const emeraldL = emeraldGradientLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, emeraldRTL);
+        const blockCx = 540 + emeraldL.blockShift;
+        // Fit the whole card PLUS the drop shadow's spread into the
+        // sample canvas, centred, keeping the aspect — a uniform
+        // scale, so nothing is squashed.
+        const fitW = emeraldL.w + 96, fitH = emeraldL.h + 120;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = emeraldL.x + emeraldL.w / 2, cardCy = emeraldL.y + emeraldL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintEmeraldGradientCard(emeraldL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.emeraldgradient(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-emeraldgradient';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

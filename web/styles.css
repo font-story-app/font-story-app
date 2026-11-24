@@ -498,6 +498,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-sheenribbon {
   height: 60px;
 }
+/* Emerald gradient preview: same miniature treatment as the ribbon. */
+.pick-card .sample canvas.sample-canvas-emeraldgradient {
+  height: 60px;
+}
 /* Slanted quote frame preview: same miniature treatment as the corner card. */
 .pick-card .sample canvas.sample-canvas-slantquote {
   height: 60px;
@@ -674,6 +678,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-shinygold { background: linear-gradient(90deg, #ffc400 0%, #ffc400 12%, rgb(255, 221, 107) 20%, rgb(255, 243, 204) 25%, #ffffff 29%, rgb(255, 243, 204) 33%, rgb(255, 221, 107) 38%, #ffc400 45%, #ffc400 55%, rgb(255, 221, 107) 62%, rgb(255, 243, 204) 67%, #ffffff 71%, rgb(255, 243, 204) 75%, rgb(255, 221, 107) 80%, #ffc400 88%, #ffc400 100%); color: #000; border-radius: 8px; padding: 0 6px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.31); }
 .sample-liftedshadow { background: #ffffff; color: #000; border-radius: 8px; padding: 0 6px; box-shadow: 0 14px 22px rgba(0, 0, 0, 0.35); }
 .sample-sheenribbon { background: linear-gradient(90deg, rgba(107, 12, 44, 0) 0%, rgba(107, 12, 44, 0.34) 12%, rgba(114, 12, 48, 0.58) 24%, rgba(154, 14, 66, 0.78) 36%, rgba(217, 16, 96, 0.94) 44.5%, rgba(255, 18, 114, 1) 50%, rgba(217, 16, 96, 0.94) 55.5%, rgba(154, 14, 66, 0.78) 64%, rgba(114, 12, 48, 0.58) 76%, rgba(107, 12, 44, 0.34) 88%, rgba(107, 12, 44, 0) 100%); color: #fff; border-radius: 0; padding: 0 6px; }
+.sample-emeraldgradient { background: linear-gradient(180deg, #021811 0%, rgb(2, 51, 36) 22%, rgb(1, 106, 74) 54%, rgb(0, 177, 123) 82%, #00dc99 100%); color: #fff; border: 2px solid #000; border-radius: 8px; padding: 0 6px; }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
