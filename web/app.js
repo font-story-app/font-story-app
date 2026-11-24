@@ -114,6 +114,7 @@ const STYLES = [
   { id: 'sheenribbon', label: 'نوار درخشان' },
   { id: 'emeraldgradient', label: 'گرادیان زمردی' },
   { id: 'sharphighlight', label: 'هایلایت تیز' },
+  { id: 'glassoutline', label: 'شیشه دورخط' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -931,6 +932,13 @@ const STYLE_CONTROLS = {
     { key: 'sharpPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 8, unit: '٪', editable: true },
     { key: 'sharpBoxC', label: 'رنگ باکس', type: 'color', def: '#e91e63' },
     { key: 'sharpShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 72, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  glassoutline: [
+    { key: 'glassoutlineStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
+    { key: 'glassoutlineRimC', label: 'رنگ حاشیه', type: 'color', def: '#dcdcdc' },
+    { key: 'glassoutlineShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 78, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2142,6 +2150,150 @@ const STYLE_PAINT = {
       drawWords(line, cx, y);
       ctx.restore();
     }
+  },
+  // Glass outline text (Reza, 2026-11-24 — his
+  // createGlassOutlineTextStyle code): layered canvas text, no card.
+  // Layer 1, the mask: the glyph shapes, solid. Layer 2, the outer
+  // ring: a thick mitered stroke (0.132em, miterLimit 3) in the
+  // stroke colour, filled too so the soft shadow takes the full
+  // glyph shape (0/0.088em, blur 0.16em, alpha 0.70 x intensity),
+  // redrawn crisp without the shadow, then the mask cut out of it
+  // (destination-out) so only the ring and its shadow remain and the
+  // real background shows through the middle of the letters. Layer
+  // 3, the glass fill: the mask clipped (source-in) to his diagonal
+  // gradient, opaque at the bottom-left fading to 0.50 at the
+  // top-right. Layer 4, the inner rim: the inverted mask shifted in
+  // 16 directions at 0.042em (plus 8 more at half width when the rim
+  // is wider than 2.2px), clipped back inside the glyphs
+  // (destination-in) and coloured with his white-to-silver diagonal
+  // gradient. Every layer is built per line on a small offscreen
+  // canvas and composited onto the main canvas; drawWords paints
+  // the mask and the stroke, so word spacing, justification and
+  // letter spacing match the other styles exactly. His
+  // 0.34em/0.30em/0.44em padding is the offscreen margin around each
+  // line, not a user knob. The text colour is the رنگ tab's colour
+  // (white by default), like the other text styles.
+  glassoutline: (line, cx, y, lw, fs) => {
+    const em = fs || 100;
+    const words = line.split(' ').filter((w) => w !== '');
+    if (!words.length) return;
+    const s = Math.max(0, Math.min(1, (sp('glassoutlineShadowO') ?? 78) / 100));
+    const textC = flatColor(state.colorTouched ? state.color : '#ffffff');
+    const strokeC = sp('glassoutlineStrokeC') || '#000000';
+    const rimC = sp('glassoutlineRimC') || '#dcdcdc';
+    const [tr, tg, tb] = hexToRgb(textC);
+    const [rr, rg, rb] = hexToRgb(rimC);
+    // The line's glyph box, exactly as drawWords places it. draw()
+    // paints with textBaseline 'middle', so y is the line's vertical
+    // centre — the offscreen top is set so the glyph box centres on y.
+    const visW = lineWidth(line) + lineJustifyGap * (words.length - 1);
+    const m = ctx.measureText(line);
+    const ascent = (m.actualBoundingBoxAscent > 0 ? m.actualBoundingBoxAscent : em * 0.78);
+    const descent = (m.actualBoundingBoxDescent > 0 ? m.actualBoundingBoxDescent : em * 0.38);
+    const padX = Math.ceil(em * 0.34), padTop = Math.ceil(em * 0.30), padBot = Math.ceil(em * 0.44);
+    const w = Math.ceil(visW) + padX * 2, h = Math.ceil(ascent + descent) + padTop + padBot;
+    const ox = cx - visW / 2 - padX, oy = y - (ascent + descent) / 2 - padTop;
+    const ocx = padX + visW / 2, obaseline = padTop + ascent;
+    // A layer canvas carrying the main canvas's font state, so
+    // drawWords paints identical glyphs on it.
+    const layer = () => {
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, w);
+      c.height = Math.max(1, h);
+      const g = c.getContext('2d');
+      g.font = ctx.font;
+      g.textBaseline = 'alphabetic';
+      g.direction = ctx.direction;
+      if ('letterSpacing' in g) g.letterSpacing = ctx.letterSpacing;
+      return { c, g };
+    };
+    // drawWords reads the global ctx, so swap it onto the layer for
+    // the call. textFill false: the fill colour is set explicitly
+    // before each call and must not be replaced by a gradient.
+    const prevCtx = ctx;
+    const paintWords = (g, mode) => {
+      ctx = g;
+      drawWords(line, ocx, obaseline, 0, 0, mode, false);
+      ctx = prevCtx;
+    };
+    // 1. The mask: the glyph shapes, solid black.
+    const mask = layer();
+    mask.g.fillStyle = '#000000';
+    paintWords(mask.g, 'fill');
+    // 2. The outer ring: thick mitered stroke + fill with the soft
+    // shadow, redrawn crisp, then the glyph interiors cut out.
+    const outer = layer();
+    outer.g.lineJoin = 'miter';
+    outer.g.miterLimit = 3;
+    outer.g.lineWidth = em * 0.132;
+    outer.g.strokeStyle = strokeC;
+    outer.g.fillStyle = strokeC;
+    if (s > 0) {
+      outer.g.shadowColor = `rgba(0, 0, 0, ${(0.70 * s).toFixed(3)})`;
+      outer.g.shadowBlur = em * 0.16;
+      outer.g.shadowOffsetX = 0;
+      outer.g.shadowOffsetY = em * 0.088;
+    }
+    paintWords(outer.g, 'stroke');
+    paintWords(outer.g, 'fill');
+    outer.g.shadowColor = 'transparent';
+    outer.g.shadowBlur = 0;
+    outer.g.shadowOffsetX = 0;
+    outer.g.shadowOffsetY = 0;
+    paintWords(outer.g, 'stroke');
+    outer.g.globalCompositeOperation = 'destination-out';
+    outer.g.drawImage(mask.c, 0, 0);
+    // 3. The glass fill: the mask clipped to his diagonal gradient,
+    // bottom-left (opaque) to top-right (0.50).
+    const fillL = layer();
+    fillL.g.drawImage(mask.c, 0, 0);
+    fillL.g.globalCompositeOperation = 'source-in';
+    const fillGrad = fillL.g.createLinearGradient(padX, padTop + ascent + descent, padX + visW, padTop);
+    fillGrad.addColorStop(0.00, `rgba(${tr}, ${tg}, ${tb}, 1)`);
+    fillGrad.addColorStop(0.28, `rgba(${tr}, ${tg}, ${tb}, 0.96)`);
+    fillGrad.addColorStop(0.52, `rgba(${tr}, ${tg}, ${tb}, 0.68)`);
+    fillGrad.addColorStop(0.76, `rgba(${tr}, ${tg}, ${tb}, 0.54)`);
+    fillGrad.addColorStop(1.00, `rgba(${tr}, ${tg}, ${tb}, 0.50)`);
+    fillL.g.fillStyle = fillGrad;
+    fillL.g.fillRect(0, 0, w, h);
+    // 4. The inner rim: the inverted mask shifted in 16 directions
+    // at the rim width (plus 8 at half width when it is wider than
+    // 2.2px), clipped back inside the glyphs, coloured with his
+    // white-to-silver diagonal gradient.
+    const inv = layer();
+    inv.g.fillStyle = '#000000';
+    inv.g.fillRect(0, 0, w, h);
+    inv.g.globalCompositeOperation = 'destination-out';
+    inv.g.drawImage(mask.c, 0, 0);
+    const rim = layer();
+    const rimWidth = Math.max(1.5, em * 0.042);
+    const steps = 16;
+    for (let i = 0; i < steps; i++) {
+      const angle = (i / steps) * Math.PI * 2;
+      rim.g.drawImage(inv.c, Math.cos(angle) * rimWidth, Math.sin(angle) * rimWidth);
+    }
+    if (rimWidth > 2.2) {
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        rim.g.drawImage(inv.c, Math.cos(angle) * rimWidth * 0.52, Math.sin(angle) * rimWidth * 0.52);
+      }
+    }
+    rim.g.globalCompositeOperation = 'destination-in';
+    rim.g.drawImage(mask.c, 0, 0);
+    rim.g.globalCompositeOperation = 'source-in';
+    const rimGrad = rim.g.createLinearGradient(padX, padTop + ascent + descent, padX + visW, padTop);
+    rimGrad.addColorStop(0.00, `rgba(${tr}, ${tg}, ${tb}, 1)`);
+    rimGrad.addColorStop(0.32, `rgba(${tr}, ${tg}, ${tb}, 0.94)`);
+    rimGrad.addColorStop(0.68, `rgba(${rr}, ${rg}, ${rb}, 0.78)`);
+    rimGrad.addColorStop(1.00, `rgba(${rr}, ${rg}, ${rb}, 0.74)`);
+    rim.g.fillStyle = rimGrad;
+    rim.g.fillRect(0, 0, w, h);
+    // Composite the three layers onto the main canvas.
+    ctx.save();
+    ctx.drawImage(outer.c, ox, oy);
+    ctx.drawImage(fillL.c, ox, oy);
+    ctx.drawImage(rim.c, ox, oy);
+    ctx.restore();
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -7036,7 +7188,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -7079,6 +7231,7 @@ function redraw() {
   paintSheenRibbonSamples();
   paintEmeraldGradientSamples();
   paintSharpHighlightSamples();
+  paintGlassOutlineSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -7624,6 +7777,7 @@ function buildStylePicker() {
       if (item.id === 'sheenribbon') return '<canvas class="sample-canvas sample-canvas-sheenribbon" width="190" height="120"></canvas>';
       if (item.id === 'emeraldgradient') return '<canvas class="sample-canvas sample-canvas-emeraldgradient" width="190" height="120"></canvas>';
       if (item.id === 'sharphighlight') return '<canvas class="sample-canvas sample-canvas-sharphighlight" width="190" height="120"></canvas>';
+      if (item.id === 'glassoutline') return '<canvas class="sample-canvas sample-canvas-glassoutline" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -9962,6 +10116,53 @@ function paintSharpHighlightSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sharphighlight';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the glass outline preview with the REAL glassoutline code
+// (STYLE_PAINT.glassoutline) on its small canvas — a miniature of
+// the actual text, same pattern as the fading preview. Called from
+// redraw(), like the fading samples. If painting fails, fall back to
+// the CSS text.
+function paintGlassOutlineSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-glassoutline')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const line = 'متن شما';
+        const lw = lineWidth(line);
+        // Fit the line (plus its outline and shadow) into the sample
+        // canvas, centred, keeping the aspect — a uniform scale, so
+        // nothing is squashed.
+        const fitW = lw + 0.68 * textFs + 40, fitH = textFs * 1.32 + 0.74 * textFs + 40;
+        const s = Math.min(W / fitW, H / fitH);
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-540, -540);
+          STYLE_PAINT.glassoutline(line, 540, 540, lw, textFs);
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-glassoutline';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
