@@ -64,6 +64,7 @@ const STYLES = [
   { id: 'brushstroke', label: 'براش' },
   { id: 'neon', label: 'نئون' },
   { id: 'glassoutline', label: 'شیشه دورخط' },
+  { id: 'layeredgold', label: 'طلایی چندلایه' },
   { id: 'retro', label: 'رترو' },
   { id: 'shadow', label: 'سایه‌دار' },
   { id: 'glow', label: 'درخشان' },
@@ -939,6 +940,13 @@ const STYLE_CONTROLS = {
     { key: 'glassoutlineStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
     { key: 'glassoutlineRimC', label: 'رنگ حاشیه', type: 'color', def: '#dcdcdc' },
     { key: 'glassoutlineShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 78, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  layeredgold: [
+    { key: 'layeredgoldStrokeC', label: 'رنگ دورخط', type: 'color', def: '#080805' },
+    { key: 'layeredgoldGrooveC', label: 'رنگ شیار', type: 'color', def: '#fef700' },
+    { key: 'layeredgoldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 66, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2305,6 +2313,184 @@ const STYLE_PAINT = {
     ctx.drawImage(outer.c, ox, oy);
     ctx.drawImage(fillL.c, ox, oy);
     ctx.drawImage(rim.c, ox, oy);
+    ctx.restore();
+  },
+  // Layered gold text (Reza, 2026-11-24 — his
+  // createLayeredGoldTextStyle code): layered canvas text, no card.
+  // The outer double outline: a thick yellow stroke (0.194em) in
+  // the accent colour with the soft shadow (0/0.095em, blur 0.16em,
+  // alpha 0.72 x intensity), redrawn crisp, then a thick near-black
+  // stroke (0.136em) inside it, with the glyph interiors cut out
+  // (destination-out) so only the two rings and their shadow remain.
+  // The inside of the letters is five concentric rings, from the
+  // edge inward — bright accent, groove, mid-bright accent, groove,
+  // bright centre — built by eroding the inverted mask in four steps
+  // (0.020/0.015/0.024/0.015em, each a 16-direction dilation plus 8
+  // at half radius when wider than 1.2px) and painting each inset
+  // region in turn, then faded diagonally (opaque bottom-left to
+  // 0.64 top-right). Every layer is built per line on a small
+  // offscreen canvas and composited onto the main canvas; drawWords
+  // paints the mask and the strokes, so word spacing, justification
+  // and letter spacing match the other styles exactly. His
+  // 0.38em/0.34em/0.46em padding is the offscreen margin around each
+  // line, not a user knob, plus a 0.25em shadow margin (glassoutline
+  // lesson) so the outline shadow is never cropped at the layer
+  // edge. The accent is the رنگ tab's colour (yellow #ffea38 by
+  // default), like the other text styles. Defaults follow the usage
+  // example Reza approved (2026-11-24): groove #fef700, shadow 66%
+  // — not the signature's #a88e14 / 78%.
+  layeredgold: (line, cx, y, lw, fs) => {
+    const em = fs || 100;
+    const words = line.split(' ').filter((w) => w !== '');
+    if (!words.length) return;
+    const s = Math.max(0, Math.min(1, (sp('layeredgoldShadowO') ?? 66) / 100));
+    const accentC = flatColor(state.colorTouched ? state.color : '#ffea38');
+    const strokeC = sp('layeredgoldStrokeC') || '#080805';
+    const grooveC = sp('layeredgoldGrooveC') || '#fef700';
+    const [ar, ag, ab] = hexToRgb(accentC);
+    const [gr, gg, gb] = hexToRgb(grooveC);
+    // The line's glyph box, exactly as drawWords places it. draw()
+    // paints with textBaseline 'middle', so y is the line's vertical
+    // centre — the offscreen top is set so the glyph box centres on y.
+    const visW = lineWidth(line) + lineJustifyGap * (words.length - 1);
+    const m = ctx.measureText(line);
+    const ascent = (m.actualBoundingBoxAscent > 0 ? m.actualBoundingBoxAscent : em * 0.78);
+    const descent = (m.actualBoundingBoxDescent > 0 ? m.actualBoundingBoxDescent : em * 0.38);
+    const padX = Math.ceil(em * 0.38), padTop = Math.ceil(em * 0.34), padBot = Math.ceil(em * 0.46);
+    const sh = Math.ceil(em * 0.25);
+    const tx = padX + sh, ty = padTop + sh;
+    const w = Math.ceil(visW) + tx * 2, h = Math.ceil(ascent + descent) + ty + padBot + sh;
+    const ox = cx - visW / 2 - tx, oy = y - (ascent + descent) / 2 - ty;
+    const ocx = tx + visW / 2, obaseline = ty + ascent;
+    // A layer canvas carrying the main canvas's font state, so
+    // drawWords paints identical glyphs on it.
+    const layer = () => {
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, w);
+      c.height = Math.max(1, h);
+      const g = c.getContext('2d');
+      g.font = ctx.font;
+      g.textBaseline = 'alphabetic';
+      g.direction = ctx.direction;
+      if ('letterSpacing' in g) g.letterSpacing = ctx.letterSpacing;
+      return { c, g };
+    };
+    // drawWords reads the global ctx, so swap it onto the layer for
+    // the call. textFill false: the fill colour is set explicitly
+    // before each call and must not be replaced by a gradient.
+    const prevCtx = ctx;
+    const paintWords = (g, mode) => {
+      ctx = g;
+      drawWords(line, ocx, obaseline, 0, 0, mode, false);
+      ctx = prevCtx;
+    };
+    // 1. The mask: the glyph shapes, solid black.
+    const mask = layer();
+    mask.g.fillStyle = '#000000';
+    paintWords(mask.g, 'fill');
+    // 2. The outer double outline: thick yellow stroke + fill with
+    // the soft shadow, redrawn crisp, then the near-black stroke
+    // inside it; the glyph interiors are cut out afterwards.
+    const outer = layer();
+    outer.g.lineJoin = 'miter';
+    outer.g.miterLimit = 3;
+    outer.g.lineWidth = em * 0.194;
+    outer.g.strokeStyle = accentC;
+    outer.g.fillStyle = accentC;
+    if (s > 0) {
+      outer.g.shadowColor = `rgba(0, 0, 0, ${(0.72 * s).toFixed(3)})`;
+      outer.g.shadowBlur = em * 0.16;
+      outer.g.shadowOffsetX = 0;
+      outer.g.shadowOffsetY = em * 0.095;
+    }
+    paintWords(outer.g, 'stroke');
+    paintWords(outer.g, 'fill');
+    outer.g.shadowColor = 'transparent';
+    outer.g.shadowBlur = 0;
+    outer.g.shadowOffsetX = 0;
+    outer.g.shadowOffsetY = 0;
+    paintWords(outer.g, 'stroke');
+    outer.g.lineWidth = em * 0.136;
+    outer.g.strokeStyle = strokeC;
+    paintWords(outer.g, 'stroke');
+    outer.g.globalCompositeOperation = 'destination-out';
+    outer.g.drawImage(mask.c, 0, 0);
+    // 3. The inverted mask, eroded in four chained steps for the
+    // concentric rings. dilate unions the source with 16 shifted
+    // copies at the radius (plus 8 at half radius when it is wider
+    // than 1.2px), so each cut is the glyphs eroded that much deeper.
+    const inv = layer();
+    inv.g.fillStyle = '#000000';
+    inv.g.fillRect(0, 0, w, h);
+    inv.g.globalCompositeOperation = 'destination-out';
+    inv.g.drawImage(mask.c, 0, 0);
+    const dilate = (src, radiusPx) => {
+      const out = layer();
+      out.g.drawImage(src, 0, 0);
+      const steps = 16;
+      for (let i = 0; i < steps; i++) {
+        const angle = (i / steps) * Math.PI * 2;
+        out.g.drawImage(src, Math.cos(angle) * radiusPx, Math.sin(angle) * radiusPx);
+      }
+      if (radiusPx > 1.2) {
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2;
+          out.g.drawImage(src, Math.cos(angle) * radiusPx * 0.5, Math.sin(angle) * radiusPx * 0.5);
+        }
+      }
+      return out.c;
+    };
+    const step1 = Math.max(1.1, em * 0.020);
+    const step2 = Math.max(0.9, em * 0.015);
+    const step3 = Math.max(1.2, em * 0.024);
+    const step4 = Math.max(0.9, em * 0.015);
+    const cut1 = dilate(inv.c, step1);
+    const cut2 = dilate(cut1, step2);
+    const cut3 = dilate(cut2, step3);
+    const cut4 = dilate(cut3, step4);
+    // 4. The concentric gold rings inside the glyphs, from the edge
+    // inward: bright ring, groove, mid-bright ring, groove, bright
+    // centre. Each inset region is the mask minus one cut, painted
+    // in turn onto the inner layer.
+    const inner = layer();
+    const brightRingStyle = `rgb(${ar}, ${ag}, ${ab})`;
+    const midBrightStyle = `rgb(${Math.min(255, Math.round(ar * 0.96 + 8))}, ${Math.min(255, Math.round(ag * 0.95 + 6))}, ${Math.min(255, Math.round(ab * 0.92 + 10))})`;
+    const grooveGrad = inner.g.createLinearGradient(tx, ty + ascent + descent, tx + visW, ty);
+    grooveGrad.addColorStop(0.00, `rgba(${Math.round((ar + gr) / 2)}, ${Math.round((ag + gg) / 2)}, ${Math.round((ab + gb) / 2)}, 0.92)`);
+    grooveGrad.addColorStop(0.55, `rgba(${gr}, ${gg}, ${gb}, 0.88)`);
+    grooveGrad.addColorStop(1.00, `rgba(${gr}, ${gg}, ${gb}, 0.80)`);
+    const paintInset = (cutCanvas, fillStyle) => {
+      const region = layer();
+      region.g.drawImage(mask.c, 0, 0);
+      if (cutCanvas) {
+        region.g.globalCompositeOperation = 'destination-out';
+        region.g.drawImage(cutCanvas, 0, 0);
+      }
+      region.g.globalCompositeOperation = 'source-in';
+      region.g.fillStyle = fillStyle;
+      region.g.fillRect(0, 0, w, h);
+      inner.g.drawImage(region.c, 0, 0);
+    };
+    paintInset(null, brightRingStyle);
+    paintInset(cut1, grooveGrad);
+    paintInset(cut2, midBrightStyle);
+    paintInset(cut3, grooveGrad);
+    paintInset(cut4, brightRingStyle);
+    // Diagonal alpha fade over the rings: vivid at the bottom-left,
+    // 0.64 at the top-right.
+    inner.g.globalCompositeOperation = 'destination-in';
+    const alphaMask = inner.g.createLinearGradient(tx, ty + ascent + descent, tx + visW, ty);
+    alphaMask.addColorStop(0.00, 'rgba(0, 0, 0, 1)');
+    alphaMask.addColorStop(0.32, 'rgba(0, 0, 0, 0.97)');
+    alphaMask.addColorStop(0.58, 'rgba(0, 0, 0, 0.78)');
+    alphaMask.addColorStop(0.82, 'rgba(0, 0, 0, 0.68)');
+    alphaMask.addColorStop(1.00, 'rgba(0, 0, 0, 0.64)');
+    inner.g.fillStyle = alphaMask;
+    inner.g.fillRect(0, 0, w, h);
+    // Composite the two layers onto the main canvas.
+    ctx.save();
+    ctx.drawImage(outer.c, ox, oy);
+    ctx.drawImage(inner.c, ox, oy);
     ctx.restore();
   },
   // Messages frame: black text on the light-grey content area (the
@@ -7200,7 +7386,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -7244,6 +7430,7 @@ function redraw() {
   paintEmeraldGradientSamples();
   paintSharpHighlightSamples();
   paintGlassOutlineSamples();
+  paintLayeredGoldSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -7790,6 +7977,7 @@ function buildStylePicker() {
       if (item.id === 'emeraldgradient') return '<canvas class="sample-canvas sample-canvas-emeraldgradient" width="190" height="120"></canvas>';
       if (item.id === 'sharphighlight') return '<canvas class="sample-canvas sample-canvas-sharphighlight" width="190" height="120"></canvas>';
       if (item.id === 'glassoutline') return '<canvas class="sample-canvas sample-canvas-glassoutline" width="190" height="120"></canvas>';
+      if (item.id === 'layeredgold') return '<canvas class="sample-canvas sample-canvas-layeredgold" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -10175,6 +10363,53 @@ function paintGlassOutlineSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glassoutline';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the layered gold preview with the REAL layeredgold code
+// (STYLE_PAINT.layeredgold) on its small canvas — a miniature of
+// the actual text, same pattern as the glass outline preview.
+// Called from redraw(), like the glass outline samples. If painting
+// fails, fall back to the CSS text.
+function paintLayeredGoldSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-layeredgold')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const line = 'متن شما';
+        const lw = lineWidth(line);
+        // Fit the line (plus its double outline and shadow) into the
+        // sample canvas, centred, keeping the aspect — a uniform
+        // scale, so nothing is squashed.
+        const fitW = lw + 1.3 * textFs + 40, fitH = textFs * 2.6 + 40;
+        const s = Math.min(W / fitW, H / fitH);
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-540, -540);
+          STYLE_PAINT.layeredgold(line, 540, 540, lw, textFs);
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-layeredgold';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
