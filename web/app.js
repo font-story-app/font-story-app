@@ -103,6 +103,7 @@ const STYLES = [
   { id: 'metallic', label: 'گرادیان فلزی' },
   { id: 'floatshadow', label: 'سایه شناور' },
   { id: 'glowframe', label: 'قاب درخشان' },
+  { id: 'cornerglow', label: 'گوشه‌های درخشان' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -633,6 +634,23 @@ const STYLE_CONTROLS = {
     { key: 'glowframeCardO', label: 'شفافیت کارت', type: 'range', min: 10, max: 100, step: 1, def: 27, unit: '٪' },
     { key: 'glowframeGlowC', label: 'رنگ درخشش', type: 'color', def: '#9be8ac' },
     { key: 'glowframeGlowO', label: 'شدت درخشش', type: 'range', min: 10, max: 100, step: 1, def: 85, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Corner glow frame card (Reza, 2026-11-24 — his
+  // createCornerGlowFrameCard code): a sharp-cornered dark card
+  // with a thin white frame, a soft radial glow centred on each of
+  // the four corners (spreading inside and outside the card) and a
+  // solid glowing square handle on each corner. The text itself is
+  // plain white, no shadow. Width is his 560px by default; height
+  // hugs the text (the 2026-11-24 CardH rule).
+  cornerglow: [
+    { key: 'cornerGlowCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 560, unit: 'px' },
+    { key: 'cornerGlowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'cornerGlowCardC', label: 'رنگ کارت', type: 'color', def: '#1c020a' },
+    { key: 'cornerGlowCardO', label: 'شفافیت کارت', type: 'range', min: 10, max: 100, step: 1, def: 62, unit: '٪' },
+    { key: 'cornerGlowFrameC', label: 'رنگ کادر', type: 'color', def: '#ffffff' },
+    { key: 'cornerGlowGlowO', label: 'شدت درخشش', type: 'range', min: 10, max: 100, step: 1, def: 92, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1580,6 +1598,15 @@ const STYLE_PAINT = {
       drawWords(line, cx, y);
       ctx.restore();
     }
+  },
+  // Corner glow frame card (Reza, 2026-11-24 — his
+  // createCornerGlowFrameCard code): the text is plain white and
+  // crisp — no shadow on it (the glow lives on the frame's corners,
+  // painted block-level in draw()). A colour picked in the رنگ tab
+  // wins; otherwise his #ffffff.
+  cornerglow: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -4041,6 +4068,117 @@ function paintGlowframeCard(l, fs) {
   ]);
 }
 
+// --- Corner glow frame card (Reza, 2026-11-24 — his
+// createCornerGlowFrameCard code): a sharp-cornered dark card with
+// a thin white frame, a soft radial glow centred on each of the
+// four corners (spreading inside and outside the card) and a solid
+// glowing square handle on each corner. The text itself is plain
+// white, no shadow (painted per line by STYLE_PAINT.cornerglow).
+
+// Geometry of the corner glow frame card around the text block.
+// Same shape as the other card layouts (fixed px padding, height
+// floor splitting evenly, blockShift following the alignment
+// buttons), with sharp corners (radius 0). Width is his 560px by
+// default; the height floor is 0, so the card hugs the text
+// vertically (the 2026-11-24 CardH rule). His min-height (290)
+// equals the content height at the default size, so it binds
+// nothing — the CardH knob is the floor.
+function cornerGlowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 56, padTop = 68, padBottom = 68; // his max card padding
+  const cardW = Math.max(maxLw + padX * 2, sp('cornerGlowCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('cornerGlowCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the corner glow frame card: the dark semi-transparent
+// fill with his soft outer glow, the thin sharp frame stroked
+// inside the card bounds, a soft radial glow centred on each
+// corner, and a solid glowing square handle on each corner. The
+// text itself (plain white, no shadow) is painted per line by
+// STYLE_PAINT.cornerglow.
+function paintCornerGlowCard(l, fs) {
+  const cardC = sp('cornerGlowCardC') || '#1c020a';
+  const cardO = (sp('cornerGlowCardO') ?? 62) / 100;
+  const frameC = sp('cornerGlowFrameC') || '#ffffff';
+  const intensity = (sp('cornerGlowGlowO') ?? 92) / 100;
+  const bw = 5; // his border width (max)
+  // 1. The dark semi-transparent fill, with his soft outer glow
+  // (0 0 14px at 0.14 × intensity) cast by the fill itself.
+  ctx.save();
+  ctx.shadowColor = hexToRgba(frameC, 0.14 * intensity);
+  ctx.shadowBlur = Math.round(14 * intensity);
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.fillStyle = hexToRgba(cardC, cardO);
+  ctx.fillRect(l.x, l.y, l.w, l.h);
+  ctx.restore();
+  // 2. The frame: a sharp 5px border, stroked inside the card
+  // bounds (the path is inset by half the width, like the typed
+  // card's border).
+  ctx.strokeStyle = frameC;
+  ctx.lineWidth = bw;
+  ctx.strokeRect(l.x + bw / 2, l.y + bw / 2, l.w - bw, l.h - bw);
+  const corners = [
+    [l.x, l.y], [l.x + l.w, l.y], [l.x, l.y + l.h], [l.x + l.w, l.y + l.h],
+  ];
+  // 3. The corner glows: a soft radial halo centred on each
+  // corner, spreading inside and outside the card (his wrapper
+  // margin leaves room for it — overflow visible).
+  const glowR = 235 / 2;
+  const glowStops = [
+    [0, 0.96], [0.16, 0.70], [0.34, 0.38],
+    [0.54, 0.14], [0.74, 0.03], [1, 0],
+  ];
+  for (const [cx, cy] of corners) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+    for (const [o, a] of glowStops) g.addColorStop(o, hexToRgba(frameC, a * intensity));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 4. The corner handles: solid 31px squares centred on each
+  // corner, each with his two glow shadows (blur 10px and 24px,
+  // scaled by the intensity). Each pass draws the same square, so
+  // the second pass paints identical pixels and only its shadow
+  // shows. Both passes are wrapped in save/restore so no shadow
+  // leaks into the text (slider-bug lesson).
+  const hs = 31 / 2;
+  const handleShadows = [
+    { blur: 10, a: 0.95 },
+    { blur: 24, a: 0.72 },
+  ];
+  for (const [cx, cy] of corners) {
+    for (const s of handleShadows) {
+      ctx.save();
+      ctx.shadowColor = hexToRgba(frameC, s.a * intensity);
+      ctx.shadowBlur = Math.round(s.blur * intensity);
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = frameC;
+      ctx.fillRect(cx - hs, cy - hs, 31, 31);
+      ctx.restore();
+    }
+  }
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -5039,6 +5177,9 @@ function draw() {
   // The glass glow frame card wraps the block the same way.
   const glowframeRTL = state.style === 'glowframe' ? isRTLText(lines[0] || '') : true;
   const glowframeL = state.style === 'glowframe' ? glowframeLayout(textFs, maxLw, blockH, lineHeight, h, cx, glowframeRTL) : null;
+  // The corner glow frame card wraps the block the same way.
+  const cornerGlowRTL = state.style === 'cornerglow' ? isRTLText(lines[0] || '') : true;
+  const cornerGlowL = state.style === 'cornerglow' ? cornerGlowLayout(textFs, maxLw, blockH, lineHeight, h, cx, cornerGlowRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -5074,7 +5215,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -5254,6 +5395,7 @@ function draw() {
   if (metallicL) paintMetallicCard(metallicL, textFs);
   if (floatShadowL) paintFloatShadowCard(floatShadowL, textFs);
   if (glowframeL) paintGlowframeCard(glowframeL, textFs);
+  if (cornerGlowL) paintCornerGlowCard(cornerGlowL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -5414,7 +5556,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5447,6 +5589,7 @@ function redraw() {
   paintMetallicSamples();
   paintFloatShadowSamples();
   paintGlowframeSamples();
+  paintCornerGlowSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -5981,6 +6124,7 @@ function buildStylePicker() {
       if (item.id === 'metallic') return '<canvas class="sample-canvas sample-canvas-metallic" width="190" height="120"></canvas>';
       if (item.id === 'floatshadow') return '<canvas class="sample-canvas sample-canvas-floatshadow" width="190" height="120"></canvas>';
       if (item.id === 'glowframe') return '<canvas class="sample-canvas sample-canvas-glowframe" width="190" height="120"></canvas>';
+      if (item.id === 'cornerglow') return '<canvas class="sample-canvas sample-canvas-cornerglow" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -7639,6 +7783,74 @@ function paintGlowframeSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glowframe';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the corner glow frame preview with the REAL cornerglow
+// code (cornerGlowLayout + paintCornerGlowCard + the body text) on
+// its small canvas — a miniature of the actual card, same pattern
+// as the glass glow frame preview. Called from redraw(), like the
+// glass glow frame samples.
+function paintCornerGlowSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-cornerglow')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const cornerGlowRTL = isRTLText(lines[0] || '');
+        const cornerGlowL = cornerGlowLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, cornerGlowRTL);
+        const blockCx = 540 + cornerGlowL.blockShift;
+        // Fit the whole card PLUS the corner glows' visible spread
+        // (70px on each side) into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const fitW = cornerGlowL.w + 140, fitH = cornerGlowL.h + 140;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = cornerGlowL.x + cornerGlowL.w / 2, cardCy = cornerGlowL.y + cornerGlowL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintCornerGlowCard(cornerGlowL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.cornerglow(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-cornerglow';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
