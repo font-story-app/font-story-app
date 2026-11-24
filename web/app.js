@@ -281,6 +281,8 @@ const STYLE_CONTROLS = {
     { key: 'gradlineR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 36, unit: 'px' },
     { key: 'gradlinePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
     { key: 'gradlinePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
+    { key: 'gradlinePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
+    { key: 'gradlinePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -289,6 +291,8 @@ const STYLE_CONTROLS = {
     { key: 'squareboxR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 8, unit: 'px' },
     { key: 'squareboxPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
     { key: 'squareboxPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
+    { key: 'squareboxPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
+    { key: 'squareboxPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -297,6 +301,8 @@ const STYLE_CONTROLS = {
     { key: 'lightboxR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 24, unit: 'px' },
     { key: 'lightboxPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
     { key: 'lightboxPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
+    { key: 'lightboxPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
+    { key: 'lightboxPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -315,6 +321,8 @@ const STYLE_CONTROLS = {
     { key: 'tweetCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'tweetPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 45, unit: '٪', editable: true },
     { key: 'tweetPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 45, unit: '٪', editable: true },
+    { key: 'tweetPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'tweetPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'tweetName', label: 'نام', type: 'text', def: 'FontStory', max: 30 },
     { key: 'tweetHandle', label: 'هندل', type: 'text', def: '@fontstory', max: 30 },
     { key: 'tweetNameGap', label: 'فاصله نام و آیدی', type: 'range', min: 0, max: 60, step: 2, def: 10, unit: 'px' },
@@ -332,6 +340,8 @@ const STYLE_CONTROLS = {
     { key: 'noteCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'notePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 35, unit: '٪', editable: true },
     { key: 'notePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 45, unit: '٪', editable: true },
+    { key: 'notePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'notePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'noteC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E5E5EA' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
@@ -345,6 +355,8 @@ const STYLE_CONTROLS = {
     { key: 'messageCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'messagePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 35, unit: '٪', editable: true },
     { key: 'messagePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 45, unit: '٪', editable: true },
+    { key: 'messagePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'messagePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'messageC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E5E5EA' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
@@ -372,6 +384,8 @@ const STYLE_CONTROLS = {
     { key: 'msgbubbleC', label: 'رنگ حباب', type: 'color', def: '#087ffe' },
     { key: 'msgbubblePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 40, unit: '٪', editable: true },
     { key: 'msgbubblePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 40, unit: '٪', editable: true },
+    { key: 'msgbubblePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 50, unit: '٪', editable: true },
+    { key: 'msgbubblePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 50, unit: '٪', editable: true },
     { key: 'msgbubbleR', label: 'گردی حباب', type: 'range', min: 0, max: 60, step: 1, def: 25, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
@@ -382,6 +396,8 @@ const STYLE_CONTROLS = {
     { key: 'dropbubbleC', label: 'رنگ حباب', type: 'color', def: '#087ffe' },
     { key: 'dropbubblePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 40, unit: '٪', editable: true },
     { key: 'dropbubblePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 40, unit: '٪', editable: true },
+    { key: 'dropbubblePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 50, unit: '٪', editable: true },
+    { key: 'dropbubblePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 50, unit: '٪', editable: true },
     { key: 'dropbubbleR', label: 'گردی حباب', type: 'range', min: 0, max: 60, step: 1, def: 50, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
@@ -394,6 +410,8 @@ const STYLE_CONTROLS = {
     { key: 'pinCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'pinPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 90, unit: '٪', editable: true },
     { key: 'pinPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 40, unit: '٪', editable: true },
+    { key: 'pinPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'pinPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'pinCardC', label: 'رنگ کارت', type: 'color', def: '#FFFFFF' },
     { key: 'pinC', label: 'رنگ پونز', type: 'color', def: '#df1217' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -407,6 +425,8 @@ const STYLE_CONTROLS = {
     { key: 'musicCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'musicPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 24, unit: '٪', editable: true },
     { key: 'musicPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 25, unit: '٪', editable: true },
+    { key: 'musicPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'musicPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'musicCardC', label: 'رنگ کارت', type: 'color', def: '#1a040d' },
     { key: 'musicCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 48, unit: '٪' },
     { key: 'musicSubtitle', label: 'زیرعنوان', type: 'text', def: 'Music by Font Story', max: 40 },
@@ -425,6 +445,8 @@ const STYLE_CONTROLS = {
     { key: 'frameCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'framePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'framePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'framePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'framePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'frameCardC', label: 'رنگ کارت', type: 'color', def: '#FFFFFF' },
     { key: 'frameAccent', label: 'رنگ قاب و خط دور', type: 'color', def: '#ff96aa' },
     { key: 'frameBorder', label: 'ضخامت قاب', type: 'range', min: 0, max: 60, step: 1, def: 26, unit: 'px' },
@@ -440,6 +462,8 @@ const STYLE_CONTROLS = {
     { key: 'bellCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'bellPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 64, unit: 'px', editable: true },
     { key: 'bellPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 68, unit: 'px', editable: true },
+    { key: 'bellPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'bellPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'bellCardC', label: 'رنگ کارت', type: 'color', def: '#343b40' },
     { key: 'bellCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 72, unit: '٪' },
     { key: 'bellBadgeC', label: 'رنگ نشان', type: 'color', def: '#f3dcd3' },
@@ -456,6 +480,8 @@ const STYLE_CONTROLS = {
     { key: 'heartsCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'heartsPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 38, unit: 'px', editable: true },
     { key: 'heartsPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 38, unit: 'px', editable: true },
+    { key: 'heartsPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 34, unit: 'px', editable: true },
+    { key: 'heartsPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 34, unit: 'px', editable: true },
     { key: 'heartsCardC', label: 'رنگ کارت', type: 'color', def: '#3b0b1f' },
     { key: 'heartsStripC', label: 'رنگ نوار', type: 'color', def: '#a3b2c0' },
     { key: 'heartsHeartC', label: 'رنگ قلب‌ها', type: 'color', def: '#f3d7ca' },
@@ -471,6 +497,8 @@ const STYLE_CONTROLS = {
     { key: 'doubleFrameCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'doubleFramePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 34, unit: 'px', editable: true },
     { key: 'doubleFramePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 34, unit: 'px', editable: true },
+    { key: 'doubleFramePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'doubleFramePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'doubleFrameOuterC', label: 'رنگ قاب بیرونی', type: 'color', def: '#ffffff' },
     { key: 'doubleFrameInnerC', label: 'رنگ قاب میانی', type: 'color', def: '#333333' },
     { key: 'doubleFrameBgC', label: 'رنگ پس‌زمینه', type: 'color', def: '#2d0616' },
@@ -488,6 +516,8 @@ const STYLE_CONTROLS = {
     { key: 'msgnotifCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'msgnotifPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 32, unit: 'px', editable: true },
     { key: 'msgnotifPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'msgnotifPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 38, unit: 'px', editable: true },
+    { key: 'msgnotifPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 38, unit: 'px', editable: true },
     { key: 'msgnotifCardC', label: 'رنگ کارت', type: 'color', def: '#e3e4e6' },
     { key: 'msgnotifHeaderC', label: 'رنگ سربرگ', type: 'color', def: '#55575b' },
     { key: 'msgnotifTitle', label: 'عنوان برنامه', type: 'text', def: 'MESSAGE', max: 20 },
@@ -504,6 +534,8 @@ const STYLE_CONTROLS = {
     { key: 'stitchedCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'stitchedPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'stitchedPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'stitchedPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 46, unit: 'px', editable: true },
+    { key: 'stitchedPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 46, unit: 'px', editable: true },
     { key: 'stitchedCardC', label: 'رنگ کارت', type: 'color', def: '#da778b' },
     { key: 'stitchedCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 94, unit: '٪' },
     { key: 'stitchedStitchC', label: 'رنگ دوخت', type: 'color', def: '#71333d' },
@@ -519,6 +551,8 @@ const STYLE_CONTROLS = {
     { key: 'sewingpinCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'sewingpinPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 118, unit: 'px', editable: true },
     { key: 'sewingpinPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 66, unit: 'px', editable: true },
+    { key: 'sewingpinPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'sewingpinPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'sewingpinCardC', label: 'رنگ کارت', type: 'color', def: '#b2a148' },
     { key: 'sewingpinBorderC', label: 'رنگ قاب', type: 'color', def: '#ffffff' },
     { key: 'sewingpinHeadC', label: 'رنگ سر سنجاق', type: 'color', def: '#e34a59' },
@@ -534,6 +568,8 @@ const STYLE_CONTROLS = {
     { key: 'spiralCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'spiralPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 96, unit: 'px', editable: true },
     { key: 'spiralPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 175, unit: 'px', editable: true },
+    { key: 'spiralPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'spiralPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'spiralPaperC', label: 'رنگ کاغذ', type: 'color', def: '#f9ad7b' },
     { key: 'spiralWireC', label: 'رنگ فنر و کادر', type: 'color', def: '#000000' },
     { key: 'spiralCoils', label: 'تعداد حلقه‌ها', type: 'range', min: 2, max: 24, step: 1, def: 14 },
@@ -549,6 +585,8 @@ const STYLE_CONTROLS = {
     { key: 'windowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'windowPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'windowPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'windowPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'windowPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'windowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#db977d' },
     { key: 'windowBodyC', label: 'رنگ بدنه', type: 'color', def: '#ffffff' },
     { key: 'windowIconC', label: 'رنگ آیکون‌ها', type: 'color', def: '#ffffff' },
@@ -564,6 +602,8 @@ const STYLE_CONTROLS = {
     { key: 'splitWindowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'splitWindowPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 46, unit: 'px', editable: true },
     { key: 'splitWindowPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 46, unit: 'px', editable: true },
+    { key: 'splitWindowPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'splitWindowPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'splitWindowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#fcb181' },
     { key: 'splitWindowBodyC', label: 'رنگ بدنه', type: 'color', def: '#591f2b' },
     { key: 'splitWindowCircleC', label: 'رنگ دایره‌ها', type: 'color', def: '#000000' },
@@ -580,6 +620,8 @@ const STYLE_CONTROLS = {
     { key: 'macWindowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'macWindowPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'macWindowPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'macWindowPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'macWindowPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'macWindowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#683bb7' },
     { key: 'macWindowBodyC', label: 'رنگ بدنه', type: 'color', def: '#ffffff' },
     { key: 'macWindowDot1C', label: 'دایره سبز', type: 'color', def: '#4cb050' },
@@ -597,6 +639,8 @@ const STYLE_CONTROLS = {
     { key: 'heartCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'heartPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'heartPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'heartPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 40, unit: 'px', editable: true },
+    { key: 'heartPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 40, unit: 'px', editable: true },
     { key: 'heartCardC', label: 'رنگ کارت', type: 'color', def: '#eabcc5' },
     { key: 'heartAccentC', label: 'رنگ خط و قلب', type: 'color', def: '#415a6c' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -611,6 +655,8 @@ const STYLE_CONTROLS = {
     { key: 'glassNotifCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'glassNotifPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 94, unit: 'px', editable: true },
     { key: 'glassNotifPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
+    { key: 'glassNotifPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 46, unit: 'px', editable: true },
+    { key: 'glassNotifPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 46, unit: 'px', editable: true },
     { key: 'glassNotifCardC', label: 'رنگ کارت', type: 'color', def: '#ffffff' },
     { key: 'glassNotifCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 34, unit: '٪' },
     { key: 'glassNotifTime', label: 'زمان', type: 'text', def: 'now', max: 10 },
@@ -629,6 +675,8 @@ const STYLE_CONTROLS = {
     { key: 'typedCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'typedPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 26, unit: 'px', editable: true },
     { key: 'typedPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 26, unit: 'px', editable: true },
+    { key: 'typedPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'typedPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'typedCardC', label: 'رنگ کارت', type: 'color', def: '#ebaaf0' },
     { key: 'typedBorderC', label: 'رنگ حاشیه و سایه', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -643,6 +691,8 @@ const STYLE_CONTROLS = {
     { key: 'cornerCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'cornerPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'cornerPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'cornerPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'cornerPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'cornerCardC', label: 'رنگ کارت', type: 'color', def: '#f2f2f2' },
     { key: 'cornerBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
     { key: 'cornerAccentC', label: 'رنگ کمان', type: 'color', def: '#000000' },
@@ -660,6 +710,8 @@ const STYLE_CONTROLS = {
     { key: 'metallicCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'metallicPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 50, unit: 'px', editable: true },
     { key: 'metallicPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 50, unit: 'px', editable: true },
+    { key: 'metallicPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 38, unit: 'px', editable: true },
+    { key: 'metallicPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 38, unit: 'px', editable: true },
     { key: 'metallicCenterC', label: 'رنگ مرکز', type: 'color', def: '#fa432c' },
     { key: 'metallicEdgeC', label: 'رنگ لبه', type: 'color', def: '#000000' },
     { key: 'metallicShadowO', label: 'غلظت سایه', type: 'range', min: 10, max: 100, step: 1, def: 42, unit: '٪' },
@@ -677,6 +729,8 @@ const STYLE_CONTROLS = {
     { key: 'floatShadowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'floatShadowPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 54, unit: 'px', editable: true },
     { key: 'floatShadowPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 54, unit: 'px', editable: true },
+    { key: 'floatShadowPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'floatShadowPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'floatShadowCardC', label: 'رنگ کارت', type: 'color', def: '#da7689' },
     { key: 'floatShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
     { key: 'floatShadowO', label: 'غلظت سایه', type: 'range', min: 10, max: 100, step: 1, def: 78, unit: '٪' },
@@ -695,6 +749,8 @@ const STYLE_CONTROLS = {
     { key: 'glowframeCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'glowframePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 60, unit: 'px', editable: true },
     { key: 'glowframePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 60, unit: 'px', editable: true },
+    { key: 'glowframePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 52, unit: 'px', editable: true },
+    { key: 'glowframePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 52, unit: 'px', editable: true },
     { key: 'glowframeCardC', label: 'رنگ کارت', type: 'color', def: '#24020a' },
     { key: 'glowframeCardO', label: 'شفافیت کارت', type: 'range', min: 10, max: 100, step: 1, def: 27, unit: '٪' },
     { key: 'glowframeGlowC', label: 'رنگ درخشش', type: 'color', def: '#9be8ac' },
@@ -714,6 +770,8 @@ const STYLE_CONTROLS = {
     { key: 'cornerGlowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'cornerGlowPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 68, unit: 'px', editable: true },
     { key: 'cornerGlowPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 68, unit: 'px', editable: true },
+    { key: 'cornerGlowPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'cornerGlowPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'cornerGlowCardC', label: 'رنگ کارت', type: 'color', def: '#1c020a' },
     { key: 'cornerGlowCardO', label: 'شفافیت کارت', type: 'range', min: 10, max: 100, step: 1, def: 62, unit: '٪' },
     { key: 'cornerGlowFrameC', label: 'رنگ کادر', type: 'color', def: '#ffffff' },
@@ -733,6 +791,8 @@ const STYLE_CONTROLS = {
     { key: 'vibrantCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'vibrantPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
     { key: 'vibrantPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
+    { key: 'vibrantPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 28, unit: 'px', editable: true },
+    { key: 'vibrantPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 28, unit: 'px', editable: true },
     { key: 'vibrantCardC', label: 'رنگ کارت', type: 'color', def: '#e91e63' },
     { key: 'vibrantShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
     { key: 'vibrantShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 100, unit: '٪' },
@@ -753,6 +813,8 @@ const STYLE_CONTROLS = {
     { key: 'glossCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'glossPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 76, unit: 'px', editable: true },
     { key: 'glossPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 76, unit: 'px', editable: true },
+    { key: 'glossPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'glossPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'glossSheenC', label: 'رنگ بازتاب', type: 'color', def: '#ffffff' },
     { key: 'glossBorderC', label: 'رنگ کادر', type: 'color', def: '#74383f' },
     { key: 'glossOpacity', label: 'شفافیت شیشه', type: 'range', min: 5, max: 95, step: 1, def: 48, unit: '٪' },
@@ -771,6 +833,8 @@ const STYLE_CONTROLS = {
     { key: 'gradShadowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'gradShadowPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 74, unit: 'px', editable: true },
     { key: 'gradShadowPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 74, unit: 'px', editable: true },
+    { key: 'gradShadowPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 54, unit: 'px', editable: true },
+    { key: 'gradShadowPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 54, unit: 'px', editable: true },
     { key: 'gradShadowStartC', label: 'رنگ شروع', type: 'color', def: '#ff00ff' },
     { key: 'gradShadowEndC', label: 'رنگ پایان', type: 'color', def: '#00e5e5' },
     { key: 'gradShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 55, unit: '٪' },
@@ -809,6 +873,8 @@ const STYLE_CONTROLS = {
     // exactly at every size. Tap-to-type like the card size.
     { key: 'goldPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 46, unit: '٪', editable: true },
     { key: 'goldPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 50, unit: '٪', editable: true },
+    { key: 'goldPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 30, unit: '٪', editable: true },
+    { key: 'goldPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 30, unit: '٪', editable: true },
     { key: 'goldBaseC', label: 'رنگ پایه', type: 'color', def: '#ffc400' },
     { key: 'goldShineC', label: 'رنگ درخشش', type: 'color', def: '#ffffff' },
     { key: 'goldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 65, unit: '٪' },
@@ -820,6 +886,8 @@ const STYLE_CONTROLS = {
     { key: 'liftedCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'liftedPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 74, unit: '٪', editable: true },
     { key: 'liftedPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 78, unit: '٪', editable: true },
+    { key: 'liftedPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 128, unit: '٪', editable: true },
+    { key: 'liftedPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 128, unit: '٪', editable: true },
     { key: 'liftedCardC', label: 'رنگ کارت', type: 'color', def: '#ffffff' },
     { key: 'liftedShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
     { key: 'liftedShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 75, unit: '٪' },
@@ -831,6 +899,8 @@ const STYLE_CONTROLS = {
     { key: 'sheenCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'sheenPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 62, unit: '٪', editable: true },
     { key: 'sheenPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 66, unit: '٪', editable: true },
+    { key: 'sheenPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 95, unit: '٪', editable: true },
+    { key: 'sheenPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 95, unit: '٪', editable: true },
     { key: 'sheenCenterC', label: 'رنگ مرکز', type: 'color', def: '#ff1272' },
     { key: 'sheenEdgeC', label: 'رنگ لبه', type: 'color', def: '#6b0c2c' },
     { key: 'sheenShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 50, unit: '٪' },
@@ -842,6 +912,8 @@ const STYLE_CONTROLS = {
     { key: 'emeraldCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'emeraldPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 82, unit: '٪', editable: true },
     { key: 'emeraldPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 86, unit: '٪', editable: true },
+    { key: 'emeraldPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 138, unit: '٪', editable: true },
+    { key: 'emeraldPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 138, unit: '٪', editable: true },
     { key: 'emeraldTopC', label: 'رنگ بالا', type: 'color', def: '#021811' },
     { key: 'emeraldBottomC', label: 'رنگ پایین', type: 'color', def: '#00dc99' },
     { key: 'emeraldBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
@@ -860,6 +932,8 @@ const STYLE_CONTROLS = {
     { key: 'slantQuoteCardH', label: 'ارتفاع کادر', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'slantQuotePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'slantQuotePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'slantQuotePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 52, unit: 'px', editable: true },
+    { key: 'slantQuotePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 52, unit: 'px', editable: true },
     { key: 'slantQuoteFrameC', label: 'رنگ کادر', type: 'color', def: '#ffffff' },
     { key: 'slantQuoteQuoteC', label: 'رنگ گیومه', type: 'color', def: '#ffffff' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -875,6 +949,8 @@ const STYLE_CONTROLS = {
     { key: 'doubleLineCardH', label: 'ارتفاع بلوک', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'doubleLinePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 68, unit: 'px', editable: true },
     { key: 'doubleLinePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 68, unit: 'px', editable: true },
+    { key: 'doubleLinePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 28, unit: 'px', editable: true },
+    { key: 'doubleLinePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 28, unit: 'px', editable: true },
     { key: 'doubleLineC', label: 'رنگ خط', type: 'color', def: '#000000' },
     { key: 'doubleLineO', label: 'غلظت خط', type: 'range', min: 10, max: 100, step: 1, def: 24, unit: '٪' },
     { key: 'doubleLineT', label: 'ضخامت خط', type: 'range', min: 1, max: 12, step: 1, def: 5, unit: 'px' },
@@ -891,6 +967,8 @@ const STYLE_CONTROLS = {
     { key: 'yellowBarsCardH', label: 'ارتفاع بنر', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'yellowBarsPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 80, unit: 'px', editable: true },
     { key: 'yellowBarsPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 80, unit: 'px', editable: true },
+    { key: 'yellowBarsPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
+    { key: 'yellowBarsPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 48, unit: 'px', editable: true },
     { key: 'yellowBarsC', label: 'رنگ نوار', type: 'color', def: '#fce93a' },
     { key: 'yellowBarsStrokeC', label: 'رنگ دورخط', type: 'color', def: '#111111' },
     { key: 'yellowBarsGlowC', label: 'رنگ هاله', type: 'color', def: '#1a0008' },
@@ -909,6 +987,8 @@ const STYLE_CONTROLS = {
     { key: 'gradbarsCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'gradbarsPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 54, unit: 'px', editable: true },
     { key: 'gradbarsPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 54, unit: 'px', editable: true },
+    { key: 'gradbarsPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
+    { key: 'gradbarsPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 44, unit: 'px', editable: true },
     { key: 'gradbarsTopC', label: 'رنگ بالای نوار', type: 'color', def: '#ff0000' },
     { key: 'gradbarsBottomC', label: 'رنگ پایین نوار', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -929,6 +1009,8 @@ const STYLE_CONTROLS = {
     { key: 'sidelineCardH', label: 'ارتفاع بلوک', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'sidelinePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 66, unit: 'px', editable: true },
     { key: 'sidelinePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 66, unit: 'px', editable: true },
+    { key: 'sidelinePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
+    { key: 'sidelinePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 0, unit: 'px', editable: true },
     { key: 'sidelineLineC', label: 'رنگ خط', type: 'color', def: '#ffffff' },
     { key: 'sidelineLineW', label: 'ضخامت خط', type: 'range', min: 1, max: 12, step: 0.5, def: 3.5, unit: 'px' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -942,6 +1024,8 @@ const STYLE_CONTROLS = {
     { key: 'brushC', label: 'رنگ قلم‌مو', type: 'color', def: '#241e5a' },
     { key: 'brushPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 55, unit: '٪', editable: true },
     { key: 'brushPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 55, unit: '٪', editable: true },
+    { key: 'brushPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 60, unit: '٪', editable: true },
+    { key: 'brushPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 60, unit: '٪', editable: true },
     { key: 'brushShadowC', label: 'رنگ سایه', type: 'color', def: '#fce8f3' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
@@ -2164,9 +2248,10 @@ function tweetMinSize(fs) {
   ctx.font = `400 ${fs * 0.32}px 'Vazir', system-ui, sans-serif`;
   const footerW = ctx.measureText(`${likes} likes  ${replies} replies`).width;
   ctx.font = prevFont;
-  const av = fs * 0.8, logoSize = fs * 0.5, padX = 56; // same as tweetLayout
+  const av = fs * 0.8, logoSize = fs * 0.5; // same as tweetLayout
+  const padLeft = Math.max(0, sp('tweetPadLeft') ?? 56), padRight = Math.max(0, sp('tweetPadRight') ?? 56);
   return {
-    minW: Math.max(padX * 2 + av + 16 + Math.max(nameW, handleW) + 24 + logoSize, padX * 2 + footerW),
+    minW: Math.max(padLeft + padRight + av + 16 + Math.max(nameW, handleW) + 24 + logoSize, padLeft + padRight + footerW),
     minBlockH: fs * state.lineHeight,
   };
 }
@@ -2191,7 +2276,11 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   // SIZE is the adjustable part: a default size (760x480, about the
   // card in his screenshot) that the content can grow past, adjustable
   // with the «عرض کارت» / «ارتفاع کارت» sliders in the style sheet.
-  const padX = 56;                    // card padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('tweetPadLeft') ?? 56);
+  const padRight = Math.max(0, sp('tweetPadRight') ?? 56);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('tweetPadTop') ?? 45) / 100) * fs; // card top edge -> avatar top
   const padBottom = Math.max(0, (sp('tweetPadBottom') ?? 45) / 100) * fs; // stats line -> card bottom edge
   const av = fs * 0.8;                // avatar diameter
@@ -2199,9 +2288,9 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   const gapTextStats = fs * 0.4;      // last line bottom -> stats line
   const statsH = fs * 0.32;           // stats line height
   const bodyH = Math.max(blockH, minBlockH);
-  const cardW = Math.max(maxLw + padX * 2, minW, sp('tweetCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, minW, sp('tweetCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
   // The body block's position inside the card follows the alignment
   // buttons (Reza, 2026-11-22): right hugs the card's inner right
   // edge, left hugs the inner left edge, centre sits in the middle.
@@ -2209,10 +2298,10 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   // on the right, LTR on the left) and stretches the lines instead.
   // Note: the chrome (avatar/logo) still mirrors by text direction —
   // only the body text follows the alignment buttons.
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - gapHeaderText - padTop - av;
@@ -2222,7 +2311,7 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   const extraH = Math.max(0, sp('tweetCardH') - (cardBottom - cardTop));
   cardTop -= extraH / 2;
   cardBottom += extraH / 2;
-  const avatarX = rtl ? cardX + padX + av / 2 : cardX + cardW - padX - av / 2;
+  const avatarX = rtl ? cardX + padLeft + av / 2 : cardX + cardW - padRight - av / 2;
   const avatarY = cardTop + padTop + av / 2;
   // Name + handle, centred on the avatar: the gap between the two
   // lines is the old 0.38x size plus the adjustable «فاصله نام و آیدی»
@@ -2231,14 +2320,14 @@ function tweetLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH =
   const nameGap = fs * 0.38 + sp('tweetNameGap');
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
-    padX, av, avatarX, avatarY,
+    padX, padLeft, padRight, av, avatarX, avatarY,
     nameX: rtl ? avatarX + av / 2 + 16 : avatarX - av / 2 - 16,
     nameY: avatarY - nameGap / 2,
     handleY: avatarY + nameGap / 2,
     logoSize: fs * 0.5,
-    logoX: rtl ? cardX + cardW - padX - fs * 0.25 : cardX + padX + fs * 0.25,
+    logoX: rtl ? cardX + cardW - padRight - fs * 0.25 : cardX + padLeft + fs * 0.25,
     logoY: avatarY,
-    statsX: cardX + padX,
+    statsX: cardX + padLeft,
     statsY: textBottom + gapTextStats + statsH / 2,
     statsH,
     blockShift, rtl,
@@ -2352,10 +2441,10 @@ function noteMinSize(fs) {
   const notesW = ctx.measureText('Notes').width;
   const doneW = ctx.measureText('Done').width;
   ctx.font = prevFont;
-  const padX = 56; // same as noteLayout
+  const padLeft = Math.max(0, sp('notePadLeft') ?? 56), padRight = Math.max(0, sp('notePadRight') ?? 56); // same as noteLayout
   // padX + chevron + gap + Notes + gap + dots circle + gap + share +
   // gap + Done + padX.
-  const headerW = padX * 2 + fs * 0.28 + fs * 0.12 + notesW + fs * 0.28 + fs * 0.5 + fs * 0.28 + fs * 0.42 + fs * 0.28 + doneW;
+  const headerW = padLeft + padRight + fs * 0.28 + fs * 0.12 + notesW + fs * 0.28 + fs * 0.5 + fs * 0.28 + fs * 0.42 + fs * 0.28 + doneW;
   return { minW: headerW, minBlockH: fs * state.lineHeight };
 }
 
@@ -2366,18 +2455,22 @@ function noteMinSize(fs) {
 // hugs the inner right edge, left the inner left edge, centre sits in
 // the middle; justify keeps the direction-based anchor.
 function noteLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0, rtl = true) {
-  const padX = 56;                    // card padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('notePadLeft') ?? 56);
+  const padRight = Math.max(0, sp('notePadRight') ?? 56);
+  const padX = (padLeft + padRight) / 2;
   const headerH = fs * 1.1;           // white header band height (Reza, 2026-11-22: a bit taller)
   const gapHeaderText = Math.max(0, (sp('notePadTop') ?? 35) / 100) * fs; // header bottom -> first line top (top knob)
   const padBottom = Math.max(0, (sp('notePadBottom') ?? 45) / 100) * fs; // last line bottom -> card bottom
   const bodyH = Math.max(blockH, minBlockH);
-  const cardW = Math.max(maxLw + padX * 2, minW, sp('noteCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, minW, sp('noteCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - gapHeaderText - headerH;
@@ -2389,7 +2482,7 @@ function noteLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
-    padX, headerH, blockShift, rtl,
+    padX, padLeft, padRight, headerH, blockShift, rtl,
   };
 }
 
@@ -2420,7 +2513,7 @@ function paintNoteCard(l, fs) {
   const headFont = `400 ${fs * 0.42}px 'Vazir', system-ui, sans-serif`;
   ctx.font = headFont;
   // Chevron «‹» + Notes, left.
-  const chevX = l.x + l.padX, chevS = fs * 0.28;
+  const chevX = l.x + l.padLeft, chevS = fs * 0.28;
   ctx.lineWidth = fs * 0.045;
   ctx.beginPath();
   ctx.moveTo(chevX + chevS * 0.7, hy - chevS / 2);
@@ -2431,11 +2524,11 @@ function paintNoteCard(l, fs) {
   ctx.fillText('Notes', chevX + chevS + fs * 0.12, hy);
   // Done, right.
   ctx.textAlign = 'right';
-  ctx.fillText('Done', l.x + l.w - l.padX, hy);
+  ctx.fillText('Done', l.x + l.w - l.padRight, hy);
   const doneW = ctx.measureText('Done').width;
   // Share icon (a U-shaped box with an up arrow), left of Done.
   const shS = fs * 0.42;
-  const shRight = l.x + l.w - l.padX - doneW - fs * 0.28;
+  const shRight = l.x + l.w - l.padRight - doneW - fs * 0.28;
   const shX = shRight - shS, shCy = hy;
   ctx.lineWidth = fs * 0.035;
   ctx.beginPath();
@@ -2478,9 +2571,9 @@ function messageMinSize(fs) {
   const messagesW = ctx.measureText('Messages').width;
   const nowW = ctx.measureText('Now').width;
   ctx.font = prevFont;
-  const padX = 56; // same as messageLayout
+  const padLeft = Math.max(0, sp('messagePadLeft') ?? 56), padRight = Math.max(0, sp('messagePadRight') ?? 56); // same as messageLayout
   // padX + icon + gap + Messages + gap + Now + padX.
-  const headerW = padX * 2 + fs * 0.68 + fs * 0.12 + messagesW + fs * 0.28 + nowW;
+  const headerW = padLeft + padRight + fs * 0.68 + fs * 0.12 + messagesW + fs * 0.28 + nowW;
   return { minW: headerW, minBlockH: fs * state.lineHeight };
 }
 
@@ -2492,18 +2585,22 @@ function messageMinSize(fs) {
 // inner left edge, centre sits in the middle; justify keeps the
 // direction-based anchor.
 function messageLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH = 0, rtl = true) {
-  const padX = 56;                    // card padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('messagePadLeft') ?? 56);
+  const padRight = Math.max(0, sp('messagePadRight') ?? 56);
+  const padX = (padLeft + padRight) / 2;
   const headerH = fs * 1.1;           // white header band height
   const gapHeaderText = Math.max(0, (sp('messagePadTop') ?? 35) / 100) * fs; // header bottom -> first line top (top knob)
   const padBottom = Math.max(0, (sp('messagePadBottom') ?? 45) / 100) * fs; // last line bottom -> card bottom
   const bodyH = Math.max(blockH, minBlockH);
-  const cardW = Math.max(maxLw + padX * 2, minW, sp('messageCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, minW, sp('messageCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - gapHeaderText - headerH;
@@ -2515,7 +2612,7 @@ function messageLayout(fs, maxLw, blockH, lineHeight, h, cx, minW = 0, minBlockH
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
-    padX, headerH, blockShift, rtl,
+    padX, padLeft, padRight, headerH, blockShift, rtl,
   };
 }
 
@@ -2546,7 +2643,7 @@ function paintMessageCard(l, fs) {
   // Green Messages app icon, left (vertical gradient like the real
   // icon: bright lime at the top, deeper green at the bottom).
   const iconS = fs * 0.68;
-  const iconX = l.x + l.padX, iconY = hy - iconS / 2;
+  const iconX = l.x + l.padLeft, iconY = hy - iconS / 2;
   const iconGrad = ctx.createLinearGradient(iconX, iconY, iconX, iconY + iconS);
   iconGrad.addColorStop(0, '#8BD94F');
   iconGrad.addColorStop(1, '#3ABA29');
@@ -2573,7 +2670,7 @@ function paintMessageCard(l, fs) {
   ctx.fillText('Messages', iconX + iconS + fs * 0.12, hy);
   // «Now», right.
   ctx.textAlign = 'right';
-  ctx.fillText('Now', l.x + l.w - l.padX, hy);
+  ctx.fillText('Now', l.x + l.w - l.padRight, hy);
   ctx.restore();
 }
 
@@ -2587,17 +2684,21 @@ function paintMessageCard(l, fs) {
 // edge, centre sits in the middle; justify keeps the direction-based
 // anchor.
 function pinLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 56;                    // card padding left/right (same as note)
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('pinPadLeft') ?? 56);
+  const padRight = Math.max(0, sp('pinPadRight') ?? 56);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('pinPadTop') ?? 90) / 100) * fs; // room for the pin at the top-right
   const padBottom = Math.max(0, (sp('pinPadBottom') ?? 40) / 100) * fs; // last line bottom -> card bottom
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('pinCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('pinCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - padTop;
@@ -2609,7 +2710,7 @@ function pinLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
-    padX, padTop, padBottom, blockShift, rtl,
+    padX, padLeft, padRight, padTop, padBottom, blockShift, rtl,
   };
 }
 
@@ -2725,7 +2826,11 @@ function musicInk() {
 // as the note card. The section centres are anchored to the text
 // block, so they never move when the height floor adds space.
 function musicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 56;                    // card padding left/right (same as note)
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('musicPadLeft') ?? 56);
+  const padRight = Math.max(0, sp('musicPadRight') ?? 56);
+  const padX = (padLeft + padRight) / 2;
   const subtitleFs = fs * 0.15;       // «Music by Font Story», his ~16px
   const gapSubtitleText = fs * 0.3;   // subtitle -> title
   const gapTextProgress = fs * 0.35;  // title -> progress bar
@@ -2739,13 +2844,13 @@ function musicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const padTop = Math.max(0, (sp('musicPadTop') ?? 24) / 100) * fs; // card top -> subtitle
   const padBottom = Math.max(0, (sp('musicPadBottom') ?? 25) / 100) * fs; // volume row -> card bottom
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('musicCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('musicCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   const subtitleY = textTop - gapSubtitleText - subtitleFs / 2;
@@ -2762,7 +2867,7 @@ function musicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 40,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
     subtitleFs, subtitleY, progressTrackY, trackH, timeFs, timeY,
     controlsY, controlsH, volumeY, volumeH,
   };
@@ -2794,7 +2899,7 @@ function paintMusicCard(l, fs) {
   ctx.restore();
   // Progress: a white track at 0.42 opacity, a white fill to the
   // progress %, and a white knob with a soft shadow at its end.
-  const progX0 = l.x + l.padX, progX1 = l.x + l.w - l.padX;
+  const progX0 = l.x + l.padLeft, progX1 = l.x + l.w - l.padRight;
   const progW = progX1 - progX0;
   const prog = Math.max(0, Math.min(100, sp('musicProgress') ?? 61)) / 100;
   ctx.save();
@@ -2849,11 +2954,11 @@ function paintMusicCard(l, fs) {
   const volTrackH = fs * 0.05;
   const volKnobR = fs * 0.1;
   const vol = Math.max(0, Math.min(100, sp('musicVolume') ?? 20)) / 100;
-  const trackX0 = l.x + l.padX + volLowSize + volGap;
-  const trackX1 = l.x + l.w - l.padX - volHighSize - volGap;
+  const trackX0 = l.x + l.padLeft + volLowSize + volGap;
+  const trackX1 = l.x + l.w - l.padRight - volHighSize - volGap;
   const trackW = trackX1 - trackX0;
-  paintMusicVolLow(l.x + l.padX + volLowSize / 2, l.volumeY, volLowSize, ink);
-  paintMusicVolHigh(l.x + l.w - l.padX - volHighSize / 2, l.volumeY, volHighSize, ink);
+  paintMusicVolLow(l.x + l.padLeft + volLowSize / 2, l.volumeY, volLowSize, ink);
+  paintMusicVolHigh(l.x + l.w - l.padRight - volHighSize / 2, l.volumeY, volHighSize, ink);
   ctx.save();
   ctx.fillStyle = ink;
   roundRect(trackX0, l.volumeY - volTrackH / 2, trackW, volTrackH, volTrackH / 2);
@@ -2876,17 +2981,21 @@ function paintMusicCard(l, fs) {
 // his fixed 48px vertical / 56px horizontal (not fs units — it is a
 // card design value, like the note's 56px side padding).
 function frameLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 56;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('framePadLeft') ?? 56);
+  const padRight = Math.max(0, sp('framePadRight') ?? 56);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('framePadTop') ?? 48), padBottom = Math.max(0, sp('framePadBottom') ?? 48);
   const bw = sp('frameBorder') ?? 26;
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + (padX + bw) * 2, sp('frameCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight + bw * 2, sp('frameCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - (padX + bw) * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight + bw * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - padTop - bw;
@@ -2898,7 +3007,7 @@ function frameLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
-    padX, bw, blockShift, rtl,
+    padX, padLeft, padRight, bw, blockShift, rtl,
   };
 }
 
@@ -2981,16 +3090,20 @@ function paintBellLine(l, fs) {
 // height above the card. The body block's position follows the
 // alignment buttons, same rule as the note card.
 function bellLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 48;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('bellPadLeft') ?? 48);
+  const padRight = Math.max(0, sp('bellPadRight') ?? 48);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('bellPadTop') ?? 64), padBottom = Math.max(0, sp('bellPadBottom') ?? 68);
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('bellCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('bellCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - padTop;
@@ -3003,7 +3116,7 @@ function bellLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const r = Math.min(44, cardW * 0.06);
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -3074,15 +3187,19 @@ function paintHeartsStrip(l) {
 // horizontal position follows the alignment buttons, same rule as the
 // note card.
 function heartsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 34;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('heartsPadLeft') ?? 34);
+  const padRight = Math.max(0, sp('heartsPadRight') ?? 34);
+  const padX = (padLeft + padRight) / 2;
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('heartsCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('heartsCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const stripW = cardW * 0.83;
   const stripH = stripW * (96 / 500);
   const bottomPad = 0.066 * sp('heartsCardH');
@@ -3104,7 +3221,7 @@ function heartsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const r = Math.min(48, cardW * 0.06);
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r,
-    padX, blockShift, rtl, bottomPad, stripH,
+    padX, padLeft, padRight, blockShift, rtl, bottomPad, stripH,
   };
 }
 
@@ -3129,16 +3246,20 @@ function paintHeartsCard(l) {
 // thickness knob (his frameThickness) drives both frames.
 function doubleFrameLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const ft = sp('doubleFrameT') ?? 26;
-  const padX = 44;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('doubleFramePadLeft') ?? 44);
+  const padRight = Math.max(0, sp('doubleFramePadRight') ?? 44);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('doubleFramePadTop') ?? 34), padBottom = Math.max(0, sp('doubleFramePadBottom') ?? 34);
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2 + ft * 4, sp('doubleFrameCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight + ft * 4, sp('doubleFrameCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - ft * 4 - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - ft * 4 - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const innerBoxH = Math.max(blockH + padTop + padBottom, 200);
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
@@ -3153,7 +3274,7 @@ function doubleFrameLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
-    padX, ft, blockShift, rtl,
+    padX, padLeft, padRight, ft, blockShift, rtl,
   };
 }
 
@@ -3206,20 +3327,24 @@ function msgnotifAdjust(hex, delta) {
 // note card. The height floor grows the card evenly above and below,
 // so the text stays centred on the canvas.
 function msgnotifLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 38;                    // his max horizontal padding
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('msgnotifPadLeft') ?? 38);
+  const padRight = Math.max(0, sp('msgnotifPadRight') ?? 38);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('msgnotifPadTop') ?? 32), padBottom = Math.max(0, sp('msgnotifPadBottom') ?? 44);  // his max vertical padding
   const headerH = fs * 0.35;          // icon height (his max 38px)
   const bodyPadTop = 26, bodyPadBottom = 12; // his max body padding
   const topPeek = 34;                 // strips visible above the card
   const midTop = 17, backH = 80, midH = 95; // his max layer sizes
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('msgnotifCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('msgnotifCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - bodyPadTop - headerH - padTop;
@@ -3231,7 +3356,7 @@ function msgnotifLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
-    padX, padTop, headerH, blockShift, rtl, topPeek, midTop, backH, midH,
+    padX, padLeft, padRight, padTop, headerH, blockShift, rtl, topPeek, midTop, backH, midH,
   };
 }
 
@@ -3268,7 +3393,7 @@ function paintMsgnotifCard(l, fs) {
   ctx.save();
   const hy = l.y + l.padTop + l.headerH / 2;
   const iconSize = l.headerH;
-  const iconX = l.x + l.padX, iconY = hy - iconSize / 2;
+  const iconX = l.x + l.padLeft, iconY = hy - iconSize / 2;
   const grad = ctx.createLinearGradient(iconX, iconY, iconX, iconY + iconSize);
   grad.addColorStop(0, '#65f67d');
   grad.addColorStop(1, '#1bc93b');
@@ -3290,7 +3415,7 @@ function paintMsgnotifCard(l, fs) {
   ctx.fillText(title, iconX + iconSize + fs * 0.12, hy);
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
   ctx.textAlign = 'right';
-  ctx.fillText(time, l.x + l.w - l.padX, hy);
+  ctx.fillText(time, l.x + l.w - l.padRight, hy);
   ctx.restore();
 }
 
@@ -3305,16 +3430,20 @@ function paintMsgnotifCard(l, fs) {
 // the bell layout (fixed px padding, height floor splitting evenly,
 // blockShift following the alignment buttons).
 function stitchedLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 46;                    // his max horizontal padding
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('stitchedPadLeft') ?? 46);
+  const padRight = Math.max(0, sp('stitchedPadRight') ?? 46);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('stitchedPadTop') ?? 56), padBottom = Math.max(0, sp('stitchedPadBottom') ?? 56);  // his max vertical padding
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('stitchedCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('stitchedCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - padTop;
@@ -3326,7 +3455,7 @@ function stitchedLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 36,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -3485,16 +3614,20 @@ function getSewingPinImage(headColor) {
 // (his max top offset); the image box is offset by the 12-unit
 // viewBox padding so the visible pin lands exactly there.
 function sewingPinLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 48;                    // his max horizontal padding
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('sewingpinPadLeft') ?? 48);
+  const padRight = Math.max(0, sp('sewingpinPadRight') ?? 48);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('sewingpinPadTop') ?? 118), padBottom = Math.max(0, sp('sewingpinPadBottom') ?? 66); // his max vertical padding
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('sewingpinCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('sewingpinCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - padTop;
@@ -3510,7 +3643,7 @@ function sewingPinLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const pinY = cardTop + 28 - (12 / 100) * pinH;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
-    padX, blockShift, rtl, pinX, pinY, pinW, pinH,
+    padX, padLeft, padRight, blockShift, rtl, pinX, pinY, pinW, pinH,
   };
 }
 
@@ -3556,16 +3689,20 @@ function paintSewingPinCard(l, fs) {
 // the text instead of splitting evenly, and the text stays 96px
 // below the paper top.
 function spiralLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 44;                    // his max horizontal padding
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('spiralPadLeft') ?? 44);
+  const padRight = Math.max(0, sp('spiralPadRight') ?? 44);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('spiralPadTop') ?? 96), padBottom = Math.max(0, sp('spiralPadBottom') ?? 175); // his max vertical padding
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('spiralCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('spiralCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   const cardTop = textTop - padTop;
@@ -3581,7 +3718,7 @@ function spiralLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const coilOverhang = (20.25 / 480) * cardW;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
-    padX, blockShift, rtl, coilOverhang,
+    padX, padLeft, padRight, blockShift, rtl, coilOverhang,
   };
 }
 
@@ -3645,17 +3782,21 @@ function paintSpiralCard(l, fs) {
 // centred in the BODY — the header sits above it — so the space above
 // the text is the header height plus the body padding.
 function windowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 44;                    // his max body padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('windowPadLeft') ?? 44);
+  const padRight = Math.max(0, sp('windowPadRight') ?? 44);
+  const padX = (padLeft + padRight) / 2;
   const headerH = 84;                 // his max header height
   const bodyPadTop = Math.max(0, sp('windowPadTop') ?? 48), bodyPadBottom = Math.max(0, sp('windowPadBottom') ?? 48); // his max body padding
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('windowCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('windowCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - headerH - bodyPadTop;
@@ -3668,7 +3809,7 @@ function windowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
-    padX, headerH, blockShift, rtl,
+    padX, padLeft, padRight, headerH, blockShift, rtl,
   };
 }
 
@@ -3737,20 +3878,24 @@ function paintWindowCard(l, fs) {
 // evenly between the top of the header and the bottom of the body, so
 // the text stays centred in the body.
 function splitWindowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 44;                    // his max body padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('splitWindowPadLeft') ?? 44);
+  const padRight = Math.max(0, sp('splitWindowPadRight') ?? 44);
+  const padX = (padLeft + padRight) / 2;
   const headerH = 74;                 // his max header height
   const headerR = 26;                 // his max header radius
   const gap = 12;                     // his max gap between header and body
   const bodyPadTop = Math.max(0, sp('splitWindowPadTop') ?? 46), bodyPadBottom = Math.max(0, sp('splitWindowPadBottom') ?? 46); // his max body padding
   const bodyR = 28;                   // his max body radius
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('splitWindowCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('splitWindowCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let bodyTop = textTop - bodyPadTop;
@@ -3770,7 +3915,7 @@ function splitWindowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
     x: cardX, y: headerTop, w: cardW, h: bodyBottom - headerTop,
     headerY: headerTop, headerH, headerR,
     bodyY: bodyTop, bodyH: bodyBottom - bodyTop, bodyR,
-    padX, gap, blockShift, rtl,
+    padX, padLeft, padRight, gap, blockShift, rtl,
   };
 }
 
@@ -3820,17 +3965,21 @@ function paintSplitWindowCard(l, fs) {
 // centred in the BODY — the header sits above it — so the space above
 // the text is the header height plus the body padding.
 function macWindowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 44;                    // his max body padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('macWindowPadLeft') ?? 44);
+  const padRight = Math.max(0, sp('macWindowPadRight') ?? 44);
+  const padX = (padLeft + padRight) / 2;
   const headerH = 72;                 // his max header height
   const bodyPadTop = Math.max(0, sp('macWindowPadTop') ?? 48), bodyPadBottom = Math.max(0, sp('macWindowPadBottom') ?? 48); // his max body padding
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('macWindowCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('macWindowCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - headerH - bodyPadTop;
@@ -3843,7 +3992,7 @@ function macWindowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
-    padX, headerH, blockShift, rtl,
+    padX, padLeft, padRight, headerH, blockShift, rtl,
   };
 }
 
@@ -3901,18 +4050,22 @@ const HEART_PATH = 'M12 21.2 C10.5 18.9 4.2 14.2 4.2 8.8 C4.2 5.7 6.5 3.5 9.1 3.
 // hangs BELOW the text instead of above it: the text is centred in
 // the body (the upper part), then the divider and the footer follow.
 function heartLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 40;                    // his max body padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('heartPadLeft') ?? 40);
+  const padRight = Math.max(0, sp('heartPadRight') ?? 40);
+  const padX = (padLeft + padRight) / 2;
   const bodyPadTop = Math.max(0, sp('heartPadTop') ?? 44), bodyPadBottom = Math.max(0, sp('heartPadBottom') ?? 44); // his max body padding
   const dividerH = 4;                 // his max divider height
   const footerH = 48;                 // his max footer height
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('heartCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('heartCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - bodyPadTop;
@@ -3925,7 +4078,7 @@ function heartLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 20,
-    padX, dividerH, footerH, blockShift, rtl,
+    padX, padLeft, padRight, dividerH, footerH, blockShift, rtl,
   };
 }
 
@@ -3969,16 +4122,20 @@ function paintHeartCard(l, fs) {
 // text is centred in the panel; the time label sits in the top-right
 // corner.
 function glassNotifLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 46;                    // his max card padding left/right
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, sp('glassNotifPadLeft') ?? 46);
+  const padRight = Math.max(0, sp('glassNotifPadRight') ?? 46);
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, sp('glassNotifPadTop') ?? 94), padBottom = Math.max(0, sp('glassNotifPadBottom') ?? 72);  // his max card padding top/bottom
   const bodyH = blockH;
-  const cardW = Math.max(maxLw + padX * 2, sp('glassNotifCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('glassNotifCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - bodyH / 2;
   const textBottom = h / 2 + bodyH / 2;
   let cardTop = textTop - padTop;
@@ -3991,7 +4148,7 @@ function glassNotifLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4037,16 +4194,17 @@ function paintGlassNotifCard(l, fs) {
 // blinkCursor animation was never applicable to the static
 // canvas/export.
 function typedInputLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 48, padTop = Math.max(0, sp('typedPadTop') ?? 26), padBottom = Math.max(0, sp('typedPadBottom') ?? 26); // his max card padding
+  const padLeft = Math.max(0, sp('typedPadLeft') ?? 48), padRight = Math.max(0, sp('typedPadRight') ?? 48); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('typedPadTop') ?? 26), padBottom = Math.max(0, sp('typedPadBottom') ?? 26); // his max card padding
   const borderW = 5.5;                            // his max border width
   const shadowDepth = 15;                         // his deepest shadow layer
-  const cardW = Math.max(maxLw + padX * 2, sp('typedCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('typedCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4058,7 +4216,7 @@ function typedInputLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 28,
-    padX, borderW, shadowDepth, blockShift, rtl,
+    padX, padLeft, padRight, borderW, shadowDepth, blockShift, rtl,
   };
 }
 
@@ -4095,15 +4253,16 @@ function paintTypedCard(l, fs) {
 // shape as the other card layouts (fixed px padding, height floor
 // splitting evenly, blockShift following the alignment buttons).
 function cornerCardLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 56, padTop = Math.max(0, sp('cornerPadTop') ?? 48), padBottom = Math.max(0, sp('cornerPadBottom') ?? 48); // his max card padding
+  const padLeft = Math.max(0, sp('cornerPadLeft') ?? 56), padRight = Math.max(0, sp('cornerPadRight') ?? 56); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('cornerPadTop') ?? 48), padBottom = Math.max(0, sp('cornerPadBottom') ?? 48); // his max card padding
   const borderW = 4;                             // his border width
-  const cardW = Math.max(maxLw + padX * 2, sp('cornerCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('cornerCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4115,7 +4274,7 @@ function cornerCardLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 48,
-    padX, borderW, blockShift, rtl,
+    padX, padLeft, padRight, borderW, blockShift, rtl,
   };
 }
 
@@ -4180,14 +4339,15 @@ function paintCornerCard(l, fs) {
 // buttons). Width is his 580px by default; the height floor is 0,
 // so the card hugs the text vertically (the 2026-11-24 CardH rule).
 function metallicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 38, padTop = Math.max(0, sp('metallicPadTop') ?? 50), padBottom = Math.max(0, sp('metallicPadBottom') ?? 50); // his max card padding
-  const cardW = Math.max(maxLw + padX * 2, sp('metallicCardW'));
+  const padLeft = Math.max(0, sp('metallicPadLeft') ?? 38), padRight = Math.max(0, sp('metallicPadRight') ?? 38); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('metallicPadTop') ?? 50), padBottom = Math.max(0, sp('metallicPadBottom') ?? 50); // his max card padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('metallicCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4199,7 +4359,7 @@ function metallicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 46,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4266,14 +4426,15 @@ function paintMetallicCard(l, fs) {
 // min-height (240) is below the content height at the default size,
 // so it binds nothing — the CardH knob is the floor.
 function floatShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 48, padTop = Math.max(0, sp('floatShadowPadTop') ?? 54), padBottom = Math.max(0, sp('floatShadowPadBottom') ?? 54); // his max card padding
-  const cardW = Math.max(maxLw + padX * 2, sp('floatShadowCardW'));
+  const padLeft = Math.max(0, sp('floatShadowPadLeft') ?? 48), padRight = Math.max(0, sp('floatShadowPadRight') ?? 48); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('floatShadowPadTop') ?? 54), padBottom = Math.max(0, sp('floatShadowPadBottom') ?? 54); // his max card padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('floatShadowCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4285,7 +4446,7 @@ function floatShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 38,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4337,14 +4498,15 @@ function paintFloatShadowCard(l, fs) {
 // min-height (255) is below the content height at the default size,
 // so it binds nothing — the CardH knob is the floor.
 function glowframeLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 52, padTop = Math.max(0, sp('glowframePadTop') ?? 60), padBottom = Math.max(0, sp('glowframePadBottom') ?? 60); // his max card padding
-  const cardW = Math.max(maxLw + padX * 2, sp('glowframeCardW'));
+  const padLeft = Math.max(0, sp('glowframePadLeft') ?? 52), padRight = Math.max(0, sp('glowframePadRight') ?? 52); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('glowframePadTop') ?? 60), padBottom = Math.max(0, sp('glowframePadBottom') ?? 60); // his max card padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('glowframeCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4356,7 +4518,7 @@ function glowframeLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4503,14 +4665,15 @@ function paintGlowframeCard(l, fs) {
 // equals the content height at the default size, so it binds
 // nothing — the CardH knob is the floor.
 function cornerGlowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 56, padTop = Math.max(0, sp('cornerGlowPadTop') ?? 68), padBottom = Math.max(0, sp('cornerGlowPadBottom') ?? 68); // his max card padding
-  const cardW = Math.max(maxLw + padX * 2, sp('cornerGlowCardW'));
+  const padLeft = Math.max(0, sp('cornerGlowPadLeft') ?? 56), padRight = Math.max(0, sp('cornerGlowPadRight') ?? 56); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('cornerGlowPadTop') ?? 68), padBottom = Math.max(0, sp('cornerGlowPadBottom') ?? 68); // his max card padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('cornerGlowCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4522,7 +4685,7 @@ function cornerGlowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4612,14 +4775,15 @@ function paintCornerGlowCard(l, fs) {
 // max-width 720px is only a cap); the height floor is 0, so the
 // card hugs the text vertically (the 2026-11-24 CardH rule).
 function vibrantLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 28, padTop = Math.max(0, sp('vibrantPadTop') ?? 72), padBottom = Math.max(0, sp('vibrantPadBottom') ?? 72); // his max card padding
-  const cardW = Math.max(maxLw + padX * 2, sp('vibrantCardW'));
+  const padLeft = Math.max(0, sp('vibrantPadLeft') ?? 28), padRight = Math.max(0, sp('vibrantPadRight') ?? 28); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('vibrantPadTop') ?? 72), padBottom = Math.max(0, sp('vibrantPadBottom') ?? 72); // his max card padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('vibrantCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4631,7 +4795,7 @@ function vibrantLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 34,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4680,14 +4844,15 @@ function paintVibrantCard(l, fs) {
 // default; the height floor is 0, so the card hugs the text
 // vertically (the 2026-11-24 CardH rule).
 function glossyLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 56, padTop = Math.max(0, sp('glossPadTop') ?? 76), padBottom = Math.max(0, sp('glossPadBottom') ?? 76); // his max card padding
-  const cardW = Math.max(maxLw + padX * 2, sp('glossCardW'));
+  const padLeft = Math.max(0, sp('glossPadLeft') ?? 56), padRight = Math.max(0, sp('glossPadRight') ?? 56); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('glossPadTop') ?? 76), padBottom = Math.max(0, sp('glossPadBottom') ?? 76); // his max card padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('glossCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4699,7 +4864,7 @@ function glossyLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4764,14 +4929,15 @@ function paintGlossyCard(l, fs) {
 // 700px by default; the height floor is 0, so the card hugs the
 // text vertically (the 2026-11-24 CardH rule).
 function gradShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 54, padTop = Math.max(0, sp('gradShadowPadTop') ?? 74), padBottom = Math.max(0, sp('gradShadowPadBottom') ?? 74); // his max card padding
-  const cardW = Math.max(maxLw + padX * 2, sp('gradShadowCardW'));
+  const padLeft = Math.max(0, sp('gradShadowPadLeft') ?? 54), padRight = Math.max(0, sp('gradShadowPadRight') ?? 54); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('gradShadowPadTop') ?? 74), padBottom = Math.max(0, sp('gradShadowPadBottom') ?? 74); // his max card padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('gradShadowCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4783,7 +4949,7 @@ function gradShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 32,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4840,16 +5006,20 @@ function paintGradShadowCard(l, fs) {
 // is clamped to 0 here, so the card can never shrink below the
 // text and roundRect never sees a negative height.
 function shinyGoldLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 0.30 * fs;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, (sp('goldPadLeft') ?? 30) / 100) * fs;
+  const padRight = Math.max(0, (sp('goldPadRight') ?? 30) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('goldPadTop') ?? 46) / 100) * fs;
   const padBottom = Math.max(0, (sp('goldPadBottom') ?? 50) / 100) * fs;
-  const cardW = Math.max(maxLw + padX * 2, sp('goldCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('goldCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4861,7 +5031,7 @@ function shinyGoldLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0.28 * fs,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -4931,16 +5101,20 @@ function paintShinyGoldCard(l, fs) {
 // bottom -0.68em, height 0.92em); the layout returns the CARD rect,
 // and shadowBelow tells the picker how much room the shadow needs.
 function liftedShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 1.28 * fs;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, (sp('liftedPadLeft') ?? 128) / 100) * fs;
+  const padRight = Math.max(0, (sp('liftedPadRight') ?? 128) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('liftedPadTop') ?? 74) / 100) * fs;
   const padBottom = Math.max(0, (sp('liftedPadBottom') ?? 78) / 100) * fs;
-  const cardW = Math.max(maxLw + padX * 2, sp('liftedCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('liftedCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -4952,7 +5126,7 @@ function liftedShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0.32 * fs,
-    padX, blockShift, rtl, shadowBelow: 0.68 * fs,
+    padX, padLeft, padRight, blockShift, rtl, shadowBelow: 0.68 * fs,
   };
 }
 
@@ -5050,16 +5224,20 @@ function paintLiftedShadowCard(l, fs) {
 // his 0.62em/0.66em), like the other card styles. No rounded corners
 // (his borderRadius is 0), so the layout returns r 0.
 function sheenRibbonLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 0.95 * fs;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, (sp('sheenPadLeft') ?? 95) / 100) * fs;
+  const padRight = Math.max(0, (sp('sheenPadRight') ?? 95) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('sheenPadTop') ?? 62) / 100) * fs;
   const padBottom = Math.max(0, (sp('sheenPadBottom') ?? 66) / 100) * fs;
-  const cardW = Math.max(maxLw + padX * 2, sp('sheenCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('sheenCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -5071,7 +5249,7 @@ function sheenRibbonLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -5117,16 +5295,20 @@ function paintSheenRibbonCard(l, fs) {
 // font size, defaults 82/86 = his 0.82em/0.86em), like the other card
 // styles.
 function emeraldGradientLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 1.38 * fs;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, (sp('emeraldPadLeft') ?? 138) / 100) * fs;
+  const padRight = Math.max(0, (sp('emeraldPadRight') ?? 138) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('emeraldPadTop') ?? 82) / 100) * fs;
   const padBottom = Math.max(0, (sp('emeraldPadBottom') ?? 86) / 100) * fs;
-  const cardW = Math.max(maxLw + padX * 2, sp('emeraldCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('emeraldCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -5138,7 +5320,7 @@ function emeraldGradientLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true)
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0.42 * fs,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -5210,14 +5392,15 @@ function paintEmeraldGradientCard(l, fs) {
 // frame width follows the text (floored at the card width), so s is
 // 1 whenever the frame is at least 720 wide.
 function slantQuoteLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 52, padTop = Math.max(0, sp('slantQuotePadTop') ?? 44), padBottom = Math.max(0, sp('slantQuotePadBottom') ?? 44); // his max frame padding
-  const cardW = Math.max(maxLw + padX * 2, sp('slantQuoteCardW'));
+  const padLeft = Math.max(0, sp('slantQuotePadLeft') ?? 52), padRight = Math.max(0, sp('slantQuotePadRight') ?? 52); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('slantQuotePadTop') ?? 44), padBottom = Math.max(0, sp('slantQuotePadBottom') ?? 44); // his max frame padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('slantQuoteCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -5240,7 +5423,7 @@ function slantQuoteLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const botGapStart = Math.max(pad + r + 18 * s, botGapEnd - gapW);
   return {
     x: cardX, y: cardTop, w, h: fh, r,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
     s, sw, pad, shortSeg, gapW,
     topGapStart, topGapEnd, botGapStart, botGapEnd,
     // Quote-pair centres, in frame-local coords: the top pair
@@ -5336,14 +5519,15 @@ function paintSlantQuoteCard(l, fs) {
 // the full block width; the text sits between them with his vertical
 // padding on both sides.
 function doubleLineLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 28, padTop = Math.max(0, sp('doubleLinePadTop') ?? 68), padBottom = Math.max(0, sp('doubleLinePadBottom') ?? 68); // his max text padding
-  const cardW = Math.max(maxLw + padX * 2, sp('doubleLineCardW'));
+  const padLeft = Math.max(0, sp('doubleLinePadLeft') ?? 28), padRight = Math.max(0, sp('doubleLinePadRight') ?? 28); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('doubleLinePadTop') ?? 68), padBottom = Math.max(0, sp('doubleLinePadBottom') ?? 68); // his max text padding
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('doubleLineCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -5355,7 +5539,7 @@ function doubleLineLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop,
-    padX, blockShift, rtl,
+    padX, padLeft, padRight, blockShift, rtl,
   };
 }
 
@@ -5385,14 +5569,15 @@ function paintDoubleLine(l, fs) {
 // at the block's left and right edges, inside the block width; the
 // text sits in the middle with his padding on both sides.
 function yellowBarsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const barW = 24, padX = 48, padTop = Math.max(0, sp('yellowBarsPadTop') ?? 80), padBottom = Math.max(0, sp('yellowBarsPadBottom') ?? 80); // his max values
-  const cardW = Math.max(maxLw + padX * 2 + barW * 2, sp('yellowBarsCardW'));
+  const barW = 24, padLeft = Math.max(0, sp('yellowBarsPadLeft') ?? 48), padRight = Math.max(0, sp('yellowBarsPadRight') ?? 48); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('yellowBarsPadTop') ?? 80), padBottom = Math.max(0, sp('yellowBarsPadBottom') ?? 80); // his max values
+  const cardW = Math.max(maxLw + padLeft + padRight + barW * 2, sp('yellowBarsCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - barW * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - barW * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -5404,7 +5589,7 @@ function yellowBarsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop,
-    padX, barW, blockShift, rtl,
+    padX, padLeft, padRight, barW, blockShift, rtl,
   };
 }
 
@@ -5446,15 +5631,16 @@ function paintYellowBars(l, fs) {
 // min-height floor (his minHeight clamp max: 34vw of the 1080
 // canvas, capped at 275).
 function gradbarsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const barW = 15, padX = 44, padTop = Math.max(0, sp('gradbarsPadTop') ?? 54), padBottom = Math.max(0, sp('gradbarsPadBottom') ?? 54); // his max values
+  const barW = 15, padLeft = Math.max(0, sp('gradbarsPadLeft') ?? 44), padRight = Math.max(0, sp('gradbarsPadRight') ?? 44); // card padding left/right (knobs, 2026-11-24)
+  const padX = (padLeft + padRight) / 2, padTop = Math.max(0, sp('gradbarsPadTop') ?? 54), padBottom = Math.max(0, sp('gradbarsPadBottom') ?? 54); // his max values
   const minH = 275; // his min-height clamp max
-  const cardW = Math.max(maxLw + padX * 2 + barW * 2, sp('gradbarsCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight + barW * 2, sp('gradbarsCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - padX * 2 - barW * 2 - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft + padRight - barW * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -5468,7 +5654,7 @@ function gradbarsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop,
-    padX, barW, blockShift, rtl,
+    padX, padLeft, padRight, barW, blockShift, rtl,
   };
 }
 
@@ -5502,15 +5688,21 @@ function paintGradbars(l, fs) {
 // max-width 720px is only a cap — the hug width is smaller for
 // short text, and the width knob can widen it).
 function sidelineLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const gap = 56, padTop = Math.max(0, sp('sidelinePadTop') ?? 66), padBottom = Math.max(0, sp('sidelinePadBottom') ?? 66); // his max values
+  const padLeft = Math.max(0, sp('sidelinePadLeft') ?? 0); // new left space (the text hugged the block's left edge before)
+  const padRight = Math.max(0, sp('sidelinePadRight') ?? 56); // text -> line gap (was the fixed gap)
+  const padTop = Math.max(0, sp('sidelinePadTop') ?? 66), padBottom = Math.max(0, sp('sidelinePadBottom') ?? 66); // his max values
   const lineW = sp('sidelineLineW') ?? 3.5;
-  const cardW = Math.max(maxLw + gap + lineW, sp('sidelineCardW'));
+  const cardW = Math.max(maxLw + padLeft + padRight + lineW, sp('sidelineCardW'));
   const cardX = cx - cardW / 2;
-  const slack = Math.max(0, cardW - gap - lineW - maxLw) / 2;
-  const blockShift = state.align === 'right' ? slack
-    : state.align === 'left' ? -slack
-    : state.align === 'justify' ? (rtl ? slack : -slack)
-    : 0;
+  const slack = Math.max(0, cardW - padLeft - padRight - lineW - maxLw) / 2;
+  // The shift is relative to the DEFAULT asymmetry (left 0, right
+  // 56): at defaults it is 0 and the render is unchanged; each knob
+  // then moves only its own side's space. (Every other style has
+  // equal defaults, so the plain (padLeft - padRight)/2 applies.)
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight + 56) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight + 56) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight + 56) / 2
+    : (padLeft - padRight + 56) / 2;
   const textTop = h / 2 - blockH / 2;
   const textBottom = h / 2 + blockH / 2;
   let cardTop = textTop - padTop;
@@ -5522,7 +5714,7 @@ function sidelineLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   cardBottom += extraH / 2;
   return {
     x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop,
-    gap, lineW, blockShift, rtl,
+    padLeft, padRight, lineW, blockShift, rtl,
   };
 }
 
@@ -5550,19 +5742,25 @@ function paintSideline(l, fs) {
 // (see paintMsgbubble): a 34x36 shape overlapping the bottom-right
 // corner, its tip poking ~0.17x right of the bubble.
 function msgbubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = fs * 0.5;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, (sp('msgbubblePadLeft') ?? 50) / 100) * fs;
+  const padRight = Math.max(0, (sp('msgbubblePadRight') ?? 50) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('msgbubblePadTop') ?? 40) / 100) * fs;
   const padBottom = Math.max(0, (sp('msgbubblePadBottom') ?? 40) / 100) * fs;
-  const w = Math.max(maxLw + padX * 2, Math.min(1080 * 0.88, 620));
+  const w = Math.max(maxLw + padLeft + padRight, Math.min(1080 * 0.88, 620));
   const hh = blockH + padTop + padBottom;
   const r = Math.min(fs * (sp('msgbubbleR') / 100), hh / 2, w / 2);
   // The bubble stays centred on the canvas whatever the alignment is;
   // only the text inside it moves (draw() anchors the lines within
   // the bubble's inner width).
-  const blockShift = 0;
+  // The shift moves only the text anchor (blockCx in draw()): the
+  // bubble itself stays centred, so its x below no longer adds blockShift.
+  const blockShift = (padLeft - padRight) / 2;
   return {
-    x: cx - w / 2 + blockShift, y: h / 2 - blockH / 2 - padTop, w, h: hh, r,
-    padX, padTop, padBottom, blockShift,
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop, w, h: hh, r,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
     tailOut: fs * 0.17, tailDrop: fs * 0.01, rtl,
   };
 }
@@ -5625,19 +5823,25 @@ function paintMsgbubble(l, fs) {
 // whose top edge sits 16u above the bubble's bottom and whose tip
 // hangs 18u below it, 25u left of the bubble's right edge.
 function dropbubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = fs * 0.5;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, (sp('dropbubblePadLeft') ?? 50) / 100) * fs;
+  const padRight = Math.max(0, (sp('dropbubblePadRight') ?? 50) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('dropbubblePadTop') ?? 40) / 100) * fs;
   const padBottom = Math.max(0, (sp('dropbubblePadBottom') ?? 40) / 100) * fs;
-  const w = Math.max(maxLw + padX * 2, Math.min(1080 * 0.86, 560));
+  const w = Math.max(maxLw + padLeft + padRight, Math.min(1080 * 0.86, 560));
   const hh = blockH + padTop + padBottom;
   const r = Math.min(fs * (sp('dropbubbleR') / 100), hh / 2, w / 2);
   // The bubble stays centred on the canvas whatever the alignment is;
   // only the text inside it moves (draw() anchors the lines within
   // the bubble's inner width).
-  const blockShift = 0;
+  // The shift moves only the text anchor (blockCx in draw()): the
+  // bubble itself stays centred, so its x below no longer adds blockShift.
+  const blockShift = (padLeft - padRight) / 2;
   return {
-    x: cx - w / 2 + blockShift, y: h / 2 - blockH / 2 - padTop, w, h: hh, r,
-    padX, padTop, padBottom, blockShift,
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop, w, h: hh, r,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
     tailOut: 0, tailDrop: fs * 0.18, rtl,
   };
 }
@@ -5928,18 +6132,24 @@ function getPinImage(pinColor) {
 // Reza 2026-11-22 22:09) — the text aligns inside it via the band's
 // inner width (see alignW in draw()).
 function brushLayout(fs, maxLw, blockH, lineHeight, h, cx) {
-  const padX = fs * 0.6;
+  // Side padding: two knobs (2026-11-24), defaults = the old symmetric
+  // padding; padX stays as their average for the symmetric chrome.
+  const padLeft = Math.max(0, (sp('brushPadLeft') ?? 60) / 100) * fs;
+  const padRight = Math.max(0, (sp('brushPadRight') ?? 60) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
   const padTop = Math.max(0, (sp('brushPadTop') ?? 55) / 100) * fs;
   const padBottom = Math.max(0, (sp('brushPadBottom') ?? 55) / 100) * fs;
-  const w = Math.min(Math.max(maxLw + padX * 2, 640), 1026);
+  const w = Math.min(Math.max(maxLw + padLeft + padRight, 640), 1026);
   const hh = blockH + padTop + padBottom;
   // The band stays centred on the canvas whatever the alignment is;
   // only the text inside it moves (draw() anchors the lines within
   // the band's inner width).
-  const blockShift = 0;
+  // The shift moves only the text anchor (blockCx in draw()): the
+  // band itself stays centred, so its x below no longer adds blockShift.
+  const blockShift = (padLeft - padRight) / 2;
   return {
-    x: cx - w / 2 + blockShift, y: h / 2 - blockH / 2 - padTop, w, h: hh,
-    padX, padTop, padBottom, blockShift,
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop, w, h: hh,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
   };
 }
 function paintBrush(l, fs) {
@@ -6333,7 +6543,12 @@ function draw() {
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
   const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || sheenRibbonL || emeraldL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
-  const blockCx = frameL ? cx + frameL.blockShift : cx;
+  // Box styles (squarebox/lightbox/gradline) have no frame layout:
+  // their side pads are read here so the text centres in the box's
+  // inner width, and the box paint below reuses them.
+  const boxPadLeft = (state.style === 'squarebox' || state.style === 'lightbox' || state.style === 'gradline') ? Math.max(0, sp(state.style + 'PadLeft') ?? 72) : 0;
+  const boxPadRight = (state.style === 'squarebox' || state.style === 'lightbox' || state.style === 'gradline') ? Math.max(0, sp(state.style + 'PadRight') ?? 72) : 0;
+  const blockCx = frameL ? cx + frameL.blockShift : cx + (boxPadLeft - boxPadRight) / 2;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
   // the align buttons move only the text inside the block; the block
@@ -6341,7 +6556,7 @@ function draw() {
   // the three call sites below (line anchor, caret, editor) are
   // unchanged for them.
   const bubbleL = msgbubbleL || dropbubbleL || brushL || quotesL;
-  const alignW = bubbleL ? bubbleL.w - bubbleL.padX * 2 : maxLw;
+  const alignW = bubbleL ? bubbleL.w - (bubbleL.padLeft ?? bubbleL.padX) - (bubbleL.padRight ?? bubbleL.padX) : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
     hw: frameL ? frameL.w / 2 : maxLw / 2, hh: frameL ? frameL.h / 2 : blockH / 2,
@@ -6389,12 +6604,14 @@ function draw() {
   // glass/quotes, like the reference. The text itself is painted
   // per-line below; each box has its own colour/radius knobs.
   if (state.style === 'squarebox' || state.style === 'lightbox' || state.style === 'gradline') {
-    const pad = 72;
     // Top/bottom space inside the box (2026-11-24): his pad/2 = 36px
     // each side. squarebox/lightbox/gradline each have their own knobs.
     const padTop = Math.max(0, sp(state.style + 'PadTop') ?? 36);
     const padBottom = Math.max(0, sp(state.style + 'PadBottom') ?? 36);
-    const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
+    // Side space (2026-11-24): his pad = 72px each side — the knobs
+    // are boxPadLeft/boxPadRight, read above next to blockCx so the
+    // text centres in the box's inner width.
+    const bw = Math.max(...lines.map((l) => lineWidth(l))) + boxPadLeft + boxPadRight;
     const top = y - lineHeight / 2 - padTop;
     const r = state.style === 'squarebox' ? sp('squareboxR') : state.style === 'lightbox' ? sp('lightboxR') : sp('gradlineR');
     ctx.save();
@@ -9945,7 +10162,7 @@ function paintMsgbubbleSamples() {
         const blockCx = 540 + msgbubbleL.blockShift;
         // The sample's text aligns inside the bubble too (same alignW
         // rule as draw()).
-        const alignW = msgbubbleL.w - msgbubbleL.padX * 2;
+        const alignW = msgbubbleL.w - msgbubbleL.padLeft - msgbubbleL.padRight;
         // Fit the whole bubble INTO the sample canvas, centred, keeping
         // the aspect — a uniform scale, so nothing is squashed. The fit
         // counts the tail, which pokes out past the bubble's right and
@@ -10014,7 +10231,7 @@ function paintDropbubbleSamples() {
         const blockCx = 540 + dropbubbleL.blockShift;
         // The sample's text aligns inside the bubble too (same alignW
         // rule as draw()).
-        const alignW = dropbubbleL.w - dropbubbleL.padX * 2;
+        const alignW = dropbubbleL.w - dropbubbleL.padLeft - dropbubbleL.padRight;
         // Fit the whole bubble INTO the sample canvas, centred, keeping
         // the aspect — a uniform scale, so nothing is squashed. The fit
         // counts the tail, which hangs below the bottom edge, so it is
@@ -10084,7 +10301,7 @@ function paintBrushSamples() {
         const blockCx = 540 + brushL.blockShift;
         // The sample's text aligns inside the band too (same alignW
         // rule as draw()).
-        const alignW = brushL.w - brushL.padX * 2;
+        const alignW = brushL.w - brushL.padLeft - brushL.padRight;
         // Fit the whole band INTO the sample canvas, centred, keeping
         // the aspect — a uniform scale, so nothing is squashed. The fit
         // counts the shadow overhang (right + down), so it is never
