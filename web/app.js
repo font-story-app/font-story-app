@@ -292,7 +292,7 @@ const STYLE_CONTROLS = {
   tweet: [
     { key: 'tweetTextSize', label: 'اندازه فونت متن', type: 'range', min: 50, max: 150, step: 5, def: 100, unit: '٪' },
     { key: 'tweetCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'tweetCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'tweetCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'tweetName', label: 'نام', type: 'text', def: 'FontStory', max: 30 },
     { key: 'tweetHandle', label: 'هندل', type: 'text', def: '@fontstory', max: 30 },
     { key: 'tweetNameGap', label: 'فاصله نام و آیدی', type: 'range', min: 0, max: 60, step: 2, def: 10, unit: 'px' },
@@ -307,7 +307,7 @@ const STYLE_CONTROLS = {
   // white content area below. Colours sampled from his screenshot.
   note: [
     { key: 'noteCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'noteCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'noteCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'noteC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E5E5EA' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
@@ -318,7 +318,7 @@ const STYLE_CONTROLS = {
   // from his screenshot.
   message: [
     { key: 'messageCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'messageCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'messageCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'messageC', label: 'رنگ پس‌زمینه متن', type: 'color', def: '#E5E5EA' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
@@ -361,7 +361,7 @@ const STYLE_CONTROLS = {
   // top-right corner and bold text in the middle.
   pin: [
     { key: 'pinCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'pinCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'pinCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'pinCardC', label: 'رنگ کارت', type: 'color', def: '#FFFFFF' },
     { key: 'pinC', label: 'رنگ پونز', type: 'color', def: '#df1217' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -372,7 +372,7 @@ const STYLE_CONTROLS = {
   // bar with times, play controls, and a volume row.
   music: [
     { key: 'musicCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'musicCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'musicCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'musicCardC', label: 'رنگ کارت', type: 'color', def: '#1a040d' },
     { key: 'musicCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 48, unit: '٪' },
     { key: 'musicSubtitle', label: 'زیرعنوان', type: 'text', def: 'Music by Font Story', max: 40 },
@@ -388,7 +388,7 @@ const STYLE_CONTROLS = {
   // black text with a thick pink outline (his two-layer trick).
   frame: [
     { key: 'frameCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'frameCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'frameCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'frameCardC', label: 'رنگ کارت', type: 'color', def: '#FFFFFF' },
     { key: 'frameAccent', label: 'رنگ قاب و خط دور', type: 'color', def: '#ff96aa' },
     { key: 'frameBorder', label: 'ضخامت قاب', type: 'range', min: 0, max: 60, step: 1, def: 26, unit: 'px' },
@@ -401,7 +401,7 @@ const STYLE_CONTROLS = {
   // top-left corner and a hand-drawn line near the bottom.
   bell: [
     { key: 'bellCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'bellCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'bellCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'bellCardC', label: 'رنگ کارت', type: 'color', def: '#343b40' },
     { key: 'bellCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 72, unit: '٪' },
     { key: 'bellBadgeC', label: 'رنگ نشان', type: 'color', def: '#f3dcd3' },
@@ -415,7 +415,7 @@ const STYLE_CONTROLS = {
   // carrying three pale hearts at the bottom.
   hearts: [
     { key: 'heartsCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'heartsCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'heartsCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'heartsCardC', label: 'رنگ کارت', type: 'color', def: '#3b0b1f' },
     { key: 'heartsStripC', label: 'رنگ نوار', type: 'color', def: '#a3b2c0' },
     { key: 'heartsHeartC', label: 'رنگ قلب‌ها', type: 'color', def: '#f3d7ca' },
@@ -428,7 +428,7 @@ const STYLE_CONTROLS = {
   // with coral pink text.
   doubleFrame: [
     { key: 'doubleFrameCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'doubleFrameCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 350, unit: 'px' },
+    { key: 'doubleFrameCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'doubleFrameOuterC', label: 'رنگ قاب بیرونی', type: 'color', def: '#ffffff' },
     { key: 'doubleFrameInnerC', label: 'رنگ قاب میانی', type: 'color', def: '#333333' },
     { key: 'doubleFrameBgC', label: 'رنگ پس‌زمینه', type: 'color', def: '#2d0616' },
@@ -443,7 +443,7 @@ const STYLE_CONTROLS = {
   // header, and the text centred below.
   msgnotif: [
     { key: 'msgnotifCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'msgnotifCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'msgnotifCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'msgnotifCardC', label: 'رنگ کارت', type: 'color', def: '#e3e4e6' },
     { key: 'msgnotifHeaderC', label: 'رنگ سربرگ', type: 'color', def: '#55575b' },
     { key: 'msgnotifTitle', label: 'عنوان برنامه', type: 'text', def: 'MESSAGE', max: 20 },
@@ -457,7 +457,7 @@ const STYLE_CONTROLS = {
   // perimeter, so it closes seamlessly at the corners.
   stitched: [
     { key: 'stitchedCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'stitchedCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'stitchedCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'stitchedCardC', label: 'رنگ کارت', type: 'color', def: '#da778b' },
     { key: 'stitchedCardO', label: 'غلظت کارت', type: 'range', min: 10, max: 100, step: 1, def: 94, unit: '٪' },
     { key: 'stitchedStitchC', label: 'رنگ دوخت', type: 'color', def: '#71333d' },
@@ -470,7 +470,7 @@ const STYLE_CONTROLS = {
   // passing through two holes in the card, a pointed tip on the right.
   sewingpin: [
     { key: 'sewingpinCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'sewingpinCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'sewingpinCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'sewingpinCardC', label: 'رنگ کارت', type: 'color', def: '#b2a148' },
     { key: 'sewingpinBorderC', label: 'رنگ قاب', type: 'color', def: '#ffffff' },
     { key: 'sewingpinHeadC', label: 'رنگ سر سنجاق', type: 'color', def: '#e34a59' },
@@ -483,7 +483,7 @@ const STYLE_CONTROLS = {
   // and diving into punched holes below it.
   spiral: [
     { key: 'spiralCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'spiralCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'spiralCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'spiralPaperC', label: 'رنگ کاغذ', type: 'color', def: '#f9ad7b' },
     { key: 'spiralWireC', label: 'رنگ فنر و کادر', type: 'color', def: '#000000' },
     { key: 'spiralCoils', label: 'تعداد حلقه‌ها', type: 'range', min: 2, max: 24, step: 1, def: 14 },
@@ -496,7 +496,7 @@ const STYLE_CONTROLS = {
   // body with the text centred in it.
   windowcard: [
     { key: 'windowCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'windowCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'windowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'windowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#db977d' },
     { key: 'windowBodyC', label: 'رنگ بدنه', type: 'color', def: '#ffffff' },
     { key: 'windowIconC', label: 'رنگ آیکون‌ها', type: 'color', def: '#ffffff' },
@@ -509,7 +509,7 @@ const STYLE_CONTROLS = {
   // burgundy body card with the text centred in it.
   splitwindow: [
     { key: 'splitWindowCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'splitWindowCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'splitWindowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'splitWindowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#fcb181' },
     { key: 'splitWindowBodyC', label: 'رنگ بدنه', type: 'color', def: '#591f2b' },
     { key: 'splitWindowCircleC', label: 'رنگ دایره‌ها', type: 'color', def: '#000000' },
@@ -523,7 +523,7 @@ const STYLE_CONTROLS = {
   // in it.
   macwindow: [
     { key: 'macWindowCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'macWindowCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'macWindowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'macWindowHeaderC', label: 'رنگ نوار عنوان', type: 'color', def: '#683bb7' },
     { key: 'macWindowBodyC', label: 'رنگ بدنه', type: 'color', def: '#ffffff' },
     { key: 'macWindowDot1C', label: 'دایره سبز', type: 'color', def: '#4cb050' },
@@ -538,7 +538,7 @@ const STYLE_CONTROLS = {
   // filled heart icon centred in it.
   heart: [
     { key: 'heartCardW', label: 'عرض کارت', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'heartCardH', label: 'ارتفاع کارت', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'heartCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'heartCardC', label: 'رنگ کارت', type: 'color', def: '#eabcc5' },
     { key: 'heartAccentC', label: 'رنگ خط و قلب', type: 'color', def: '#415a6c' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -593,7 +593,7 @@ const STYLE_CONTROLS = {
   // shows through, like the quotes style.
   slantquote: [
     { key: 'slantQuoteCardW', label: 'عرض کادر', type: 'range', min: 400, max: 900, step: 10, def: 760, unit: 'px' },
-    { key: 'slantQuoteCardH', label: 'ارتفاع کادر', type: 'range', min: 300, max: 800, step: 10, def: 480, unit: 'px' },
+    { key: 'slantQuoteCardH', label: 'ارتفاع کادر', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'slantQuoteFrameC', label: 'رنگ کادر', type: 'color', def: '#ffffff' },
     { key: 'slantQuoteQuoteC', label: 'رنگ گیومه', type: 'color', def: '#ffffff' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
