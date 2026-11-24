@@ -340,6 +340,8 @@ const STYLE_PARAMS = {
   gradlineC2: { color: true },
   gradlineC3: { color: true },
   gradlineR: { min: 0, max: 60 },
+  gradlinePadTop: { min: 0, max: 300 },
+  gradlinePadBottom: { min: 0, max: 300 },
   squareboxC: { color: true },
   squareboxR: { min: 0, max: 60 },
   squareboxPadTop: { min: 0, max: 300 },

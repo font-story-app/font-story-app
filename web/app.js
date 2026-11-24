@@ -276,6 +276,8 @@ const STYLE_CONTROLS = {
     { key: 'gradlineC2', label: 'رنگ دوم گرادیان', type: 'color', def: '#E23C6E' },
     { key: 'gradlineC3', label: 'رنگ سوم گرادیان', type: 'color', def: '#FC732F' },
     { key: 'gradlineR', label: 'گردی کادر', type: 'range', min: 0, max: 60, step: 1, def: 36, unit: 'px' },
+    { key: 'gradlinePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
+    { key: 'gradlinePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 36, unit: 'px', editable: true },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -5986,8 +5988,7 @@ function draw() {
   if (state.style === 'squarebox' || state.style === 'lightbox' || state.style === 'gradline') {
     const pad = 72;
     // Top/bottom space inside the box (2026-11-24): his pad/2 = 36px
-    // each side. squarebox/lightbox have their own knobs; gradline
-    // shares this block and keeps the fixed 36 via the fallback.
+    // each side. squarebox/lightbox/gradline each have their own knobs.
     const padTop = Math.max(0, sp(state.style + 'PadTop') ?? 36);
     const padBottom = Math.max(0, sp(state.style + 'PadBottom') ?? 36);
     const bw = Math.max(...lines.map((l) => lineWidth(l))) + pad * 2;
