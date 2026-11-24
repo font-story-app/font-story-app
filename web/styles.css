@@ -514,6 +514,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-layeredgold {
   height: 60px;
 }
+/* Metallic gold preview: same miniature treatment as the layered gold. */
+.pick-card .sample canvas.sample-canvas-metallicgold {
+  height: 60px;
+}
 /* Slanted quote frame preview: same miniature treatment as the corner card. */
 .pick-card .sample canvas.sample-canvas-slantquote {
   height: 60px;
@@ -694,6 +698,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-sharphighlight { background: #e91e63; color: #fff; border-radius: 0; padding: 0 6px; }
 .sample-glassoutline { background: transparent; color: #fff; -webkit-text-stroke: 2px #000; text-shadow: 0 3px 6px rgba(0, 0, 0, 0.55); padding: 0 6px; }
 .sample-layeredgold { background: transparent; color: #ffea38; -webkit-text-stroke: 2px #080805; text-shadow: 0 3px 6px rgba(0, 0, 0, 0.55); padding: 0 6px; }
+.sample-metallicgold { background: linear-gradient(102deg, #9e912a 0%, #ac9e2e 20%, #d4c73b 42%, #fff148 59%, #d4c73b 78%, #9e912a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 3px 6px rgba(0, 0, 0, 0.55); padding: 0 6px; }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */

@@ -65,6 +65,7 @@ const STYLES = [
   { id: 'neon', label: 'نئون' },
   { id: 'glassoutline', label: 'شیشه دورخط' },
   { id: 'layeredgold', label: 'طلایی چندلایه' },
+  { id: 'metallicgold', label: 'طلایی متالیک' },
   { id: 'retro', label: 'رترو' },
   { id: 'shadow', label: 'سایه‌دار' },
   { id: 'glow', label: 'درخشان' },
@@ -947,6 +948,14 @@ const STYLE_CONTROLS = {
     { key: 'layeredgoldStrokeC', label: 'رنگ دورخط', type: 'color', def: '#080805' },
     { key: 'layeredgoldGrooveC', label: 'رنگ شیار', type: 'color', def: '#fef700' },
     { key: 'layeredgoldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 66, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  metallicgold: [
+    { key: 'metallicgoldHighlightC', label: 'رنگ هایلایت', type: 'color', def: '#fff148' },
+    { key: 'metallicgoldEdgeC', label: 'رنگ لبه', type: 'color', def: '#9e912a' },
+    { key: 'metallicgoldShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
+    { key: 'metallicgoldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 66, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2491,6 +2500,100 @@ const STYLE_PAINT = {
     ctx.save();
     ctx.drawImage(outer.c, ox, oy);
     ctx.drawImage(inner.c, ox, oy);
+    ctx.restore();
+  },
+  // Metallic gold text (Reza, 2026-11-24 — his
+  // createMetallicGoldTextStyle code): text-only, no card. The text
+  // is a horizontal metallic gradient clipped to the glyphs —
+  // edge 0%, soft edge 20%, mid 42%, highlight 59%, mid 78%,
+  // edge 100% along a 102deg axis (mostly horizontal, slightly
+  // downward) — with a two-layer soft shadow behind it, painted as
+  // two drawWords passes since canvas takes one shadow per pass
+  // (emerald precedent): a large soft shadow (offset 0.025em/
+  // 0.075em, blur 0.105em, alpha 0.64 x intensity) and a small
+  // tight one (offset 0/0.03em, blur 0.045em, alpha 0.34 x
+  // intensity). The mid colour mixes highlight and edge at 0.56
+  // (rgb 212,199,59) and the soft edge at 0.14 (rgb 172,158,46),
+  // both computed live from the knobs so they follow any colour
+  // change. The gradient spans the line's box including his
+  // 0.18em/0.1em span padding, exactly as his background-clip:text
+  // layer does. The رنگ tab's colour does not apply here — the
+  // gold gradient IS the text, like his code (transparent fill,
+  // gradient clipped to the glyphs). Shadow intensity default 66%
+  // follows his usage example (the signature says 0.65), the same
+  // rule he approved for layeredgold.
+  metallicgold: (line, cx, y, lw, fs) => {
+    const em = fs || 100;
+    const words = line.split(' ').filter((w) => w !== '');
+    if (!words.length) return;
+    const s = Math.max(0, Math.min(1, (sp('metallicgoldShadowO') ?? 66) / 100));
+    const highlightC = sp('metallicgoldHighlightC') || '#fff148';
+    const edgeC = sp('metallicgoldEdgeC') || '#9e912a';
+    const shadowC = sp('metallicgoldShadowC') || '#000000';
+    const [hr, hg, hb] = hexToRgb(highlightC);
+    const [er, eg, eb] = hexToRgb(edgeC);
+    const [sr, sg, sb] = hexToRgb(shadowC);
+    // His mixHex(highlight, edge, weight): highlight*weight +
+    // edge*(1-weight), rounded per channel.
+    const mix = (weight) => `rgb(${Math.round(hr * weight + er * (1 - weight))}, ${Math.round(hg * weight + eg * (1 - weight))}, ${Math.round(hb * weight + eb * (1 - weight))})`;
+    const midColor = mix(0.56);
+    const softEdgeColor = mix(0.14);
+    const visW = lineWidth(line) + lineJustifyGap * (words.length - 1);
+    const m = ctx.measureText(line);
+    const ascent = (m.actualBoundingBoxAscent > 0 ? m.actualBoundingBoxAscent : em * 0.78);
+    const descent = (m.actualBoundingBoxDescent > 0 ? m.actualBoundingBoxDescent : em * 0.38);
+    // His span padding: 0.18em top/bottom, 0.1em left/right.
+    const padX = em * 0.1, padTop = em * 0.18, padBot = em * 0.18;
+    const boxW = visW + padX * 2;
+    const boxH = ascent + descent + padTop + padBot;
+    const boxCx = cx, boxCy = y;
+    // CSS linear-gradient(102deg): the gradient axis points 102deg
+    // clockwise from "up", i.e. (sin 102deg, -cos 102deg) in
+    // screen coordinates — mostly rightward, slightly downward.
+    // The axis length is the box's projection onto that direction,
+    // so the gradient exactly covers the box.
+    const dirX = Math.sin(102 * Math.PI / 180);
+    const dirY = -Math.cos(102 * Math.PI / 180);
+    const axisLen = Math.abs(boxW * dirX) + Math.abs(boxH * dirY);
+    const grad = ctx.createLinearGradient(
+      boxCx - dirX * axisLen / 2, boxCy - dirY * axisLen / 2,
+      boxCx + dirX * axisLen / 2, boxCy + dirY * axisLen / 2
+    );
+    grad.addColorStop(0.00, edgeC);
+    grad.addColorStop(0.20, softEdgeColor);
+    grad.addColorStop(0.42, midColor);
+    grad.addColorStop(0.59, highlightC);
+    grad.addColorStop(0.78, midColor);
+    grad.addColorStop(1.00, edgeC);
+    // Two shadow passes, then the gradient fill on top of its own
+    // shadow — the same layering as his DOM (shadow span behind the
+    // metallic span). textFill false: the fill is the gradient set
+    // here, not the رنگ tab's colour.
+    const prevCtx = ctx;
+    const paintWords = (g) => {
+      ctx = g;
+      drawWords(line, cx, y, 0, 0, 'fill', false);
+      ctx = prevCtx;
+    };
+    ctx.save();
+    ctx.fillStyle = grad;
+    if (s > 0) {
+      ctx.shadowColor = `rgba(${sr}, ${sg}, ${sb}, ${(0.64 * s).toFixed(3)})`;
+      ctx.shadowBlur = em * 0.105;
+      ctx.shadowOffsetX = em * 0.025;
+      ctx.shadowOffsetY = em * 0.075;
+      paintWords(ctx);
+      ctx.shadowColor = `rgba(${sr}, ${sg}, ${sb}, ${(0.34 * s).toFixed(3)})`;
+      ctx.shadowBlur = em * 0.045;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = em * 0.03;
+      paintWords(ctx);
+    }
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    paintWords(ctx);
     ctx.restore();
   },
   // Messages frame: black text on the light-grey content area (the
@@ -7386,7 +7489,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -7431,6 +7534,7 @@ function redraw() {
   paintSharpHighlightSamples();
   paintGlassOutlineSamples();
   paintLayeredGoldSamples();
+  paintMetallicGoldSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -7978,6 +8082,7 @@ function buildStylePicker() {
       if (item.id === 'sharphighlight') return '<canvas class="sample-canvas sample-canvas-sharphighlight" width="190" height="120"></canvas>';
       if (item.id === 'glassoutline') return '<canvas class="sample-canvas sample-canvas-glassoutline" width="190" height="120"></canvas>';
       if (item.id === 'layeredgold') return '<canvas class="sample-canvas sample-canvas-layeredgold" width="190" height="120"></canvas>';
+      if (item.id === 'metallicgold') return '<canvas class="sample-canvas sample-canvas-metallicgold" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -10410,6 +10515,53 @@ function paintLayeredGoldSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-layeredgold';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the metallic gold preview with the REAL metallicgold code
+// (STYLE_PAINT.metallicgold) on its small canvas — a miniature of
+// the actual text, same pattern as the layered gold preview.
+// Called from redraw(), like the layered gold samples. If painting
+// fails, fall back to the CSS text.
+function paintMetallicGoldSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-metallicgold')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const line = 'متن شما';
+        const lw = lineWidth(line);
+        // Fit the line (plus its two-layer shadow) into the sample
+        // canvas, centred, keeping the aspect — a uniform scale, so
+        // nothing is squashed.
+        const fitW = lw + 1.3 * textFs + 40, fitH = textFs * 2.6 + 40;
+        const s = Math.min(W / fitW, H / fitH);
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-540, -540);
+          STYLE_PAINT.metallicgold(line, 540, 540, lw, textFs);
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-metallicgold';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
