@@ -110,6 +110,7 @@ const STYLES = [
   { id: 'gradientshadow', label: 'گرادیان سایه‌دار' },
   { id: 'fading', label: 'محو سایه‌دار' },
   { id: 'shinygold', label: 'طلایی براق' },
+  { id: 'liftedshadow', label: 'سایه برجسته' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -809,6 +810,17 @@ const STYLE_CONTROLS = {
     { key: 'goldBaseC', label: 'رنگ پایه', type: 'color', def: '#ffc400' },
     { key: 'goldShineC', label: 'رنگ درخشش', type: 'color', def: '#ffffff' },
     { key: 'goldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 65, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  liftedshadow: [
+    { key: 'liftedCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'liftedCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'liftedPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 74, unit: '٪', editable: true },
+    { key: 'liftedPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 78, unit: '٪', editable: true },
+    { key: 'liftedCardC', label: 'رنگ کارت', type: 'color', def: '#ffffff' },
+    { key: 'liftedShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
+    { key: 'liftedShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 75, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1907,6 +1919,14 @@ const STYLE_PAINT = {
     ctx.fillStyle = fill;
     drawWords(line, cx, y);
     ctx.restore();
+  },
+  // Lifted shadow card (Reza, 2026-11-24 — his
+  // createLiftedShadowCard code): plain black text, no shadow — the
+  // arched shadow under the card is painted block-level by
+  // paintLiftedShadowCard.
+  liftedshadow: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -4805,6 +4825,129 @@ function paintShinyGoldCard(l, fs) {
   }
 }
 
+// --- Lifted shadow card (Reza, 2026-11-24 — his createLiftedShadowCard
+// code): a white rounded card with an arched shadow beneath it. The
+// shadow is an SVG layer in his code (two arch paths with vertical
+// gradients, a horizontal edge fade, and a blur); it is drawn here on
+// canvas in paintLiftedShadowCard (same paths, same gradients, the
+// edge fade as a destination-in mask pass, the blur as ctx.filter).
+
+// Geometry of the lifted shadow card around the text block. Same
+// shape as the other card layouts (height floor splitting evenly,
+// blockShift following the alignment buttons), but the padding is
+// em-based in his code, so it scales with the text size: 1.28em on
+// the sides, 0.74em above, 0.78em below, radius 0.32em. The top and
+// bottom space are knobs (liftedPadTop/liftedPadBottom, % of the font
+// size, defaults 74/78 = his 0.74em/0.78em), like the other card
+// styles. The shadow hangs 0.68em below the card (his SVG sits at
+// bottom -0.68em, height 0.92em); the layout returns the CARD rect,
+// and shadowBelow tells the picker how much room the shadow needs.
+function liftedShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 1.28 * fs;
+  const padTop = Math.max(0, (sp('liftedPadTop') ?? 74) / 100) * fs;
+  const padBottom = Math.max(0, (sp('liftedPadBottom') ?? 78) / 100) * fs;
+  const cardW = Math.max(maxLw + padX * 2, sp('liftedCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('liftedCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0.32 * fs,
+    padX, blockShift, rtl, shadowBelow: 0.68 * fs,
+  };
+}
+
+// Paint the lifted shadow card: the white rounded card, plus the
+// arched shadow beneath it. The shadow is his SVG layer translated to
+// canvas: the same two arch paths in the same 1000x180 viewBox,
+// mapped onto the card width x 0.92em (preserveAspectRatio none, like
+// his SVG), filled with the same vertical gradients; the horizontal
+// edge fade is a destination-in mask pass (canvas has no SVG mask —
+// the fading style's precedent), and the 0.055em blur is ctx.filter
+// (the yellow-bars precedent, guarded the same way, so an old WebView
+// without it just draws the shadow sharper). The shadow is drawn
+// first and the card on top of it (his zIndex 0/1). The wrapper's
+// 0.45em bottom margin is outside spacing with nothing below it on
+// the canvas, so it is not reproduced.
+function paintLiftedShadowCard(l, fs) {
+  const cardC = sp('liftedCardC') || '#ffffff';
+  const shadowC = sp('liftedShadowC') || '#000000';
+  const s = Math.max(0, Math.min(1, (sp('liftedShadowO') ?? 75) / 100));
+  if (s > 0) {
+    // The SVG box: its top sits 0.24em above the card's bottom edge
+    // (bottom -0.68em, height 0.92em), full card width.
+    const sx = l.x, sy = l.y + l.h - 0.24 * fs, sw = l.w, sh = 0.92 * fs;
+    const ow = Math.max(2, Math.round(sw)), oh = Math.max(2, Math.round(sh));
+    const off = document.createElement('canvas');
+    off.width = ow; off.height = oh;
+    const octx = off.getContext('2d');
+    // viewBox 1000x180 -> shadow box (non-uniform scale, like his
+    // preserveAspectRatio="none").
+    const kx = ow / 1000, ky = oh / 180;
+    // One arch path, filled with his vertical gradient (userSpaceOnUse
+    // y0->y1 in viewBox units; stops are [offset, baseOpacity], the
+    // intensity scales the alpha like his stop-opacity values).
+    const arch = (path, y0, y1, stops) => {
+      octx.save();
+      octx.scale(kx, ky);
+      const g = octx.createLinearGradient(0, y0, 0, y1);
+      for (const [o, a] of stops) g.addColorStop(o, hexToRgba(shadowC, a * s));
+      octx.fillStyle = g;
+      octx.beginPath();
+      path(octx);
+      octx.fill();
+      octx.restore();
+    };
+    // His main arch: wide, shallow top edge, bottom edge dipping down
+    // at the sides and arching up in the middle (the lifted look).
+    arch((c) => {
+      c.moveTo(14, 34); c.lineTo(58, 28); c.lineTo(942, 28); c.lineTo(986, 34);
+      c.lineTo(990, 144); c.quadraticCurveTo(500, -42, 10, 144); c.closePath();
+    }, 32, 152, [[0, 0.72], [0.42, 0.42], [0.78, 0.20], [1, 0.08]]);
+    // His deep arch: darker, concentrated right under the card edge.
+    arch((c) => {
+      c.moveTo(28, 34); c.lineTo(972, 34); c.lineTo(976, 92);
+      c.quadraticCurveTo(500, 18, 24, 92); c.closePath();
+    }, 34, 96, [[0, 0.85], [0.55, 0.35], [1, 0]]);
+    // His horizontal edge mask (fade to nothing over 4.5% at each
+    // side, under the rounded corners): destination-in, so only the
+    // middle of the shadow survives.
+    octx.globalCompositeOperation = 'destination-in';
+    const edge = octx.createLinearGradient(0, 0, ow, 0);
+    edge.addColorStop(0, 'rgba(255,255,255,0)');
+    edge.addColorStop(0.045, 'rgba(255,255,255,1)');
+    edge.addColorStop(0.955, 'rgba(255,255,255,1)');
+    edge.addColorStop(1, 'rgba(255,255,255,0)');
+    octx.fillStyle = edge;
+    octx.fillRect(0, 0, ow, oh);
+    octx.globalCompositeOperation = 'source-over';
+    // His blur(0.055em) on the whole SVG layer, guarded like the
+    // yellow-bars glow so it never leaks into the card or the text.
+    ctx.save();
+    try {
+      if ('filter' in ctx) ctx.filter = `blur(${(0.055 * fs).toFixed(1)}px)`;
+      ctx.drawImage(off, sx, sy, sw, sh);
+    } finally {
+      ctx.restore();
+    }
+  }
+  // The card itself, on top of the shadow.
+  ctx.fillStyle = cardC;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -5891,6 +6034,10 @@ function draw() {
   // The shiny gold card wraps the block the same way.
   const shinyGoldRTL = state.style === 'shinygold' ? isRTLText(lines[0] || '') : true;
   const shinyGoldL = state.style === 'shinygold' ? shinyGoldLayout(textFs, maxLw, blockH, lineHeight, h, cx, shinyGoldRTL) : null;
+  // The lifted shadow card wraps the block the same way (white card,
+  // arched shadow hanging below it).
+  const liftedShadowRTL = state.style === 'liftedshadow' ? isRTLText(lines[0] || '') : true;
+  const liftedShadowL = state.style === 'liftedshadow' ? liftedShadowLayout(textFs, maxLw, blockH, lineHeight, h, cx, liftedShadowRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -5929,7 +6076,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -6118,6 +6265,7 @@ function draw() {
   if (glossyL) paintGlossyCard(glossyL, textFs);
   if (gradShadowL) paintGradShadowCard(gradShadowL, textFs);
   if (shinyGoldL) paintShinyGoldCard(shinyGoldL, textFs);
+  if (liftedShadowL) paintLiftedShadowCard(liftedShadowL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -6313,7 +6461,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -6352,6 +6500,7 @@ function redraw() {
   paintGradShadowSamples();
   paintFadingSamples();
   paintShinyGoldSamples();
+  paintLiftedShadowSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -6893,6 +7042,7 @@ function buildStylePicker() {
       if (item.id === 'gradientshadow') return '<canvas class="sample-canvas sample-canvas-gradientshadow" width="190" height="120"></canvas>';
       if (item.id === 'fading') return '<canvas class="sample-canvas sample-canvas-fading" width="190" height="120"></canvas>';
       if (item.id === 'shinygold') return '<canvas class="sample-canvas sample-canvas-shinygold" width="190" height="120"></canvas>';
+      if (item.id === 'liftedshadow') return '<canvas class="sample-canvas sample-canvas-liftedshadow" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -8965,6 +9115,73 @@ function paintShinyGoldSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-shinygold';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the lifted shadow preview with the REAL liftedshadow code
+// (liftedShadowLayout + paintLiftedShadowCard + the body text) on its
+// small canvas — a miniature of the actual card, same pattern as the
+// shiny gold preview. Called from redraw(), like the gold samples.
+// If painting fails, fall back to the CSS box.
+function paintLiftedShadowSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-liftedshadow')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const liftedShadowRTL = isRTLText(lines[0] || '');
+        const liftedShadowL = liftedShadowLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, liftedShadowRTL);
+        const blockCx = 540 + liftedShadowL.blockShift;
+        // Fit the whole card PLUS the arched shadow hanging below it
+        // into the sample canvas, centred on the card+shadow unit,
+        // keeping the aspect — a uniform scale, so nothing is squashed.
+        const fitW = liftedShadowL.w + 96, fitH = liftedShadowL.h + liftedShadowL.shadowBelow + 120;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = liftedShadowL.x + liftedShadowL.w / 2, cardCy = liftedShadowL.y + liftedShadowL.h / 2 + liftedShadowL.shadowBelow / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintLiftedShadowCard(liftedShadowL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.liftedshadow(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-liftedshadow';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

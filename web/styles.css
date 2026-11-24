@@ -490,6 +490,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-shinygold {
   height: 60px;
 }
+/* Lifted shadow preview: same miniature treatment as the gold card. */
+.pick-card .sample canvas.sample-canvas-liftedshadow {
+  height: 60px;
+}
 /* Slanted quote frame preview: same miniature treatment as the corner card. */
 .pick-card .sample canvas.sample-canvas-slantquote {
   height: 60px;
@@ -664,6 +668,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-gradientshadow { background: linear-gradient(90deg, #ff00ff, #00e5e5); color: #fff; border-radius: 10px; padding: 0 6px; box-shadow: 0 12px 16px rgba(0, 0, 0, 0.26); }
 .sample-fading { background: transparent; color: #fff; -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 28%, rgba(0, 0, 0, 0.875) 45%, rgba(0, 0, 0, 0.563) 70%, rgba(0, 0, 0, 0.22) 95%, rgba(0, 0, 0, 0.22) 100%); mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 28%, rgba(0, 0, 0, 0.875) 45%, rgba(0, 0, 0, 0.563) 70%, rgba(0, 0, 0, 0.22) 95%, rgba(0, 0, 0, 0.22) 100%); text-shadow: 0 2px 4px rgba(0, 0, 0, 0.22), 0 5px 10px rgba(0, 0, 0, 0.33); padding: 0 6px; }
 .sample-shinygold { background: linear-gradient(90deg, #ffc400 0%, #ffc400 12%, rgb(255, 221, 107) 20%, rgb(255, 243, 204) 25%, #ffffff 29%, rgb(255, 243, 204) 33%, rgb(255, 221, 107) 38%, #ffc400 45%, #ffc400 55%, rgb(255, 221, 107) 62%, rgb(255, 243, 204) 67%, #ffffff 71%, rgb(255, 243, 204) 75%, rgb(255, 221, 107) 80%, #ffc400 88%, #ffc400 100%); color: #000; border-radius: 8px; padding: 0 6px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.31); }
+.sample-liftedshadow { background: #ffffff; color: #000; border-radius: 8px; padding: 0 6px; box-shadow: 0 14px 22px rgba(0, 0, 0, 0.35); }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
