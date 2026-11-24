@@ -2171,7 +2171,9 @@ const STYLE_PAINT = {
   // the mask and the stroke, so word spacing, justification and
   // letter spacing match the other styles exactly. His
   // 0.34em/0.30em/0.44em padding is the offscreen margin around each
-  // line, not a user knob. The text colour is the رنگ tab's colour
+  // line, not a user knob, plus a 0.25em shadow margin (2026-11-24
+  // fix) so the outline shadow is never cropped at the layer edge.
+  // The text colour is the رنگ tab's colour
   // (white by default), like the other text styles.
   glassoutline: (line, cx, y, lw, fs) => {
     const em = fs || 100;
@@ -2191,9 +2193,19 @@ const STYLE_PAINT = {
     const ascent = (m.actualBoundingBoxAscent > 0 ? m.actualBoundingBoxAscent : em * 0.78);
     const descent = (m.actualBoundingBoxDescent > 0 ? m.actualBoundingBoxDescent : em * 0.38);
     const padX = Math.ceil(em * 0.34), padTop = Math.ceil(em * 0.30), padBot = Math.ceil(em * 0.44);
-    const w = Math.ceil(visW) + padX * 2, h = Math.ceil(ascent + descent) + padTop + padBot;
-    const ox = cx - visW / 2 - padX, oy = y - (ascent + descent) / 2 - padTop;
-    const ocx = padX + visW / 2, obaseline = padTop + ascent;
+    // Shadow margin (Reza, 2026-11-24 — the shadow above the text
+    // was cropped): the outline stroke (0.066em past the glyphs)
+    // plus the shadow blur (0.16em core, with a soft tail to ~2x)
+    // reaches ~0.39em past the glyph box, but the offscreen canvas
+    // only had his 0.30em pad on top — the faint tail was cut at the
+    // canvas edge, a hard line in the soft shadow above the letters.
+    // The layers get an extra 0.25em on every side so the whole
+    // shadow fits; the text itself does not move.
+    const sh = Math.ceil(em * 0.25);
+    const tx = padX + sh, ty = padTop + sh;
+    const w = Math.ceil(visW) + tx * 2, h = Math.ceil(ascent + descent) + ty + padBot + sh;
+    const ox = cx - visW / 2 - tx, oy = y - (ascent + descent) / 2 - ty;
+    const ocx = tx + visW / 2, obaseline = ty + ascent;
     // A layer canvas carrying the main canvas's font state, so
     // drawWords paints identical glyphs on it.
     const layer = () => {
@@ -2248,7 +2260,7 @@ const STYLE_PAINT = {
     const fillL = layer();
     fillL.g.drawImage(mask.c, 0, 0);
     fillL.g.globalCompositeOperation = 'source-in';
-    const fillGrad = fillL.g.createLinearGradient(padX, padTop + ascent + descent, padX + visW, padTop);
+    const fillGrad = fillL.g.createLinearGradient(tx, ty + ascent + descent, tx + visW, ty);
     fillGrad.addColorStop(0.00, `rgba(${tr}, ${tg}, ${tb}, 1)`);
     fillGrad.addColorStop(0.28, `rgba(${tr}, ${tg}, ${tb}, 0.96)`);
     fillGrad.addColorStop(0.52, `rgba(${tr}, ${tg}, ${tb}, 0.68)`);
@@ -2281,7 +2293,7 @@ const STYLE_PAINT = {
     rim.g.globalCompositeOperation = 'destination-in';
     rim.g.drawImage(mask.c, 0, 0);
     rim.g.globalCompositeOperation = 'source-in';
-    const rimGrad = rim.g.createLinearGradient(padX, padTop + ascent + descent, padX + visW, padTop);
+    const rimGrad = rim.g.createLinearGradient(tx, ty + ascent + descent, tx + visW, ty);
     rimGrad.addColorStop(0.00, `rgba(${tr}, ${tg}, ${tb}, 1)`);
     rimGrad.addColorStop(0.32, `rgba(${tr}, ${tg}, ${tb}, 0.94)`);
     rimGrad.addColorStop(0.68, `rgba(${rr}, ${rg}, ${rb}, 0.78)`);
@@ -10145,7 +10157,7 @@ function paintGlassOutlineSamples() {
         // Fit the line (plus its outline and shadow) into the sample
         // canvas, centred, keeping the aspect — a uniform scale, so
         // nothing is squashed.
-        const fitW = lw + 0.68 * textFs + 40, fitH = textFs * 1.32 + 0.74 * textFs + 40;
+        const fitW = lw + 1.2 * textFs + 40, fitH = textFs * 2.5 + 40;
         const s = Math.min(W / fitW, H / fitH);
         ctx.save();
         try {
