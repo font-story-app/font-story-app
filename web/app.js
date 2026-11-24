@@ -1040,7 +1040,7 @@ const STYLE_CONTROLS = {
   // band, inside a broken black frame with bold double quote marks.
   brushquote: [
     { key: 'brushquoteCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
-    { key: 'brushquoteCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 225, unit: 'px' },
+    { key: 'brushquoteCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 5, def: 225, unit: 'px' },
     { key: 'brushquotePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 62, unit: 'px', editable: true },
     { key: 'brushquotePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 62, unit: 'px', editable: true },
     { key: 'brushquotePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 84, unit: 'px', editable: true },
