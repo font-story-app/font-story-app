@@ -113,6 +113,7 @@ const STYLES = [
   { id: 'liftedshadow', label: 'سایه برجسته' },
   { id: 'sheenribbon', label: 'نوار درخشان' },
   { id: 'emeraldgradient', label: 'گرادیان زمردی' },
+  { id: 'sharphighlight', label: 'هایلایت تیز' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -918,6 +919,18 @@ const STYLE_CONTROLS = {
     { key: 'emeraldBottomC', label: 'رنگ پایین', type: 'color', def: '#00dc99' },
     { key: 'emeraldBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
     { key: 'emeraldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 65, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  sharphighlight: [
+    { key: 'sharpCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'sharpCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'sharpPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 68, unit: '٪', editable: true },
+    { key: 'sharpPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 62, unit: '٪', editable: true },
+    { key: 'sharpPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 8, unit: '٪', editable: true },
+    { key: 'sharpPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 8, unit: '٪', editable: true },
+    { key: 'sharpBoxC', label: 'رنگ باکس', type: 'color', def: '#e91e63' },
+    { key: 'sharpShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 72, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2088,6 +2101,36 @@ const STYLE_PAINT = {
     const shadows = [
       { ox: 0, oy: 0.06 * em, blur: 0.085 * em, a: 0.84 * s },
       { ox: 0, oy: 0.025 * em, blur: 0.03 * em, a: 0.62 * s },
+    ];
+    for (const sh of shadows) {
+      ctx.save();
+      ctx.shadowColor = `rgba(0, 0, 0, ${sh.a.toFixed(3)})`;
+      ctx.shadowBlur = sh.blur;
+      ctx.shadowOffsetX = sh.ox;
+      ctx.shadowOffsetY = sh.oy;
+      ctx.fillStyle = fill;
+      drawWords(line, cx, y);
+      ctx.restore();
+    }
+  },
+  // Sharp highlight box (Reza, 2026-11-24 — his
+  // createSharpHighlightBox code): white text with his two-layer
+  // sharp shadow — 0/0.055em, blur 0.075em, alpha 0.82 x intensity,
+  // plus 0/0.022em, blur 0.024em, alpha 0.64 x intensity. Canvas takes
+  // one shadow per pass, so the two layers are two drawWords passes
+  // (the fading style's pattern).
+  sharphighlight: (line, cx, y, lw, fs) => {
+    const s = Math.max(0, Math.min(1, (sp('sharpShadowO') ?? 72) / 100));
+    const fill = state.colorTouched ? state.color : '#ffffff';
+    if (s <= 0) {
+      ctx.fillStyle = fill;
+      drawWords(line, cx, y);
+      return;
+    }
+    const em = fs || 100;
+    const shadows = [
+      { ox: 0, oy: 0.055 * em, blur: 0.075 * em, a: 0.82 * s },
+      { ox: 0, oy: 0.022 * em, blur: 0.024 * em, a: 0.64 * s },
     ];
     for (const sh of shadows) {
       ctx.save();
@@ -5378,6 +5421,58 @@ function paintEmeraldGradientCard(l, fs) {
   ctx.restore();
 }
 
+// --- Sharp highlight box (Reza, 2026-11-24 — his
+// createSharpHighlightBox code): a flat rectangular box with sharp
+// corners, tall and tight to the text horizontally, no drop shadow.
+
+// Geometry of the sharp highlight box around the text block. Same
+// shape as the other card layouts (height floor splitting evenly,
+// blockShift following the alignment buttons, with the side difference
+// added to every branch), but the padding is em-based in his code, so
+// it scales with the text size: 0.08em on the sides, 0.68em above,
+// 0.62em below. All four spaces are knobs (sharpPadTop/sharpPadBottom
+// 68/62, sharpPadRight/sharpPadLeft 8/8, % of the font size), like
+// the other card styles. No rounded corners (his borderRadius is 0),
+// so the layout returns r 0.
+function sharpHighlightLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padLeft = Math.max(0, (sp('sharpPadLeft') ?? 8) / 100) * fs;
+  const padRight = Math.max(0, (sp('sharpPadRight') ?? 8) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, (sp('sharpPadTop') ?? 68) / 100) * fs;
+  const padBottom = Math.max(0, (sp('sharpPadBottom') ?? 62) / 100) * fs;
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('sharpCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padLeft - padRight - maxLw) / 2;
+  const sideDiff = (padLeft - padRight) / 2;
+  const blockShift = state.align === 'right' ? slack + sideDiff
+    : state.align === 'left' ? -slack + sideDiff
+    : state.align === 'justify' ? (rtl ? slack : -slack) + sideDiff
+    : sideDiff;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the box is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('sharpCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
+    padX, padLeft, padRight, blockShift, rtl,
+  };
+}
+
+// Paint the sharp highlight box: a flat fill in the box colour, sharp
+// corners (his borderRadius 0), so a plain fillRect, not roundRect.
+// No drop shadow — his boxShadow is none. The two-layer text shadow
+// is painted per line by STYLE_PAINT.sharphighlight.
+function paintSharpHighlightCard(l, fs) {
+  const boxC = sp('sharpBoxC') || '#e91e63';
+  ctx.fillStyle = boxC;
+  ctx.fillRect(l.x, l.y, l.w, l.h);
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -6504,6 +6599,10 @@ function draw() {
   // gradient, thin black border, soft drop shadow).
   const emeraldRTL = state.style === 'emeraldgradient' ? isRTLText(lines[0] || '') : true;
   const emeraldL = state.style === 'emeraldgradient' ? emeraldGradientLayout(textFs, maxLw, blockH, lineHeight, h, cx, emeraldRTL) : null;
+  // The sharp highlight box wraps the block the same way (flat box,
+  // sharp corners, tight sides, no drop shadow).
+  const sharpRTL = state.style === 'sharphighlight' ? isRTLText(lines[0] || '') : true;
+  const sharpL = state.style === 'sharphighlight' ? sharpHighlightLayout(textFs, maxLw, blockH, lineHeight, h, cx, sharpRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -6542,7 +6641,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || sheenRibbonL || emeraldL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -6741,6 +6840,7 @@ function draw() {
   if (liftedShadowL) paintLiftedShadowCard(liftedShadowL, textFs);
   if (sheenRibbonL) paintSheenRibbonCard(sheenRibbonL, textFs);
   if (emeraldL) paintEmeraldGradientCard(emeraldL, textFs);
+  if (sharpL) paintSharpHighlightCard(sharpL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -6936,7 +7036,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -6978,6 +7078,7 @@ function redraw() {
   paintLiftedShadowSamples();
   paintSheenRibbonSamples();
   paintEmeraldGradientSamples();
+  paintSharpHighlightSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -7522,6 +7623,7 @@ function buildStylePicker() {
       if (item.id === 'liftedshadow') return '<canvas class="sample-canvas sample-canvas-liftedshadow" width="190" height="120"></canvas>';
       if (item.id === 'sheenribbon') return '<canvas class="sample-canvas sample-canvas-sheenribbon" width="190" height="120"></canvas>';
       if (item.id === 'emeraldgradient') return '<canvas class="sample-canvas sample-canvas-emeraldgradient" width="190" height="120"></canvas>';
+      if (item.id === 'sharphighlight') return '<canvas class="sample-canvas sample-canvas-sharphighlight" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -9794,6 +9896,72 @@ function paintEmeraldGradientSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-emeraldgradient';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the sharp highlight preview with the REAL sharphighlight
+// code (sharpHighlightLayout + paintSharpHighlightCard + the body
+// text) on its small canvas — a miniature of the actual box, same
+// pattern as the emerald preview. Called from redraw(), like the
+// emerald samples. If painting fails, fall back to the CSS box.
+function paintSharpHighlightSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-sharphighlight')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const sharpRTL = isRTLText(lines[0] || '');
+        const sharpL = sharpHighlightLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, sharpRTL);
+        const blockCx = 540 + sharpL.blockShift;
+        // Fit the whole box into the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed.
+        const fitW = sharpL.w + 96, fitH = sharpL.h + 120;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = sharpL.x + sharpL.w / 2, cardCy = sharpL.y + sharpL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintSharpHighlightCard(sharpL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.sharphighlight(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-sharphighlight';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
