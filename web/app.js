@@ -66,6 +66,7 @@ const STYLES = [
   { id: 'glassoutline', label: 'شیشه دورخط' },
   { id: 'layeredgold', label: 'طلایی چندلایه' },
   { id: 'metallicgold', label: 'طلایی متالیک' },
+  { id: 'neonglow', label: 'نئون درخشان' },
   { id: 'retro', label: 'رترو' },
   { id: 'shadow', label: 'سایه‌دار' },
   { id: 'glow', label: 'درخشان' },
@@ -956,6 +957,12 @@ const STYLE_CONTROLS = {
     { key: 'metallicgoldEdgeC', label: 'رنگ لبه', type: 'color', def: '#9e912a' },
     { key: 'metallicgoldShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
     { key: 'metallicgoldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 66, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  neonglow: [
+    { key: 'neonglowGlowC', label: 'رنگ هاله', type: 'color', def: '#ff1c6e' },
+    { key: 'neonglowGlowO', label: 'شدت هاله', type: 'range', min: 0, max: 100, step: 1, def: 86, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2588,6 +2595,59 @@ const STYLE_PAINT = {
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = em * 0.03;
       paintWords(ctx);
+    }
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    paintWords(ctx);
+    ctx.restore();
+  },
+  // Neon glow text (Reza, 2026-11-24 — his
+  // createNeonGlowTextStyle code): text-only, no card. White text
+  // with a four-layer neon halo in the glow colour, all centred on
+  // the glyphs (offset 0,0) with growing blur — 0.045em at 0.95 x
+  // intensity, 0.11em at 0.84, 0.20em at 0.62, 0.34em at 0.36 —
+  // painted as four drawWords passes since canvas takes one shadow
+  // per pass (emerald precedent), then one crisp pass with the
+  // shadow off so the text stays sharp. The text colour is the رنگ
+  // tab's colour (white by default), like the other text styles.
+  // Glow intensity default 86% follows his usage example (the
+  // signature says 0.85), the same rule he approved for
+  // layeredgold and metallicgold. Unlike the older «نئون» style,
+  // which has a single glow, this one layers four.
+  neonglow: (line, cx, y, lw, fs) => {
+    const em = fs || 100;
+    const words = line.split(' ').filter((w) => w !== '');
+    if (!words.length) return;
+    const s = Math.max(0, Math.min(1, (sp('neonglowGlowO') ?? 86) / 100));
+    const textC = flatColor(state.colorTouched ? state.color : '#ffffff');
+    const glowC = sp('neonglowGlowC') || '#ff1c6e';
+    const [gr, gg, gb] = hexToRgb(glowC);
+    // His four text-shadow layers: blur (em) and alpha at full
+    // intensity, in order from tightest to widest.
+    const layers = [
+      [0.045, 0.95],
+      [0.11, 0.84],
+      [0.20, 0.62],
+      [0.34, 0.36],
+    ];
+    const prevCtx = ctx;
+    const paintWords = (g) => {
+      ctx = g;
+      drawWords(line, cx, y, 0, 0, 'fill', false);
+      ctx = prevCtx;
+    };
+    ctx.save();
+    ctx.fillStyle = textC;
+    if (s > 0) {
+      for (const [blur, alpha] of layers) {
+        ctx.shadowColor = `rgba(${gr}, ${gg}, ${gb}, ${(alpha * s).toFixed(3)})`;
+        ctx.shadowBlur = em * blur;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        paintWords(ctx);
+      }
     }
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
@@ -7489,7 +7549,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -7535,6 +7595,7 @@ function redraw() {
   paintGlassOutlineSamples();
   paintLayeredGoldSamples();
   paintMetallicGoldSamples();
+  paintNeonGlowSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -8083,6 +8144,7 @@ function buildStylePicker() {
       if (item.id === 'glassoutline') return '<canvas class="sample-canvas sample-canvas-glassoutline" width="190" height="120"></canvas>';
       if (item.id === 'layeredgold') return '<canvas class="sample-canvas sample-canvas-layeredgold" width="190" height="120"></canvas>';
       if (item.id === 'metallicgold') return '<canvas class="sample-canvas sample-canvas-metallicgold" width="190" height="120"></canvas>';
+      if (item.id === 'neonglow') return '<canvas class="sample-canvas sample-canvas-neonglow" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -10562,6 +10624,53 @@ function paintMetallicGoldSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-metallicgold';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the neon glow preview with the REAL neonglow code
+// (STYLE_PAINT.neonglow) on its small canvas — a miniature of the
+// actual text, same pattern as the metallic gold preview.
+// Called from redraw(), like the metallic gold samples. If painting
+// fails, fall back to the CSS text.
+function paintNeonGlowSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-neonglow')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const line = 'متن شما';
+        const lw = lineWidth(line);
+        // Fit the line (plus its four-layer halo) into the sample
+        // canvas, centred, keeping the aspect — a uniform scale, so
+        // nothing is squashed.
+        const fitW = lw + 1.3 * textFs + 40, fitH = textFs * 2.6 + 40;
+        const s = Math.min(W / fitW, H / fitH);
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-540, -540);
+          STYLE_PAINT.neonglow(line, 540, 540, lw, textFs);
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-neonglow';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
