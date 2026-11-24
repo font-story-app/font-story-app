@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow', 'vibrantshadow',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -222,6 +222,12 @@ const STYLE_PARAMS = {
   cornerGlowCardO: { min: 10, max: 100 },
   cornerGlowFrameC: { color: true },
   cornerGlowGlowO: { min: 10, max: 100 },
+  // Vibrant shadow card (Reza, 2026-11-24).
+  vibrantCardW: { min: 0, max: 900 },
+  vibrantCardH: { min: 0, max: 800 },
+  vibrantCardC: { color: true },
+  vibrantShadowC: { color: true },
+  vibrantShadowO: { min: 0, max: 100 },
   // Hearts tape card (Reza, 2026-11-23).
   heartsCardW: { min: 400, max: 900 },
   heartsCardH: { min: 0, max: 800 },

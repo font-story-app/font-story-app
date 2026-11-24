@@ -105,6 +105,7 @@ const STYLES = [
   { id: 'floatshadow', label: 'سایه شناور' },
   { id: 'glowframe', label: 'قاب درخشان' },
   { id: 'cornerglow', label: 'گوشه‌های درخشان' },
+  { id: 'vibrantshadow', label: 'سایه رنگی' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -652,6 +653,22 @@ const STYLE_CONTROLS = {
     { key: 'cornerGlowCardO', label: 'شفافیت کارت', type: 'range', min: 10, max: 100, step: 1, def: 62, unit: '٪' },
     { key: 'cornerGlowFrameC', label: 'رنگ کادر', type: 'color', def: '#ffffff' },
     { key: 'cornerGlowGlowO', label: 'شدت درخشش', type: 'range', min: 10, max: 100, step: 1, def: 92, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Vibrant shadow card (Reza, 2026-11-24 — his
+  // createVibrantShadowCard code): a vivid pink rounded card with
+  // a soft two-layer drop shadow, and the white text carrying its
+  // own small down-right shadow. Width hugs the text (his max-width
+  // 720px is only a cap); height hugs the text (the 2026-11-24
+  // CardH rule: the height knob starts at 0). Intensity 1 is the
+  // 100% default of the شدت سایه knob.
+  vibrantshadow: [
+    { key: 'vibrantCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'vibrantCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'vibrantCardC', label: 'رنگ کارت', type: 'color', def: '#e91e63' },
+    { key: 'vibrantShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
+    { key: 'vibrantShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 100, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1634,6 +1651,26 @@ const STYLE_PAINT = {
   cornerglow: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
+  },
+  // Vibrant shadow card (Reza, 2026-11-24 — his
+  // createVibrantShadowCard code): the white text carries his
+  // small down-right shadow — 2px 3px, blur 4px at intensity 1,
+  // alpha 0.36 — scaled by the same intensity knob as the card's
+  // shadow. One pass: the shadow is his single textShadow layer.
+  // Wrapped in save/restore so no shadow leaks into the next line
+  // (slider-bug lesson).
+  vibrantshadow: (line, cx, y) => {
+    const shadowC = sp('vibrantShadowC') || '#000000';
+    const s = Math.max(0, (sp('vibrantShadowO') ?? 100) / 100);
+    const fill = state.colorTouched ? state.color : '#ffffff';
+    ctx.save();
+    ctx.shadowColor = hexToRgba(shadowC, Math.min(0.75, 0.36 * s));
+    ctx.shadowBlur = Math.max(2, Math.round(4 * s));
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = fill;
+    drawWords(line, cx, y);
+    ctx.restore();
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -4206,6 +4243,73 @@ function paintCornerGlowCard(l, fs) {
   }
 }
 
+// --- Vibrant shadow card (Reza, 2026-11-24 — his
+// createVibrantShadowCard code): a vivid pink rounded card with a
+// soft two-layer drop shadow, and the white text carrying its own
+// small down-right shadow (painted per line by
+// STYLE_PAINT.vibrantshadow).
+
+// Geometry of the vibrant shadow card around the text block. Same
+// shape as the other card layouts (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons).
+// His padding is his clamp max (72px vertical, 28px horizontal);
+// his radius is his clamp max 34px. Width hugs the text (his
+// max-width 720px is only a cap); the height floor is 0, so the
+// card hugs the text vertically (the 2026-11-24 CardH rule).
+function vibrantLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 28, padTop = 72, padBottom = 72; // his max card padding
+  const cardW = Math.max(maxLw + padX * 2, sp('vibrantCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('vibrantCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 34,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the vibrant shadow card: the vivid pink fill plus his
+// two-layer drop shadow — the wide one (0 5px, blur 22, alpha
+// 0.30) and the close one (0 2px, blur 8, alpha 0.16) — both
+// scaled by the same intensity knob as the text shadow. Each pass
+// fills the same card, so the later fill paints identical pixels
+// and only the new shadow shows. All passes are wrapped in
+// save/restore so no shadow leaks into the text (slider-bug
+// lesson). The text itself (with its own shadow) is painted per
+// line by STYLE_PAINT.vibrantshadow.
+function paintVibrantCard(l, fs) {
+  const shadowC = sp('vibrantShadowC') || '#000000';
+  const s = Math.max(0, (sp('vibrantShadowO') ?? 100) / 100);
+  const cardC = sp('vibrantCardC') || '#e91e63';
+  const shadows = [
+    { ox: 0, oy: Math.round(5 * s), blur: Math.round(22 * s), a: Math.min(0.65, 0.30 * s) },
+    { ox: 0, oy: Math.round(2 * s), blur: Math.round(8 * s), a: Math.min(0.45, 0.16 * s) },
+  ];
+  for (const sh of shadows) {
+    ctx.save();
+    ctx.shadowColor = hexToRgba(shadowC, sh.a);
+    ctx.shadowBlur = sh.blur;
+    ctx.shadowOffsetX = sh.ox;
+    ctx.shadowOffsetY = sh.oy;
+    ctx.fillStyle = cardC;
+    roundRect(l.x, l.y, l.w, l.h, l.r);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -5255,6 +5359,9 @@ function draw() {
   // The corner glow frame card wraps the block the same way.
   const cornerGlowRTL = state.style === 'cornerglow' ? isRTLText(lines[0] || '') : true;
   const cornerGlowL = state.style === 'cornerglow' ? cornerGlowLayout(textFs, maxLw, blockH, lineHeight, h, cx, cornerGlowRTL) : null;
+  // The vibrant shadow card wraps the block the same way.
+  const vibrantRTL = state.style === 'vibrantshadow' ? isRTLText(lines[0] || '') : true;
+  const vibrantL = state.style === 'vibrantshadow' ? vibrantLayout(textFs, maxLw, blockH, lineHeight, h, cx, vibrantRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -5293,7 +5400,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -5474,6 +5581,7 @@ function draw() {
   if (floatShadowL) paintFloatShadowCard(floatShadowL, textFs);
   if (glowframeL) paintGlowframeCard(glowframeL, textFs);
   if (cornerGlowL) paintCornerGlowCard(cornerGlowL, textFs);
+  if (vibrantL) paintVibrantCard(vibrantL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -5635,7 +5743,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5669,6 +5777,7 @@ function redraw() {
   paintFloatShadowSamples();
   paintGlowframeSamples();
   paintCornerGlowSamples();
+  paintVibrantSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -6205,6 +6314,7 @@ function buildStylePicker() {
       if (item.id === 'floatshadow') return '<canvas class="sample-canvas sample-canvas-floatshadow" width="190" height="120"></canvas>';
       if (item.id === 'glowframe') return '<canvas class="sample-canvas sample-canvas-glowframe" width="190" height="120"></canvas>';
       if (item.id === 'cornerglow') return '<canvas class="sample-canvas sample-canvas-cornerglow" width="190" height="120"></canvas>';
+      if (item.id === 'vibrantshadow') return '<canvas class="sample-canvas sample-canvas-vibrantshadow" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -7932,6 +8042,74 @@ function paintCornerGlowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-cornerglow';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the vibrant shadow preview with the REAL vibrantshadow code
+// (vibrantLayout + paintVibrantCard + the shadowed body text) on
+// its small canvas — a miniature of the actual card, same pattern
+// as the corner glow frame preview. Called from redraw(), like the
+// corner glow samples. If painting fails, fall back to the CSS box.
+function paintVibrantSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-vibrantshadow')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const vibrantRTL = isRTLText(lines[0] || '');
+        const vibrantL = vibrantLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, vibrantRTL);
+        const blockCx = 540 + vibrantL.blockShift;
+        // Fit the whole card PLUS the drop shadow's spread (blur
+        // 22px, offset 5px down) into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const fitW = vibrantL.w + 96, fitH = vibrantL.h + 110;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = vibrantL.x + vibrantL.w / 2, cardCy = vibrantL.y + vibrantL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintVibrantCard(vibrantL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.vibrantshadow(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-vibrantshadow';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

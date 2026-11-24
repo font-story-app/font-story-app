@@ -470,6 +470,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-cornerglow {
   height: 60px;
 }
+/* Vibrant shadow preview: same miniature treatment as the corner glow card. */
+.pick-card .sample canvas.sample-canvas-vibrantshadow {
+  height: 60px;
+}
 /* Slanted quote frame preview: same miniature treatment as the corner card. */
 .pick-card .sample canvas.sample-canvas-slantquote {
   height: 60px;
@@ -639,6 +643,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-floatshadow { background: #da7689; color: #fff; border-radius: 10px; padding: 0 6px; box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.4); }
 .sample-glowframe { background: rgba(36, 2, 10, 0.27); color: #fff; border: 2px solid #9be8ac; border-radius: 10px; padding: 0 6px; }
 .sample-cornerglow { background: rgba(28, 2, 10, 0.62); color: #fff; border: 2px solid #fff; border-radius: 0; padding: 0 6px; }
+.sample-vibrantshadow { background: #e91e63; color: #fff; border-radius: 10px; padding: 0 6px; box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3); }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
