@@ -107,6 +107,7 @@ const STYLES = [
   { id: 'cornerglow', label: 'گوشه‌های درخشان' },
   { id: 'vibrantshadow', label: 'سایه رنگی' },
   { id: 'glossyglass', label: 'شیشه براق' },
+  { id: 'gradientshadow', label: 'گرادیان سایه‌دار' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -688,6 +689,22 @@ const STYLE_CONTROLS = {
     { key: 'glossSheenC', label: 'رنگ بازتاب', type: 'color', def: '#ffffff' },
     { key: 'glossBorderC', label: 'رنگ کادر', type: 'color', def: '#74383f' },
     { key: 'glossOpacity', label: 'شفافیت شیشه', type: 'range', min: 5, max: 95, step: 1, def: 48, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Gradient shadow card (Reza, 2026-11-24 — his
+  // createGradientShadowCard code): a horizontal gradient card
+  // (magenta to cyan) with a soft two-layer drop shadow, and the
+  // white text carrying its own soft shadow. Width is his 700px
+  // by default; height hugs the text (the 2026-11-24 CardH rule:
+  // the height knob starts at 0). Intensity 0.55 is the 55%
+  // default of the شدت سایه knob.
+  gradientshadow: [
+    { key: 'gradShadowCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 700, unit: 'px' },
+    { key: 'gradShadowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'gradShadowStartC', label: 'رنگ شروع', type: 'color', def: '#ff00ff' },
+    { key: 'gradShadowEndC', label: 'رنگ پایان', type: 'color', def: '#00e5e5' },
+    { key: 'gradShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 55, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1698,6 +1715,25 @@ const STYLE_PAINT = {
   glossyglass: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
+  },
+  // Gradient shadow card (Reza, 2026-11-24 — his
+  // createGradientShadowCard code): the white text carries his
+  // soft shadow — 0 4px, blur 8px, alpha 0.44 × intensity —
+  // scaled by the same intensity knob as the card's shadow. One
+  // pass: the shadow is his single textShadow layer. Wrapped in
+  // save/restore so no shadow leaks into the next line
+  // (slider-bug lesson).
+  gradientshadow: (line, cx, y) => {
+    const s = Math.max(0, Math.min(1, (sp('gradShadowO') ?? 55) / 100));
+    const fill = state.colorTouched ? state.color : '#ffffff';
+    ctx.save();
+    ctx.shadowColor = `rgba(0, 0, 0, ${(0.44 * s).toFixed(3)})`;
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = fill;
+    drawWords(line, cx, y);
+    ctx.restore();
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -4422,6 +4458,77 @@ function paintGlossyCard(l, fs) {
   ctx.stroke();
 }
 
+// --- Gradient shadow card (Reza, 2026-11-24 — his
+// createGradientShadowCard code): a horizontal gradient card
+// (magenta to cyan) with a soft two-layer drop shadow, and the
+// white text carrying its own soft shadow (painted per line by
+// STYLE_PAINT.gradientshadow).
+
+// Geometry of the gradient shadow card around the text block.
+// Same shape as the other card layouts (fixed px padding, height
+// floor splitting evenly, blockShift following the alignment
+// buttons). His padding is his clamp max (74px vertical, 54px
+// horizontal); his radius is his clamp max 32px. Width is his
+// 700px by default; the height floor is 0, so the card hugs the
+// text vertically (the 2026-11-24 CardH rule).
+function gradShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 54, padTop = 74, padBottom = 74; // his max card padding
+  const cardW = Math.max(maxLw + padX * 2, sp('gradShadowCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('gradShadowCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 32,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the gradient shadow card: his 90deg gradient, magenta to
+// cyan left to right, plus his two-layer drop shadow — the wide
+// one (0 12px, blur 28, alpha 0.48 × intensity) and the close one
+// (0 4px, blur 10, alpha 0.28 × intensity) — both scaled by the
+// same intensity knob as the text shadow. Each pass fills the same
+// card, so the later fill paints identical pixels and only the new
+// shadow shows. All passes are wrapped in save/restore so no
+// shadow leaks into the text (slider-bug lesson). The text itself
+// (with its own shadow) is painted per line by
+// STYLE_PAINT.gradientshadow.
+function paintGradShadowCard(l, fs) {
+  const startC = sp('gradShadowStartC') || '#ff00ff';
+  const endC = sp('gradShadowEndC') || '#00e5e5';
+  const s = Math.max(0, Math.min(1, (sp('gradShadowO') ?? 55) / 100));
+  const shadows = [
+    { ox: 0, oy: 12, blur: 28, a: 0.48 * s },
+    { ox: 0, oy: 4, blur: 10, a: 0.28 * s },
+  ];
+  for (const sh of shadows) {
+    ctx.save();
+    ctx.shadowColor = `rgba(0, 0, 0, ${sh.a.toFixed(3)})`;
+    ctx.shadowBlur = sh.blur;
+    ctx.shadowOffsetX = sh.ox;
+    ctx.shadowOffsetY = sh.oy;
+    const g = ctx.createLinearGradient(l.x, 0, l.x + l.w, 0);
+    g.addColorStop(0, startC);
+    g.addColorStop(1, endC);
+    ctx.fillStyle = g;
+    roundRect(l.x, l.y, l.w, l.h, l.r);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -5477,6 +5584,9 @@ function draw() {
   // The glossy glass card wraps the block the same way.
   const glossyRTL = state.style === 'glossyglass' ? isRTLText(lines[0] || '') : true;
   const glossyL = state.style === 'glossyglass' ? glossyLayout(textFs, maxLw, blockH, lineHeight, h, cx, glossyRTL) : null;
+  // The gradient shadow card wraps the block the same way.
+  const gradShadowRTL = state.style === 'gradientshadow' ? isRTLText(lines[0] || '') : true;
+  const gradShadowL = state.style === 'gradientshadow' ? gradShadowLayout(textFs, maxLw, blockH, lineHeight, h, cx, gradShadowRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -5515,7 +5625,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -5698,6 +5808,7 @@ function draw() {
   if (cornerGlowL) paintCornerGlowCard(cornerGlowL, textFs);
   if (vibrantL) paintVibrantCard(vibrantL, textFs);
   if (glossyL) paintGlossyCard(glossyL, textFs);
+  if (gradShadowL) paintGradShadowCard(gradShadowL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -5859,7 +5970,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5895,6 +6006,7 @@ function redraw() {
   paintCornerGlowSamples();
   paintVibrantSamples();
   paintGlossySamples();
+  paintGradShadowSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -6433,6 +6545,7 @@ function buildStylePicker() {
       if (item.id === 'cornerglow') return '<canvas class="sample-canvas sample-canvas-cornerglow" width="190" height="120"></canvas>';
       if (item.id === 'vibrantshadow') return '<canvas class="sample-canvas sample-canvas-vibrantshadow" width="190" height="120"></canvas>';
       if (item.id === 'glossyglass') return '<canvas class="sample-canvas sample-canvas-glossyglass" width="190" height="120"></canvas>';
+      if (item.id === 'gradientshadow') return '<canvas class="sample-canvas sample-canvas-gradientshadow" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -8294,6 +8407,74 @@ function paintGlossySamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glossyglass';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the gradient shadow preview with the REAL gradientshadow
+// code (gradShadowLayout + paintGradShadowCard + the shadowed body
+// text) on its small canvas — a miniature of the actual card, same
+// pattern as the glossy glass preview. Called from redraw(), like
+// the glossy samples. If painting fails, fall back to the CSS box.
+function paintGradShadowSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-gradientshadow')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const gradShadowRTL = isRTLText(lines[0] || '');
+        const gradShadowL = gradShadowLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, gradShadowRTL);
+        const blockCx = 540 + gradShadowL.blockShift;
+        // Fit the whole card PLUS the drop shadow's spread (blur
+        // 28px, offset 12px down) into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const fitW = gradShadowL.w + 96, fitH = gradShadowL.h + 120;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = gradShadowL.x + gradShadowL.w / 2, cardCy = gradShadowL.y + gradShadowL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintGradShadowCard(gradShadowL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.gradientshadow(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-gradientshadow';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
