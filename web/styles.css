@@ -458,6 +458,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-metallic {
   height: 60px;
 }
+/* Floating shadow card preview: same miniature treatment as the metallic card. */
+.pick-card .sample canvas.sample-canvas-floatshadow {
+  height: 60px;
+}
 /* Slanted quote frame preview: same miniature treatment as the corner card. */
 .pick-card .sample canvas.sample-canvas-slantquote {
   height: 60px;
@@ -619,6 +623,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-yellowbars { background: rgba(26, 0, 8, 0.34); color: #fff; border-left: 6px solid #fce93a; border-right: 6px solid #fce93a; padding: 6px; }
 .sample-gradbars { background: transparent; color: #fff; border-left: 4px solid #ff0000; border-right: 4px solid #ff0000; padding: 6px; }
 .sample-metallic { background: linear-gradient(90deg, #000, #fa432c, #000); color: #fff; border-radius: 10px; padding: 0 6px; }
+.sample-floatshadow { background: #da7689; color: #fff; border-radius: 10px; padding: 0 6px; box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.4); }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */

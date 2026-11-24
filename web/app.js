@@ -101,6 +101,7 @@ const STYLES = [
   { id: 'typed', label: 'تایپ' },
   { id: 'corner', label: 'کمان گوشه' },
   { id: 'metallic', label: 'گرادیان فلزی' },
+  { id: 'floatshadow', label: 'سایه شناور' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -599,6 +600,21 @@ const STYLE_CONTROLS = {
     { key: 'metallicCenterC', label: 'رنگ مرکز', type: 'color', def: '#fa432c' },
     { key: 'metallicEdgeC', label: 'رنگ لبه', type: 'color', def: '#000000' },
     { key: 'metallicShadowO', label: 'غلظت سایه', type: 'range', min: 10, max: 100, step: 1, def: 42, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Floating shadow card (Reza, 2026-11-24 — his
+  // createFloatingShadowCard code): a dusty-rose card with a deep
+  // three-layer drop shadow down-right, and the same shadow on the
+  // white text itself (two layers). One intensity knob drives all
+  // five shadow alphas. Width is his 560px by default; height hugs
+  // the text (the 2026-11-24 CardH rule).
+  floatshadow: [
+    { key: 'floatShadowCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 560, unit: 'px' },
+    { key: 'floatShadowCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'floatShadowCardC', label: 'رنگ کارت', type: 'color', def: '#da7689' },
+    { key: 'floatShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
+    { key: 'floatShadowO', label: 'غلظت سایه', type: 'range', min: 10, max: 100, step: 1, def: 78, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1488,6 +1504,35 @@ const STYLE_PAINT = {
   metallic: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
+  },
+  // Floating shadow card (Reza, 2026-11-24 — his
+  // createFloatingShadowCard code): the white text carries his two
+  // down-right shadows — the close one (2px 4px, blur 5) and the
+  // wider one (4px 8px, blur 12), both scaled by the same intensity
+  // as the card's shadow. Each pass draws the text with its shadow;
+  // the second pass paints identical text pixels, so only its
+  // shadow shows. Both passes are wrapped in save/restore so no
+  // shadow leaks into the next line (slider-bug lesson).
+  floatshadow: (line, cx, y) => {
+    const shadowC = sp('floatShadowC') || '#000000';
+    const intensity = (sp('floatShadowO') ?? 78) / 100;
+    const fill = state.colorTouched ? state.color : '#ffffff';
+    ctx.save();
+    ctx.shadowColor = hexToRgba(shadowC, 0.62 * intensity);
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = fill;
+    drawWords(line, cx, y);
+    ctx.restore();
+    ctx.save();
+    ctx.shadowColor = hexToRgba(shadowC, 0.45 * intensity);
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 8;
+    ctx.fillStyle = fill;
+    drawWords(line, cx, y);
+    ctx.restore();
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -3715,6 +3760,73 @@ function paintMetallicCard(l, fs) {
   ctx.restore();
 }
 
+// --- Floating shadow card (Reza, 2026-11-24 — his
+// createFloatingShadowCard code): a dusty-rose card with a deep
+// three-layer drop shadow down-right, and the same shadow on the
+// text itself (painted per line by STYLE_PAINT.floatshadow).
+
+// Geometry of the floating-shadow card around the text block. Same
+// shape as the metallic card layout (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons).
+// Width is his 560px by default; the height floor is 0, so the card
+// hugs the text vertically (the 2026-11-24 CardH rule). His
+// min-height (240) is below the content height at the default size,
+// so it binds nothing — the CardH knob is the floor.
+function floatShadowLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 48, padTop = 54, padBottom = 54; // his max card padding
+  const cardW = Math.max(maxLw + padX * 2, sp('floatShadowCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('floatShadowCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 38,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the floating-shadow card: the dusty-rose fill plus his
+// three-layer drop shadow down-right — the close one (0 2px, blur
+// 14), the middle one (5px 15px, blur 26) and the deep one (10px
+// 28px, blur 54) — all scaled by the same intensity knob as the
+// text shadow. Each pass fills the same card, so the later fills
+// paint identical pixels and only the new shadow shows. All three
+// passes are wrapped in save/restore so no shadow leaks into the
+// text (slider-bug lesson). The text itself (with its own two
+// shadows) is painted per line by STYLE_PAINT.floatshadow.
+function paintFloatShadowCard(l, fs) {
+  const shadowC = sp('floatShadowC') || '#000000';
+  const intensity = (sp('floatShadowO') ?? 78) / 100;
+  const cardC = sp('floatShadowCardC') || '#da7689';
+  const shadows = [
+    { ox: 0, oy: 2, blur: 14, a: 0.24 },
+    { ox: 5, oy: 15, blur: 26, a: 0.72 },
+    { ox: 10, oy: 28, blur: 54, a: 0.64 },
+  ];
+  for (const s of shadows) {
+    ctx.save();
+    ctx.shadowColor = hexToRgba(shadowC, s.a * intensity);
+    ctx.shadowBlur = s.blur;
+    ctx.shadowOffsetX = s.ox;
+    ctx.shadowOffsetY = s.oy;
+    ctx.fillStyle = cardC;
+    roundRect(l.x, l.y, l.w, l.h, l.r);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -4707,6 +4819,9 @@ function draw() {
   // The metallic gradient card wraps the block the same way.
   const metallicRTL = state.style === 'metallic' ? isRTLText(lines[0] || '') : true;
   const metallicL = state.style === 'metallic' ? metallicLayout(textFs, maxLw, blockH, lineHeight, h, cx, metallicRTL) : null;
+  // The floating-shadow card wraps the block the same way.
+  const floatShadowRTL = state.style === 'floatshadow' ? isRTLText(lines[0] || '') : true;
+  const floatShadowL = state.style === 'floatshadow' ? floatShadowLayout(textFs, maxLw, blockH, lineHeight, h, cx, floatShadowRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -4742,7 +4857,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4920,6 +5035,7 @@ function draw() {
   // in black).
   if (cornerL) paintCornerCard(cornerL, textFs);
   if (metallicL) paintMetallicCard(metallicL, textFs);
+  if (floatShadowL) paintFloatShadowCard(floatShadowL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -5080,7 +5196,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5111,6 +5227,7 @@ function redraw() {
   paintTypedCardSamples();
   paintCornerCardSamples();
   paintMetallicSamples();
+  paintFloatShadowSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -5643,6 +5760,7 @@ function buildStylePicker() {
       if (item.id === 'typed') return '<canvas class="sample-canvas sample-canvas-typed" width="190" height="120"></canvas>';
       if (item.id === 'corner') return '<canvas class="sample-canvas sample-canvas-corner" width="190" height="120"></canvas>';
       if (item.id === 'metallic') return '<canvas class="sample-canvas sample-canvas-metallic" width="190" height="120"></canvas>';
+      if (item.id === 'floatshadow') return '<canvas class="sample-canvas sample-canvas-floatshadow" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -7165,6 +7283,74 @@ function paintMetallicSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-metallic';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the floating-shadow card preview with the REAL floatshadow
+// code (floatShadowLayout + paintFloatShadowCard + the shadowed body
+// text) on its small canvas — a miniature of the actual card, same
+// pattern as the metallic preview. Called from redraw(), like the
+// metallic samples.
+function paintFloatShadowSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-floatshadow')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const floatShadowRTL = isRTLText(lines[0] || '');
+        const floatShadowL = floatShadowLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, floatShadowRTL);
+        const blockCx = 540 + floatShadowL.blockShift;
+        // Fit the whole card PLUS the deep shadow's spread into the
+        // sample canvas, centred, keeping the aspect — a uniform
+        // scale, so nothing is squashed. The shadow reaches 64px
+        // right, 44px left, 26px up and 82px down from the card.
+        const fitW = floatShadowL.w + 128, fitH = floatShadowL.h + 164;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = floatShadowL.x + floatShadowL.w / 2, cardCy = floatShadowL.y + floatShadowL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintFloatShadowCard(floatShadowL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.floatshadow(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-floatshadow';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
