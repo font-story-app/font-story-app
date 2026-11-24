@@ -63,6 +63,7 @@ const STYLES = [
   { id: 'halo', label: 'هاله' },
   { id: 'brushstroke', label: 'براش' },
   { id: 'neon', label: 'نئون' },
+  { id: 'glassoutline', label: 'شیشه دورخط' },
   { id: 'retro', label: 'رترو' },
   { id: 'shadow', label: 'سایه‌دار' },
   { id: 'glow', label: 'درخشان' },
@@ -114,7 +115,6 @@ const STYLES = [
   { id: 'sheenribbon', label: 'نوار درخشان' },
   { id: 'emeraldgradient', label: 'گرادیان زمردی' },
   { id: 'sharphighlight', label: 'هایلایت تیز' },
-  { id: 'glassoutline', label: 'شیشه دورخط' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
