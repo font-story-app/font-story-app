@@ -454,6 +454,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-corner {
   height: 60px;
 }
+/* Metallic gradient card preview: same miniature treatment as the corner card. */
+.pick-card .sample canvas.sample-canvas-metallic {
+  height: 60px;
+}
 /* Slanted quote frame preview: same miniature treatment as the corner card. */
 .pick-card .sample canvas.sample-canvas-slantquote {
   height: 60px;
@@ -609,6 +613,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-slantquote { background: transparent; color: #fff; border: 2px solid #fff; border-radius: 10px; padding: 0 6px; }
 .sample-doubleline { background: transparent; color: #fff; border-top: 2px solid rgba(0, 0, 0, 0.24); border-bottom: 2px solid rgba(0, 0, 0, 0.24); padding: 6px; }
 .sample-yellowbars { background: rgba(26, 0, 8, 0.34); color: #fff; border-left: 6px solid #fce93a; border-right: 6px solid #fce93a; padding: 6px; }
+.sample-metallic { background: linear-gradient(90deg, #000, #fa432c, #000); color: #fff; border-radius: 10px; padding: 0 6px; }
 /* Message-bubble preview fallback (used only if the canvas paint fails). */
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */

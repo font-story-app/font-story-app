@@ -99,6 +99,7 @@ const STYLES = [
   { id: 'glassnotif', label: 'اعلان شیشه‌ای' },
   { id: 'typed', label: 'تایپ' },
   { id: 'corner', label: 'کمان گوشه' },
+  { id: 'metallic', label: 'گرادیان فلزی' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -582,6 +583,21 @@ const STYLE_CONTROLS = {
     { key: 'cornerCardC', label: 'رنگ کارت', type: 'color', def: '#f2f2f2' },
     { key: 'cornerBorderC', label: 'رنگ کادر', type: 'color', def: '#000000' },
     { key: 'cornerAccentC', label: 'رنگ کمان', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Metallic gradient card (Reza, 2026-11-24 — his
+  // createMetallicGradientCard code): a rounded card with a symmetric
+  // horizontal metallic gradient — dark edges, a bright red-orange
+  // band in the centre — and a soft two-layer drop shadow. Width is
+  // his 580px by default; height hugs the text (the 2026-11-24
+  // CardH rule: every card's default height is the minimum).
+  metallic: [
+    { key: 'metallicCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 580, unit: 'px' },
+    { key: 'metallicCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'metallicCenterC', label: 'رنگ مرکز', type: 'color', def: '#fa432c' },
+    { key: 'metallicEdgeC', label: 'رنگ لبه', type: 'color', def: '#000000' },
+    { key: 'metallicShadowO', label: 'غلظت سایه', type: 'range', min: 10, max: 100, step: 1, def: 42, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1438,6 +1454,14 @@ const STYLE_PAINT = {
   yellowbars: (line, cx, y, visLw, fs) => {
     const strokeW = fs * 7 / 66; // his -webkit-text-stroke 7px at 66px
     strokeWords(line, cx, y, sp('yellowBarsStrokeC') || '#111111', strokeW);
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
+  },
+  // Metallic gradient card (Reza, 2026-11-24 — his
+  // createMetallicGradientCard code): white text on the metallic
+  // gradient card (the card is painted block-level in draw()). A
+  // colour picked in the رنگ tab wins; otherwise his #ffffff.
+  metallic: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
@@ -3583,6 +3607,90 @@ function paintCornerCard(l, fs) {
   ctx.stroke();
 }
 
+// --- Metallic gradient card (Reza, 2026-11-24 — his
+// createMetallicGradientCard code): a rounded card with a symmetric
+// horizontal metallic gradient — dark edges, a bright red-orange band
+// in the centre — and a soft two-layer drop shadow.
+
+// Geometry of the metallic gradient card around the text block.
+// Same shape as the other card layouts (fixed px padding, height
+// floor splitting evenly, blockShift following the alignment
+// buttons). Width is his 580px by default; the height floor is 0,
+// so the card hugs the text vertically (the 2026-11-24 CardH rule).
+function metallicLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 38, padTop = 50, padBottom = 50; // his max card padding
+  const cardW = Math.max(maxLw + padX * 2, sp('metallicCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('metallicCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 46,
+    padX, blockShift, rtl,
+  };
+}
+
+// His symmetric metallic gradient, as a canvas gradient along the
+// card width: edge colour at both ends, a bright centre band, and
+// his mixHex blends in between. His mixHex is already ported as
+// sewingPinMix — the same math (r1 + (r2 − r1) × ratio).
+function metallicGradient(l) {
+  const edgeC = sp('metallicEdgeC') || '#000000';
+  const centerC = sp('metallicCenterC') || '#fa432c';
+  const g = ctx.createLinearGradient(l.x, 0, l.x + l.w, 0);
+  g.addColorStop(0, edgeC);
+  g.addColorStop(0.04, sewingPinMix(edgeC, centerC, 0.04));
+  g.addColorStop(0.16, sewingPinMix(edgeC, centerC, 0.22));
+  g.addColorStop(0.31, sewingPinMix(edgeC, centerC, 0.5));
+  g.addColorStop(0.43, sewingPinMix(edgeC, centerC, 0.78));
+  g.addColorStop(0.5, centerC);
+  g.addColorStop(0.57, sewingPinMix(edgeC, centerC, 0.78));
+  g.addColorStop(0.69, sewingPinMix(edgeC, centerC, 0.5));
+  g.addColorStop(0.84, sewingPinMix(edgeC, centerC, 0.22));
+  g.addColorStop(0.96, sewingPinMix(edgeC, centerC, 0.04));
+  g.addColorStop(1, edgeC);
+  return g;
+}
+
+// Paint the metallic gradient card: the gradient fill plus his
+// two-layer drop shadow — the big soft one (0 10px 26px) and the
+// small close one (0 2px 10px at 60% opacity). Each pass fills the
+// same gradient, so the second fill paints identical pixels and
+// only its shadow shows. Both passes are wrapped in save/restore
+// so no shadow leaks into the text (slider-bug lesson). The text
+// itself is painted per line by STYLE_PAINT.metallic.
+function paintMetallicCard(l, fs) {
+  const shadowO = sp('metallicShadowO') / 100;
+  const grad = metallicGradient(l);
+  ctx.save();
+  ctx.shadowColor = `rgba(0, 0, 0, ${shadowO})`;
+  ctx.shadowBlur = 26;
+  ctx.shadowOffsetY = 10;
+  ctx.fillStyle = grad;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.shadowColor = `rgba(0, 0, 0, ${(shadowO * 0.6).toFixed(2)})`;
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = grad;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+  ctx.restore();
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -4517,6 +4625,9 @@ function draw() {
   // The corner accent card wraps the block the same way.
   const cornerRTL = state.style === 'corner' ? isRTLText(lines[0] || '') : true;
   const cornerL = state.style === 'corner' ? cornerCardLayout(textFs, maxLw, blockH, lineHeight, h, cx, cornerRTL) : null;
+  // The metallic gradient card wraps the block the same way.
+  const metallicRTL = state.style === 'metallic' ? isRTLText(lines[0] || '') : true;
+  const metallicL = state.style === 'metallic' ? metallicLayout(textFs, maxLw, blockH, lineHeight, h, cx, metallicRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -4549,7 +4660,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || slantQuoteL || doubleLineL || yellowBarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || slantQuoteL || doubleLineL || yellowBarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4726,6 +4837,7 @@ function draw() {
   // bottom-left corners (the text itself is painted per-line below,
   // in black).
   if (cornerL) paintCornerCard(cornerL, textFs);
+  if (metallicL) paintMetallicCard(metallicL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -4885,7 +4997,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -4915,6 +5027,7 @@ function redraw() {
   paintGlassNotifCardSamples();
   paintTypedCardSamples();
   paintCornerCardSamples();
+  paintMetallicSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -5445,6 +5558,7 @@ function buildStylePicker() {
       if (item.id === 'glassnotif') return '<canvas class="sample-canvas sample-canvas-glassnotif" width="190" height="120"></canvas>';
       if (item.id === 'typed') return '<canvas class="sample-canvas sample-canvas-typed" width="190" height="120"></canvas>';
       if (item.id === 'corner') return '<canvas class="sample-canvas sample-canvas-corner" width="190" height="120"></canvas>';
+      if (item.id === 'metallic') return '<canvas class="sample-canvas sample-canvas-metallic" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -6900,6 +7014,72 @@ function paintCornerCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-corner';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the metallic gradient card preview with the REAL metallic
+// code (metallicLayout + paintMetallicCard + the body text) on its
+// small canvas — a miniature of the actual card, same pattern as
+// the corner preview. Called from redraw(), like the corner samples.
+function paintMetallicSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-metallic')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const metallicRTL = isRTLText(lines[0] || '');
+        const metallicL = metallicLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, metallicRTL);
+        const blockCx = 540 + metallicL.blockShift;
+        // Fit the whole card PLUS the drop shadow's blur spread
+        // (26px on each side) into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is squashed.
+        const fitW = metallicL.w + 56, fitH = metallicL.h + 56;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = metallicL.x + metallicL.w / 2, cardCy = metallicL.y + metallicL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintMetallicCard(metallicL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.metallic(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-metallic';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }

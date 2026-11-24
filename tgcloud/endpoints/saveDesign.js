@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -186,6 +186,12 @@ const STYLE_PARAMS = {
   yellowBarsStrokeC: { color: true },
   yellowBarsGlowC: { color: true },
   yellowBarsGlowO: { min: 10, max: 100 },
+  // Metallic gradient card (Reza, 2026-11-24).
+  metallicCardW: { min: 0, max: 900 },
+  metallicCardH: { min: 0, max: 800 },
+  metallicCenterC: { color: true },
+  metallicEdgeC: { color: true },
+  metallicShadowO: { min: 10, max: 100 },
   // Hearts tape card (Reza, 2026-11-23).
   heartsCardW: { min: 400, max: 900 },
   heartsCardH: { min: 0, max: 800 },
