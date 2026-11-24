@@ -246,6 +246,8 @@ const STYLE_PARAMS = {
   // Shiny gold card (Reza, 2026-11-24).
   goldCardW: { min: 0, max: 900 },
   goldCardH: { min: 0, max: 800 },
+  goldPadTop: { min: 0, max: 150 },
+  goldPadBottom: { min: 0, max: 150 },
   goldBaseC: { color: true },
   goldShineC: { color: true },
   goldShadowO: { min: 0, max: 100 },

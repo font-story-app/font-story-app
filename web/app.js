@@ -736,6 +736,12 @@ const STYLE_CONTROLS = {
   shinygold: [
     { key: 'goldCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
     { key: 'goldCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    // Top/bottom space inside the card (the black lines Reza drew,
+    // 2026-11-24): his em padding as % of the font size — 0.46em
+    // above, 0.50em below — so the defaults reproduce his code
+    // exactly at every size. Tap-to-type like the card size.
+    { key: 'goldPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 46, unit: '٪', editable: true },
+    { key: 'goldPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 50, unit: '٪', editable: true },
     { key: 'goldBaseC', label: 'رنگ پایه', type: 'color', def: '#ffc400' },
     { key: 'goldShineC', label: 'رنگ درخشش', type: 'color', def: '#ffffff' },
     { key: 'goldShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 65, unit: '٪' },
@@ -4630,12 +4636,18 @@ function paintGradShadowCard(l, fs) {
 // shape as the other card layouts (fixed padding, height floor
 // splitting evenly, blockShift following the alignment buttons),
 // but the padding and radius are em-based in his code, so they
-// scale with the text size: 0.30em on the sides, 0.46em above,
-// 0.50em below, radius 0.28em. Width hugs the text; the height
-// floor is 0, so the card hugs the text vertically (the
-// 2026-11-24 CardH rule).
+// scale with the text size: 0.30em on the sides, radius 0.28em.
+// The top/bottom space is now a knob (goldPadTop/goldPadBottom,
+// % of the font size, defaults 46/50 = his 0.46em/0.50em), so the
+// defaults reproduce his code exactly at every size. Width hugs
+// the text; the height floor is 0, so the card hugs the text
+// vertically (the 2026-11-24 CardH rule). A typed negative space
+// is clamped to 0 here, so the card can never shrink below the
+// text and roundRect never sees a negative height.
 function shinyGoldLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padX = 0.30 * fs, padTop = 0.46 * fs, padBottom = 0.50 * fs; // his em padding
+  const padX = 0.30 * fs;
+  const padTop = Math.max(0, (sp('goldPadTop') ?? 46) / 100) * fs;
+  const padBottom = Math.max(0, (sp('goldPadBottom') ?? 50) / 100) * fs;
   const cardW = Math.max(maxLw + padX * 2, sp('goldCardW'));
   const cardX = cx - cardW / 2;
   const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
@@ -9536,7 +9548,7 @@ function renderStyleControls() {
       // 0..max, so a typed value outside that range is kept as typed
       // and the slider parks at the nearest end; Enter or tapping
       // away applies it, Escape cancels, garbage reverts.
-      if (/Card[WH]$/.test(c.key)) {
+      if (/Card[WH]$/.test(c.key) || c.editable) {
         value.classList.add('editable');
         value.addEventListener('click', () => {
           if (value.querySelector('input')) return;
