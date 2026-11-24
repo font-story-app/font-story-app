@@ -376,6 +376,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-dropbubble {
   height: 60px;
 }
+/* Comic-bubble preview: same miniature treatment as the droplet bubble. */
+.pick-card .sample canvas.sample-canvas-comicbubble {
+  height: 60px;
+}
 /* Dry-brush preview: same miniature treatment as the droplet bubble. */
 .pick-card .sample canvas.sample-canvas-brushstroke {
   height: 60px;
@@ -713,6 +717,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-msgbubble { background: #087ffe; color: #fff; border-radius: 18px; padding: 0 10px; }
 /* Droplet-bubble preview fallback (used only if the canvas paint fails). */
 .sample-dropbubble { background: #087ffe; color: #fff; border-radius: 24px; padding: 0 10px; }
+.sample-comicbubble { background: #ffffff; color: #000; border: 3px solid #000; border-radius: 18px; padding: 0 10px; box-shadow: -4px 5px 0 #000; }
 /* Dry-brush preview fallback (used only if the canvas paint fails). */
 .sample-brushstroke { background: #241e5a; color: #fff; border-radius: 4px; padding: 0 10px; }
 
