@@ -9531,6 +9531,46 @@ function renderStyleControls() {
         redraw();
       });
       row.appendChild(input);
+      // Card width/height: tap the value to type the number by hand,
+      // including negatives (Reza, 2026-11-24). The slider stays
+      // 0..max, so a typed value outside that range is kept as typed
+      // and the slider parks at the nearest end; Enter or tapping
+      // away applies it, Escape cancels, garbage reverts.
+      if (/Card[WH]$/.test(c.key)) {
+        value.classList.add('editable');
+        value.addEventListener('click', () => {
+          if (value.querySelector('input')) return;
+          const edit = document.createElement('input');
+          edit.type = 'text';
+          edit.className = 'slider-value-input';
+          edit.dir = 'ltr';
+          edit.value = String(sp(c.key));
+          edit.setAttribute('aria-label', c.label);
+          value.textContent = '';
+          value.appendChild(edit);
+          edit.focus();
+          edit.select();
+          let done = false;
+          const commit = (cancel) => {
+            if (done) return; done = true;
+            const raw = edit.value.trim();
+            const num = Number(raw);
+            if (!cancel && raw !== '' && Number.isFinite(num)) {
+              state.styleParams[c.key] = num;
+              input.value = Math.min(c.max, Math.max(c.min, num));
+              value.textContent = num + (c.unit || '');
+              redraw();
+            } else {
+              value.textContent = sp(c.key) + (c.unit || '');
+            }
+          };
+          edit.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); edit.blur(); }
+            else if (e.key === 'Escape') { commit(true); }
+          });
+          edit.addEventListener('blur', () => commit(false));
+        });
+      }
     } else if (c.type === 'text') {
       // Free text (tweet header/footer): updates live as you type.
       value.textContent = '';

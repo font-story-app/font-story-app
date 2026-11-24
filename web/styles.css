@@ -892,6 +892,15 @@ body.editing .sheet, body.editing .tabbar { display: none; }
   margin-bottom: 6px;
 }
 .slider-value { color: rgba(255,255,255,0.65); font-weight: 400; }
+/* Tap-to-type value (card width/height only): the dashed underline marks
+   it as editable; the input replaces it while typing. */
+.slider-value.editable { cursor: pointer; border-bottom: 1px dashed rgba(255,255,255,0.45); }
+.slider-value-input {
+  width: 72px; padding: 2px 6px; text-align: center;
+  font-size: 14px; font-weight: 400; color: #fff;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 6px; outline: none;
+}
 .slider-row input[type="range"] { width: 100%; accent-color: #ff3b5c; cursor: pointer; }
 .settings-sub { font-size: 13px; color: rgba(255,255,255,0.6); margin: 16px 0 2px; }
 input[type="color"].style-color-input {
