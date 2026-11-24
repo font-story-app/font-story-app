@@ -102,6 +102,7 @@ const STYLES = [
   { id: 'corner', label: 'کمان گوشه' },
   { id: 'metallic', label: 'گرادیان فلزی' },
   { id: 'floatshadow', label: 'سایه شناور' },
+  { id: 'glowframe', label: 'قاب درخشان' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -615,6 +616,23 @@ const STYLE_CONTROLS = {
     { key: 'floatShadowCardC', label: 'رنگ کارت', type: 'color', def: '#da7689' },
     { key: 'floatShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
     { key: 'floatShadowO', label: 'غلظت سایه', type: 'range', min: 10, max: 100, step: 1, def: 78, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Glass glow frame card (Reza, 2026-11-24 — his
+  // createGlassGlowFrameCard code): a semi-transparent dark card
+  // with a metallic gradient frame (greenish metal at the top, dark
+  // charcoal at the bottom), light flares on the frame's top and
+  // bottom centres, and a four-layer neon glow on the white text.
+  // Width is his 620px by default; height hugs the text (the
+  // 2026-11-24 CardH rule).
+  glowframe: [
+    { key: 'glowframeCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 620, unit: 'px' },
+    { key: 'glowframeCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'glowframeCardC', label: 'رنگ کارت', type: 'color', def: '#24020a' },
+    { key: 'glowframeCardO', label: 'شفافیت کارت', type: 'range', min: 10, max: 100, step: 1, def: 27, unit: '٪' },
+    { key: 'glowframeGlowC', label: 'رنگ درخشش', type: 'color', def: '#9be8ac' },
+    { key: 'glowframeGlowO', label: 'شدت درخشش', type: 'range', min: 10, max: 100, step: 1, def: 85, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1533,6 +1551,35 @@ const STYLE_PAINT = {
     ctx.fillStyle = fill;
     drawWords(line, cx, y);
     ctx.restore();
+  },
+  // Glass glow frame card (Reza, 2026-11-24 — his
+  // createGlassGlowFrameCard code): the white text carries his
+  // four-layer neon glow in the glow colour — 0 0 5px, 13px, 24px
+  // and 38px, each scaled by the glow intensity. Each pass draws
+  // the text with its glow; the later passes paint identical text
+  // pixels, so only the new glow shows. All four passes are wrapped
+  // in save/restore so no glow leaks into the next line
+  // (slider-bug lesson).
+  glowframe: (line, cx, y) => {
+    const glowC = sp('glowframeGlowC') || '#9be8ac';
+    const intensity = (sp('glowframeGlowO') ?? 85) / 100;
+    const fill = state.colorTouched ? state.color : '#ffffff';
+    const glows = [
+      { blur: 5, a: 0.90 },
+      { blur: 13, a: 0.72 },
+      { blur: 24, a: 0.46 },
+      { blur: 38, a: 0.22 },
+    ];
+    for (const g of glows) {
+      ctx.save();
+      ctx.shadowColor = hexToRgba(glowC, g.a * intensity);
+      ctx.shadowBlur = g.blur;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = fill;
+      drawWords(line, cx, y);
+      ctx.restore();
+    }
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -3827,6 +3874,173 @@ function paintFloatShadowCard(l, fs) {
   }
 }
 
+// --- Glass glow frame card (Reza, 2026-11-24 — his
+// createGlassGlowFrameCard code): a semi-transparent dark card with
+// a metallic gradient frame (greenish metal at the top, dark
+// charcoal at the bottom), light flares on the frame's top and
+// bottom centres, and a four-layer neon glow on the text (painted
+// per line by STYLE_PAINT.glowframe). His SVG frame is translated
+// into canvas strokes and radial gradients — the geometry (stroke
+// width, radii, flare sizes, stop positions) is his.
+
+// Geometry of the glass glow frame card around the text block. Same
+// shape as the other card layouts (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons).
+// Width is his 620px by default; the height floor is 0, so the card
+// hugs the text vertically (the 2026-11-24 CardH rule). His
+// min-height (255) is below the content height at the default size,
+// so it binds nothing — the CardH knob is the floor.
+function glowframeLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 52, padTop = 60, padBottom = 60; // his max card padding
+  const cardW = Math.max(maxLw + padX * 2, sp('glowframeCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('glowframeCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
+    padX, blockShift, rtl,
+  };
+}
+
+// A soft elliptical flare: a radial gradient stretched into an
+// ellipse by the scale transform (a circle of radius rx drawn
+// under scale(1, ry/rx) becomes an ellipse rx by ry), painted as a
+// filled path. `stops` is [[offset, rgba], ...] in his order.
+function paintGlowFlare(cx, cy, rx, ry, stops) {
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+  for (const [o, c] of stops) g.addColorStop(o, c);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1, ry / rx);
+  ctx.translate(-cx, -cy);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rx, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// Paint the glass glow frame card: the semi-transparent fill, his
+// inset shadows (top + bottom), the metallic frame stroke with his
+// vertical gradient, the specular overlays on the top and bottom
+// edges, and the light flares on the frame's top and bottom
+// centres. The text itself (with its neon glow) is painted per
+// line by STYLE_PAINT.glowframe.
+function paintGlowframeCard(l, fs) {
+  const cardC = sp('glowframeCardC') || '#24020a';
+  const cardO = (sp('glowframeCardO') ?? 27) / 100;
+  const glowC = sp('glowframeGlowC') || '#9be8ac';
+  const intensity = (sp('glowframeGlowO') ?? 85) / 100;
+  // His metallic rim colours, derived from the glow colour by his
+  // mixHex (already ported as sewingPinMix). sewingPinMix returns
+  // `rgb(r, g, b)` strings, but hexToRgba only understands hex — so
+  // convert once, here: without it the rim, specular and flare
+  // gradients would all render black (hexToRgb parses the rgb()
+  // string as NaN). The stub test caught this before deploy.
+  const toHex = (rgb) => {
+    const m = /^rgb\((\d+), (\d+), (\d+)\)$/.exec(rgb);
+    return m ? rgbToHex(+m[1], +m[2], +m[3]) : rgb;
+  };
+  const rimTop = toHex(sewingPinMix(glowC, '#8c9188', 0.62));
+  const rimBright = toHex(sewingPinMix(glowC, '#ffffff', 0.66));
+  const rimMid = toHex(sewingPinMix(glowC, '#6e6a66', 0.78));
+  const flareTint = toHex(sewingPinMix(glowC, '#ffffff', 0.58));
+  const sw = Math.max(3.2, Math.min(4.6, l.w * 0.0072)); // his frame stroke width
+  const inset = sw / 2;
+  const r = Math.max(6, Math.min(l.r - sw * 0.4, l.h / 2 - sw)); // his frame radius
+  // 1. The semi-transparent card fill.
+  ctx.fillStyle = hexToRgba(cardC, cardO);
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+  // 2. His inset shadows (top + bottom), approximated with soft
+  // dark gradients clipped to the card — canvas has no inset
+  // box-shadow, so the softness curve differs slightly from his
+  // SVG; the alphas (0.36 top, 0.22 bottom) and depths are his.
+  ctx.save();
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.clip();
+  const topShade = ctx.createLinearGradient(0, l.y, 0, l.y + 18);
+  topShade.addColorStop(0, 'rgba(14, 0, 5, 0.36)');
+  topShade.addColorStop(1, 'rgba(14, 0, 5, 0)');
+  ctx.fillStyle = topShade;
+  ctx.fillRect(l.x, l.y, l.w, 18);
+  const botShade = ctx.createLinearGradient(0, l.y + l.h - 15, 0, l.y + l.h);
+  botShade.addColorStop(0, 'rgba(14, 0, 5, 0)');
+  botShade.addColorStop(1, 'rgba(14, 0, 5, 0.22)');
+  ctx.fillStyle = botShade;
+  ctx.fillRect(l.x, l.y + l.h - 15, l.w, 15);
+  ctx.restore();
+  // 3. The metallic frame: one stroked roundRect with his vertical
+  // gradient (greenish metal at the top, dark charcoal at the
+  // bottom corners).
+  const rim = ctx.createLinearGradient(0, l.y, 0, l.y + l.h);
+  rim.addColorStop(0, hexToRgba(rimTop, 0.94));
+  rim.addColorStop(0.28, hexToRgba(rimMid, 0.80));
+  rim.addColorStop(0.65, hexToRgba('#5d4245', 0.68));
+  rim.addColorStop(0.92, hexToRgba('#36141b', 0.78));
+  rim.addColorStop(1, hexToRgba('#3b1920', 0.82));
+  ctx.strokeStyle = rim;
+  ctx.lineWidth = sw;
+  roundRect(l.x + inset, l.y + inset, l.w - sw, l.h - sw, r);
+  ctx.stroke();
+  // 4. Specular overlays on the top and bottom edges: the same
+  // stroked path with radial gradients centred on the edge centres.
+  const topSpec = ctx.createRadialGradient(l.x + l.w / 2, l.y, 0, l.x + l.w / 2, l.y, 0.46 * l.w);
+  topSpec.addColorStop(0, hexToRgba('#ffffff', 0.98 * intensity));
+  topSpec.addColorStop(0.22, hexToRgba(rimBright, 0.90 * intensity));
+  topSpec.addColorStop(0.56, hexToRgba(rimTop, 0.42 * intensity));
+  topSpec.addColorStop(1, hexToRgba(rimTop, 0));
+  ctx.strokeStyle = topSpec;
+  ctx.lineWidth = sw;
+  roundRect(l.x + inset, l.y + inset, l.w - sw, l.h - sw, r);
+  ctx.stroke();
+  const botSpec = ctx.createRadialGradient(l.x + l.w / 2, l.y + l.h, 0, l.x + l.w / 2, l.y + l.h, 0.38 * l.w);
+  botSpec.addColorStop(0, hexToRgba('#ffffff', 0.94 * intensity));
+  botSpec.addColorStop(0.26, hexToRgba(rimBright, 0.76 * intensity));
+  botSpec.addColorStop(0.62, hexToRgba(rimMid, 0.28 * intensity));
+  botSpec.addColorStop(1, hexToRgba(rimMid, 0));
+  ctx.strokeStyle = botSpec;
+  ctx.lineWidth = sw;
+  roundRect(l.x + inset, l.y + inset, l.w - sw, l.h - sw, r);
+  ctx.stroke();
+  // 5. The light flares on the frame's top and bottom centres: a
+  // wide soft ellipse plus a small hot spot on each edge.
+  paintGlowFlare(l.x + l.w / 2, l.y + inset, l.w * 0.27, Math.max(10, sw * 3.1), [
+    [0, hexToRgba('#ffffff', 0.95 * intensity)],
+    [0.26, hexToRgba(flareTint, 0.58 * intensity)],
+    [0.60, hexToRgba(flareTint, 0.15 * intensity)],
+    [1, hexToRgba(flareTint, 0)],
+  ]);
+  paintGlowFlare(l.x + l.w / 2, l.y + inset, l.w * 0.10, Math.max(3, sw * 0.9), [
+    [0, hexToRgba('#ffffff', 0.98 * intensity)],
+    [0.45, hexToRgba('#ffffff', 0.52 * intensity)],
+    [1, hexToRgba('#ffffff', 0)],
+  ]);
+  paintGlowFlare(l.x + l.w / 2, l.y + l.h - inset, l.w * 0.22, Math.max(9, sw * 2.7), [
+    [0, hexToRgba('#ffffff', 0.88 * intensity)],
+    [0.28, hexToRgba(flareTint, 0.46 * intensity)],
+    [0.62, hexToRgba(flareTint, 0.12 * intensity)],
+    [1, hexToRgba(flareTint, 0)],
+  ]);
+  paintGlowFlare(l.x + l.w / 2, l.y + l.h - inset, l.w * 0.085, Math.max(2.6, sw * 0.8), [
+    [0, hexToRgba('#ffffff', 0.98 * intensity)],
+    [0.45, hexToRgba('#ffffff', 0.52 * intensity)],
+    [1, hexToRgba('#ffffff', 0)],
+  ]);
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -4822,6 +5036,9 @@ function draw() {
   // The floating-shadow card wraps the block the same way.
   const floatShadowRTL = state.style === 'floatshadow' ? isRTLText(lines[0] || '') : true;
   const floatShadowL = state.style === 'floatshadow' ? floatShadowLayout(textFs, maxLw, blockH, lineHeight, h, cx, floatShadowRTL) : null;
+  // The glass glow frame card wraps the block the same way.
+  const glowframeRTL = state.style === 'glowframe' ? isRTLText(lines[0] || '') : true;
+  const glowframeL = state.style === 'glowframe' ? glowframeLayout(textFs, maxLw, blockH, lineHeight, h, cx, glowframeRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -4857,7 +5074,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -5036,6 +5253,7 @@ function draw() {
   if (cornerL) paintCornerCard(cornerL, textFs);
   if (metallicL) paintMetallicCard(metallicL, textFs);
   if (floatShadowL) paintFloatShadowCard(floatShadowL, textFs);
+  if (glowframeL) paintGlowframeCard(glowframeL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -5196,7 +5414,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5228,6 +5446,7 @@ function redraw() {
   paintCornerCardSamples();
   paintMetallicSamples();
   paintFloatShadowSamples();
+  paintGlowframeSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -5761,6 +5980,7 @@ function buildStylePicker() {
       if (item.id === 'corner') return '<canvas class="sample-canvas sample-canvas-corner" width="190" height="120"></canvas>';
       if (item.id === 'metallic') return '<canvas class="sample-canvas sample-canvas-metallic" width="190" height="120"></canvas>';
       if (item.id === 'floatshadow') return '<canvas class="sample-canvas sample-canvas-floatshadow" width="190" height="120"></canvas>';
+      if (item.id === 'glowframe') return '<canvas class="sample-canvas sample-canvas-glowframe" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -7351,6 +7571,74 @@ function paintFloatShadowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-floatshadow';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the glass glow frame preview with the REAL glowframe code
+// (glowframeLayout + paintGlowframeCard + the glowing body text) on
+// its small canvas — a miniature of the actual card, same pattern
+// as the floating-shadow preview. Called from redraw(), like the
+// floating-shadow samples.
+function paintGlowframeSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-glowframe')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const glowframeRTL = isRTLText(lines[0] || '');
+        const glowframeL = glowframeLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, glowframeRTL);
+        const blockCx = 540 + glowframeL.blockShift;
+        // Fit the whole card into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed. (The frame and flares sit inside the card
+        // bounds; only a small margin is needed.)
+        const fitW = glowframeL.w + 24, fitH = glowframeL.h + 24;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = glowframeL.x + glowframeL.w / 2, cardCy = glowframeL.y + glowframeL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintGlowframeCard(glowframeL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.glowframe(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-glowframe';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
