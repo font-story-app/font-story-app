@@ -50,6 +50,7 @@ const STYLES = [
   { id: 'brush', label: 'قلم‌مو' },
   { id: 'quotes', label: 'نقل‌قول' },
   { id: 'slantquote', label: 'نقل‌قول مورب' },
+  { id: 'brushquote', label: 'بنر نقل‌قول' },
   // StoryFont styles (Reza, 2026-11-22): the six canvas looks from his
   // screenshots, colours sampled from the shots. 'pastille' was briefly
   // labelled «دور بنفش» (2026-11-23, when it was only a purple outline);
@@ -1034,6 +1035,21 @@ const STYLE_CONTROLS = {
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
+  // Brush quote banner (Reza, 2026-11-24 — his
+  // createBrushQuoteBanner code): black text on a yellow dry-brush
+  // band, inside a broken black frame with bold double quote marks.
+  brushquote: [
+    { key: 'brushquoteCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'brushquoteCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 225, unit: 'px' },
+    { key: 'brushquotePadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 62, unit: 'px', editable: true },
+    { key: 'brushquotePadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 62, unit: 'px', editable: true },
+    { key: 'brushquotePadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 84, unit: 'px', editable: true },
+    { key: 'brushquotePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 84, unit: 'px', editable: true },
+    { key: 'brushquoteBrushC', label: 'رنگ براش', type: 'color', def: '#ffc40c' },
+    { key: 'brushquoteFrameC', label: 'رنگ کادر', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
   // Double line text (Reza, 2026-11-23 — his createDoubleLineTextStyle
   // code): bold white text between two thin horizontal lines — one
   // above, one below — black at 24% opacity, 5px thick, sharp edges.
@@ -1901,6 +1917,13 @@ const STYLE_PAINT = {
   // quotes style.
   slantquote: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
+  },
+  // Brush quote banner: black text on the yellow brush band (the
+  // brush, broken frame and quote marks are painted block-level in
+  // draw()).
+  brushquote: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
   // Double line text (Reza, 2026-11-23 — his createDoubleLineTextStyle
@@ -6285,6 +6308,188 @@ function paintSlantQuoteCard(l, fs) {
   paintSlantQuoteMark(l.x + l.botCx, l.y + l.botCy, off, l.s, true);
 }
 
+// --- Brush quote banner (Reza, 2026-11-24 — his
+// createBrushQuoteBanner code): black text on a yellow dry-brush
+// band, inside a broken black frame with bold double quote marks.
+// The app paints on canvas, so his SVG layer is translated to
+// canvas paths: the brush outline and the quote mark are his exact
+// path strings, traced by traceBrushQuotePath below (absolute M/L/C/Z
+// only); the holes and splatters are his exact arrays.
+
+// His brush outline, verbatim (1000x360 space).
+const BRUSHQUOTE_BRUSH_D = 'M 96 64 L 124 58 L 144 68 L 168 55 L 188 70 L 208 54 L 226 68 L 246 88 L 264 56 L 282 82 L 304 72 L 322 48 L 342 84 L 366 60 L 386 76 L 404 38 L 420 70 L 446 74 L 470 58 L 494 78 L 520 56 L 544 74 L 570 36 L 598 48 L 626 24 L 662 34 L 704 20 L 752 24 L 792 32 L 814 54 L 826 74 L 864 78 L 898 86 L 922 108 L 936 142 L 942 184 L 948 222 L 946 258 L 936 282 L 912 294 L 876 298 L 836 300 L 798 294 L 764 302 L 724 298 L 688 314 L 656 330 L 622 338 L 586 344 L 552 334 L 528 316 L 490 304 L 456 294 L 414 290 L 372 296 L 330 292 L 292 300 L 250 295 L 210 301 L 172 294 L 136 298 L 98 296 L 68 298 L 54 276 L 76 268 L 34 252 L 68 240 L 46 226 L 78 214 L 52 198 L 72 184 L 42 170 L 74 156 L 58 142 L 82 124 L 64 106 L 88 90 L 74 72 Z';
+
+// His single bold quote mark, verbatim (22.2x45 box): a solid round
+// bottom with a curved stem up to the top-right.
+const BRUSHQUOTE_QUOTE_D = 'M 11 45 C 4.8 45 0 40.2 0 33.8 C 0 21.5 6.8 8.8 18.2 0 L 24.4 0 C 17.6 8.2 13.8 16.5 13.8 23.2 C 18.8 24.4 22.2 28.6 22.2 33.8 C 22.2 40.2 17.2 45 11 45 Z';
+
+// His dry-brush holes (x, y, w, h): small parallelograms cut out of
+// the brush so the background shows through.
+const BRUSHQUOTE_HOLES = [
+  [204, 82, 13, 6], [230, 72, 18, 6], [276, 86, 14, 6], [308, 92, 11, 5],
+  [362, 86, 18, 6], [408, 76, 14, 6], [468, 72, 22, 7], [516, 84, 15, 6],
+  [560, 62, 18, 7], [608, 54, 13, 6], [648, 46, 14, 6], [76, 256, 16, 6],
+  [92, 270, 9, 26], [592, 314, 18, 6], [634, 308, 15, 6], [848, 286, 16, 6],
+];
+
+// His paint splatters around the brush edges (cx, cy, rx, ry).
+const BRUSHQUOTE_SPLATTERS = [
+  [24, 168, 14, 4], [28, 250, 18, 4.5], [46, 278, 9, 12], [58, 294, 14, 4.5],
+  [168, 46, 12, 4.5], [248, 44, 9, 3.8], [322, 40, 11, 4], [402, 32, 8, 4.5],
+  [446, 54, 7, 3.5], [520, 44, 12, 4], [568, 28, 10, 4], [612, 22, 13, 4],
+  [678, 18, 14, 4.5], [570, 342, 14, 4.5], [648, 334, 12, 4], [708, 316, 10, 3.8],
+  [944, 152, 6, 10], [950, 226, 7, 12], [934, 286, 10, 5], [286, 308, 11, 3.8],
+];
+
+// Trace one of the brush-quote SVG path strings onto the current
+// canvas context. Only absolute M/L/C/Z commands appear in his two
+// strings, so the parser handles just those.
+function traceBrushQuotePath(d) {
+  ctx.beginPath();
+  for (const part of d.match(/[MLCZ][^MLCZ]*/g) || []) {
+    const nums = part.slice(1).trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    const cmd = part[0];
+    if (cmd === 'M') ctx.moveTo(nums[0], nums[1]);
+    else if (cmd === 'L') { for (let i = 0; i + 1 < nums.length; i += 2) ctx.lineTo(nums[i], nums[i + 1]); }
+    else if (cmd === 'C') { for (let i = 0; i + 5 < nums.length; i += 6) ctx.bezierCurveTo(nums[i], nums[i + 1], nums[i + 2], nums[i + 3], nums[i + 4], nums[i + 5]); }
+    else ctx.closePath();
+  }
+}
+
+// Geometry of the brush quote banner around the text block. Same
+// shape as the other card layouts (height floor splitting evenly,
+// blockShift following the alignment buttons), but the padding is
+// px-based in his code, so the knobs are px: his
+// clamp(42px, 8.2vw, 64px) vertical and clamp(52px, 11vw, 88px)
+// horizontal, evaluated at the 760px canvas width (62/84). The card
+// hugs the text by default (CardW 0); his 620px is a max-width, not
+// a fixed width. The height floor default 225 is his min-height
+// clamp, capped at 225px. The wrapper's min-height is the only
+// reason the banner is taller than its text.
+function brushQuoteLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padLeft = Math.max(0, sp('brushquotePadLeft') ?? 84);
+  const padRight = Math.max(0, sp('brushquotePadRight') ?? 84);
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, sp('brushquotePadTop') ?? 62);
+  const padBottom = Math.max(0, sp('brushquotePadBottom') ?? 62);
+  const cardW = Math.max(maxLw + padLeft + padRight, sp('brushquoteCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padLeft + padRight - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack + (padLeft - padRight) / 2
+    : state.align === 'left' ? -slack + (padLeft - padRight) / 2
+    : state.align === 'justify' ? (rtl ? slack : -slack) + (padLeft - padRight) / 2
+    : (padLeft - padRight) / 2;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the banner is at least the set size; the extra
+  // space splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('brushquoteCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 0,
+    padX, padLeft, padRight, blockShift, rtl,
+  };
+}
+
+// Paint the brush quote banner: the yellow dry-brush band, the broken
+// black frame, and the two bold double quote marks. Paint order
+// follows his SVG order (brush, frame, quotes), so the quotes sit on
+// top of the frame. The frame geometry is computed from the quote
+// positions first, exactly like his updateGeometry.
+function paintBrushQuoteCard(l, fs) {
+  const brushC = sp('brushquoteBrushC') || '#ffc40c';
+  const frameC = sp('brushquoteFrameC') || '#000000';
+  const totalW = l.w, totalH = l.h;
+  // The dry-brush band: his outline + holes (evenodd, so the
+  // background shows through the holes) + splatter dots, all in his
+  // 1000x360 space scaled non-uniformly onto the card box
+  // (preserveAspectRatio none, like his SVG).
+  ctx.save();
+  ctx.translate(l.x, l.y);
+  ctx.scale(totalW / 1000, totalH / 360);
+  ctx.fillStyle = brushC;
+  traceBrushQuotePath(BRUSHQUOTE_BRUSH_D);
+  for (const [hx, hy, hw, hh] of BRUSHQUOTE_HOLES) {
+    ctx.moveTo(hx, hy);
+    ctx.lineTo(hx + hw, hy);
+    ctx.lineTo(hx + hw - 2, hy + hh);
+    ctx.lineTo(hx + 2, hy + hh);
+    ctx.closePath();
+  }
+  ctx.fill('evenodd');
+  for (const [cx, cy, rx, ry] of BRUSHQUOTE_SPLATTERS) {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  // Quote-mark and frame geometry, in 1:1 card pixels.
+  const fx1 = totalW * 0.11, fx2 = totalW * 0.915;
+  const fy1 = totalH * 0.145, fy2 = totalH * 0.855;
+  const fw = fx2 - fx1, fh = fy2 - fy1;
+  const qScale = Math.max(0.68, Math.min(1.18, totalH / 185));
+  const qW = 51.4 * qScale, qH = 45 * qScale;
+  // Open pair at the top-left, close pair (rotated 180°) at the
+  // bottom-right, hanging below the frame's bottom edge.
+  const oqX = fx1 - qW * 0.42, oqY = fy1 - qH * 0.34;
+  const cqRightX = fx2 - Math.max(8, qW * 0.18);
+  const cqBottomY = fy2 + qH * 0.48;
+  // The broken frame: six segments, stroked once, round caps/joins.
+  const strokeW = Math.max(3, Math.min(4.6, totalH * 0.02));
+  const topStart = oqX + qW + Math.max(6, totalW * 0.012);
+  const topSeg1End = fx1 + fw * 0.425;
+  const topSeg2Start = fx1 + fw * 0.465;
+  const topSeg2End = fx1 + fw * 0.565;
+  const topRightStart = fx1 + fw * 0.865;
+  const topRightDrop = fy1 + fh * 0.28;
+  const bottomLeftRise = fy2 - fh * 0.21;
+  const bottomLeftEnd = fx1 + fw * 0.545;
+  const bottomSeg2Start = fx1 + fw * 0.72;
+  const bottomSeg2End = Math.max(bottomSeg2Start + 18, cqRightX - qW - Math.max(6, totalW * 0.012));
+  const bottomRightRise = fy2 - fh * 0.21;
+  const bottomRightStart = Math.min(fx2 - 6, cqRightX + Math.max(2, qW * 0.04));
+  ctx.save();
+  ctx.translate(l.x, l.y);
+  ctx.strokeStyle = frameC;
+  ctx.lineWidth = strokeW;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  if (topSeg1End > topStart) { ctx.moveTo(topStart, fy1); ctx.lineTo(topSeg1End, fy1); }
+  ctx.moveTo(topSeg2Start, fy1); ctx.lineTo(topSeg2End, fy1);
+  ctx.moveTo(topRightStart, fy1); ctx.lineTo(fx2, fy1); ctx.lineTo(fx2, topRightDrop);
+  ctx.moveTo(fx1, bottomLeftRise); ctx.lineTo(fx1, fy2); ctx.lineTo(bottomLeftEnd, fy2);
+  if (bottomSeg2End > bottomSeg2Start) { ctx.moveTo(bottomSeg2Start, fy2); ctx.lineTo(bottomSeg2End, fy2); }
+  ctx.moveTo(bottomRightStart, fy2); ctx.lineTo(fx2, fy2); ctx.lineTo(fx2, bottomRightRise);
+  ctx.stroke();
+  // The quote marks, on top of the frame.
+  ctx.fillStyle = frameC;
+  const doubleQuote = () => {
+    traceBrushQuotePath(BRUSHQUOTE_QUOTE_D);
+    ctx.fill();
+    ctx.save();
+    ctx.translate(27, 0);
+    traceBrushQuotePath(BRUSHQUOTE_QUOTE_D);
+    ctx.fill();
+    ctx.restore();
+  };
+  ctx.save();
+  ctx.translate(oqX, oqY);
+  ctx.scale(qScale, qScale);
+  doubleQuote();
+  ctx.restore();
+  ctx.save();
+  ctx.translate(cqRightX, cqBottomY);
+  ctx.rotate(Math.PI);
+  ctx.scale(qScale, qScale);
+  doubleQuote();
+  ctx.restore();
+  ctx.restore();
+}
+
 // --- Double line text (Reza, 2026-11-23 — his
 // createDoubleLineTextStyle code): bold white text between two thin
 // horizontal lines — one above, one below — black at 24% opacity,
@@ -7501,6 +7706,10 @@ function draw() {
   // takes textFs for the shared signature only).
   const slantQuoteRTL = state.style === 'slantquote' ? isRTLText(lines[0] || '') : true;
   const slantQuoteL = state.style === 'slantquote' ? slantQuoteLayout(textFs, maxLw, blockH, lineHeight, h, cx, slantQuoteRTL) : null;
+  // The brush quote banner wraps the block the same way (yellow
+  // dry-brush band, broken frame, bold quote marks).
+  const brushQuoteRTL = state.style === 'brushquote' ? isRTLText(lines[0] || '') : true;
+  const brushQuoteL = state.style === 'brushquote' ? brushQuoteLayout(textFs, maxLw, blockH, lineHeight, h, cx, brushQuoteRTL) : null;
   // The double-line block wraps the text the same way.
   const doubleLineRTL = state.style === 'doubleline' ? isRTLText(lines[0] || '') : true;
   const doubleLineL = state.style === 'doubleline' ? doubleLineLayout(textFs, maxLw, blockH, lineHeight, h, cx, doubleLineRTL) : null;
@@ -7542,7 +7751,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || brushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -7750,6 +7959,11 @@ function draw() {
   // painted per-line below, in white).
   if (slantQuoteL) paintSlantQuoteCard(slantQuoteL, textFs);
 
+  // Brush quote banner: yellow dry-brush band + broken black frame +
+  // bold double quote marks around the whole text block (text painted
+  // per-line below, in black).
+  if (brushQuoteL) paintBrushQuoteCard(brushQuoteL, textFs);
+
   // Double line text: bold white text between two thin lines — one
   // above, one below — no card fill, the page background shows
   // through (the text itself is painted per-line below, in white).
@@ -7947,7 +8161,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -7998,6 +8212,7 @@ function redraw() {
   paintMetallicGoldSamples();
   paintNeonGlowSamples();
   paintSlantQuoteCardSamples();
+  paintBrushQuoteSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
   paintGradbarsSamples();
@@ -8550,6 +8765,7 @@ function buildStylePicker() {
       if (item.id === 'metallicgold') return '<canvas class="sample-canvas sample-canvas-metallicgold" width="190" height="120"></canvas>';
       if (item.id === 'neonglow') return '<canvas class="sample-canvas sample-canvas-neonglow" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
+      if (item.id === 'brushquote') return '<canvas class="sample-canvas sample-canvas-brushquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
       if (item.id === 'gradbars') return '<canvas class="sample-canvas sample-canvas-gradbars" width="190" height="120"></canvas>';
@@ -11209,6 +11425,75 @@ function paintSlantQuoteCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-slantquote';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the brush quote preview with the REAL brush quote code
+// (brushQuoteLayout + paintBrushQuoteCard + the body text) on its
+// small canvas — a miniature of the actual banner, same pattern as
+// the slanted quote preview. Called from redraw(), like the
+// slanted quote samples. If painting fails, fall back to the CSS
+// box.
+function paintBrushQuoteSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-brushquote')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the banner geometry follows
+        // the banner width.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const brushQuoteRTL = isRTLText(lines[0] || '');
+        const brushQuoteL = brushQuoteLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, brushQuoteRTL);
+        const blockCx = 540 + brushQuoteL.blockShift;
+        // Fit the whole banner into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const fitW = brushQuoteL.w + 96, fitH = brushQuoteL.h + 120;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = brushQuoteL.x + brushQuoteL.w / 2, cardCy = brushQuoteL.y + brushQuoteL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintBrushQuoteCard(brushQuoteL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.brushquote(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-brushquote';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
