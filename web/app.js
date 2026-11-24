@@ -87,6 +87,7 @@ const STYLES = [
   { id: 'msgbubble', label: 'حباب پیام' },
   { id: 'dropbubble', label: 'حباب پیام ۲' },
   { id: 'comicbubble', label: 'حباب کمیک' },
+  { id: 'comicbubble2', label: 'حباب کمیک ۲' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
@@ -422,6 +423,24 @@ const STYLE_CONTROLS = {
     { key: 'comicBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
     { key: 'comicOutlineC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
     { key: 'comicTailSide', label: 'دنباله راست', type: 'range', min: 0, max: 1, step: 1, def: 0, editable: true },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Comic speech bubble 2 (Reza, 2026-11-24 — his second
+  // createComicSpeechBubble code): the same bubble, but the tail
+  // defaults to the RIGHT, the outline is 5.2px instead of 4.5px,
+  // and the right-tail extrusion offset is 6.5 instead of 6 — so
+  // it is its own style, right after «حباب کمیک».
+  comicbubble2: [
+    { key: 'comic2CardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'comic2CardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'comic2PadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 33, unit: 'px', editable: true },
+    { key: 'comic2PadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 49, unit: 'px', editable: true },
+    { key: 'comic2PadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 53, unit: 'px', editable: true },
+    { key: 'comic2PadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 46, unit: 'px', editable: true },
+    { key: 'comic2BubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
+    { key: 'comic2OutlineC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
+    { key: 'comic2TailSide', label: 'دنباله راست', type: 'range', min: 0, max: 1, step: 1, def: 1, editable: true },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2749,6 +2768,11 @@ const STYLE_PAINT = {
   // Comic speech bubble: black text on the white bubble (the bubble
   // + tail + extrusion are painted block-level in draw()).
   comicbubble: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Comic speech bubble 2: same black text on the white bubble.
+  comicbubble2: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -6753,6 +6777,101 @@ function paintComicBubble(l, fs) {
   ctx.restore();
 }
 
+// Geometry of the comic speech bubble 2 — the same shape as
+// comicBubbleLayout, but the side paddings are the RIGHT-tail
+// values (right 53, left 46, swapped) since this variant's tail
+// defaults to the right.
+function comicBubble2Layout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padLeft = Math.max(0, sp('comic2PadLeft') ?? 46);
+  const padRight = Math.max(0, sp('comic2PadRight') ?? 53);
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, sp('comic2PadTop') ?? 33);
+  const padBottom = Math.max(0, sp('comic2PadBottom') ?? 49);
+  const w = Math.max(maxLw + padLeft + padRight, sp('comic2CardW'));
+  const hh = blockH + padTop + padBottom;
+  // Height floor: the bubble is at least the set size; the extra
+  // space splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('comic2CardH') - hh);
+  const blockShift = (padLeft - padRight) / 2;
+  return {
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop - extraH / 2, w, h: hh + extraH, r: 0,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
+    tailOut: 0, tailDrop: 0, rtl,
+  };
+}
+
+// Paint the comic speech bubble 2 — the same three layers as
+// paintComicBubble, but the outline is 5.2px (not 4.5px), the
+// right-tail extrusion offset is 6.5 (not 6), and the tail
+// defaults to the right (his usage example).
+function paintComicBubble2(l, fs) {
+  const bubbleC = sp('comic2BubbleC') || '#ffffff';
+  const outlineC = sp('comic2OutlineC') || '#000000';
+  const isLeft = (sp('comic2TailSide') ?? 1) <= 0;
+  const bx = l.x, by = l.y, bw = l.w, bh = l.h;
+  // His geometry constants (fixed px in his code): the bubble body
+  // sits 5px from the top, 24px from the bottom, 14px from the tail
+  // side and 5px from the other side of the wrapper box.
+  const padTop = 5, padBottom = 24;
+  const padSideExtrude = 14, padSideFlat = 5;
+  const x = bx + (isLeft ? padSideExtrude : padSideFlat);
+  const y = by + padTop;
+  const w = bw - padSideExtrude - padSideFlat;
+  const h = bh - padTop - padBottom;
+  const r = Math.max(12, Math.min(19, h * 0.22));
+  // His path: a rounded rect whose bottom edge carries the sharp
+  // tail — a triangle pointing 17px down, just off the tail side.
+  const path = () => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    if (isLeft) {
+      const txStart = x + r + Math.max(17, Math.min(24, w * 0.05));
+      const txTip = x + Math.max(3, r * 0.32);
+      const txEnd = x + r + 3;
+      ctx.lineTo(txStart, y + h);
+      ctx.lineTo(txTip, y + h + 17);
+      ctx.lineTo(txEnd, y + h);
+    } else {
+      const txEnd = x + w - r - 3;
+      const txTip = x + w - Math.max(3, r * 0.32);
+      const txStart = x + w - r - Math.max(17, Math.min(24, w * 0.05));
+      ctx.lineTo(txEnd, y + h);
+      ctx.lineTo(txTip, y + h + 17);
+      ctx.lineTo(txStart, y + h);
+    }
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  };
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 5.2;
+  const sx = isLeft ? -1 : 1;
+  const layer = (tx, ty, fillC, strokeC) => {
+    ctx.save();
+    ctx.translate(tx, ty);
+    path();
+    ctx.fillStyle = fillC;
+    ctx.strokeStyle = strokeC;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  };
+  // The white back silhouette, the black extrusion (6 on the left,
+  // 6.5 on the right), then the front bubble on top.
+  layer(sx * 10.5, 4.4, bubbleC, bubbleC);
+  layer(sx * (isLeft ? 6 : 6.5), 5, outlineC, outlineC);
+  layer(0, 0, bubbleC, outlineC);
+  ctx.restore();
+}
+
 // Dry-brush stroke (Reza 2026-11-22 23:02 — his createBrushTextStyle
 // code): a wide horizontal brush band behind the whole text block,
 // dark navy #241e5a with a pale-pink #fce8f3 shadow copy offset
@@ -7406,6 +7525,10 @@ function draw() {
   // bubble, sharp tail, 3-layer extrusion — all inside the box).
   const comicBubbleRTL = state.style === 'comicbubble' ? isRTLText(lines[0] || '') : true;
   const comicBubbleL = state.style === 'comicbubble' ? comicBubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, comicBubbleRTL) : null;
+  // The comic speech bubble 2 wraps the block the same way (same
+  // bubble, tail on the right by default, thicker outline).
+  const comicBubble2RTL = state.style === 'comicbubble2' ? isRTLText(lines[0] || '') : true;
+  const comicBubble2L = state.style === 'comicbubble2' ? comicBubble2Layout(textFs, maxLw, blockH, lineHeight, h, cx, comicBubble2RTL) : null;
   // The dry-brush band wraps the block the same way (a wide band
   // behind the whole text block, with a pink shadow copy).
   const brushL = state.style === 'brushstroke' ? brushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
@@ -7419,7 +7542,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || brushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -7432,7 +7555,7 @@ function draw() {
   // itself stays centred). alignW is maxLw for every other style, so
   // the three call sites below (line anchor, caret, editor) are
   // unchanged for them.
-  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || brushL || quotesL;
+  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || brushL || quotesL;
   const alignW = bubbleL ? bubbleL.w - (bubbleL.padLeft ?? bubbleL.padX) - (bubbleL.padRight ?? bubbleL.padX) : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -7653,6 +7776,10 @@ function draw() {
   // below, in black).
   if (comicBubbleL) paintComicBubble(comicBubbleL, textFs);
 
+  // Comic speech bubble 2: same bubble, tail on the right by
+  // default, thicker outline.
+  if (comicBubble2L) paintComicBubble2(comicBubble2L, textFs);
+
   // Dry-brush band: navy brush stroke + pale-pink shadow around the
   // whole text block (text painted per-line below, in white).
   if (brushL) paintBrush(brushL, textFs);
@@ -7820,7 +7947,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -7832,6 +7959,7 @@ function redraw() {
   paintMsgbubbleSamples();
   paintDropbubbleSamples();
   paintComicBubbleSamples();
+  paintComicBubble2Samples();
   paintBrushSamples();
   paintQuotesSamples();
   paintPinSamples();
@@ -8384,6 +8512,7 @@ function buildStylePicker() {
       if (item.id === 'msgbubble') return '<canvas class="sample-canvas sample-canvas-msgbubble" width="190" height="120"></canvas>';
       if (item.id === 'dropbubble') return '<canvas class="sample-canvas sample-canvas-dropbubble" width="190" height="120"></canvas>';
       if (item.id === 'comicbubble') return '<canvas class="sample-canvas sample-canvas-comicbubble" width="190" height="120"></canvas>';
+      if (item.id === 'comicbubble2') return '<canvas class="sample-canvas sample-canvas-comicbubble2" width="190" height="120"></canvas>';
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
@@ -11552,6 +11681,76 @@ function paintComicBubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-comicbubble';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the comic bubble 2 preview with the REAL comic 2 code
+// (comicBubble2Layout + paintComicBubble2 + the body text) on its
+// small canvas — a miniature of the actual bubble, so the preview
+// always matches the canvas. Called from redraw(), like the comic
+// samples.
+function paintComicBubble2Samples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-comicbubble2')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // bubble scales with the rail, like the body text.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const comicBubble2RTL = isRTLText(lines[0] || '');
+        const comicBubble2L = comicBubble2Layout(textFs, maxLw, blockH, lineHeight, 1080, 540, comicBubble2RTL);
+        const blockCx = 540 + comicBubble2L.blockShift;
+        // The sample's text aligns inside the bubble too (same alignW
+        // rule as draw()).
+        const alignW = comicBubble2L.w - comicBubble2L.padLeft - comicBubble2L.padRight;
+        // Fit the whole bubble INTO the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed. The tail stays inside the box, so the fit counts
+        // only the bubble itself.
+        const s = Math.min(W / (comicBubble2L.w + comicBubble2L.tailOut), H / (comicBubble2L.h + comicBubble2L.tailDrop));
+        const cardCx = comicBubble2L.x + (comicBubble2L.w + comicBubble2L.tailOut) / 2, cardCy = comicBubble2L.y + (comicBubble2L.h + comicBubble2L.tailDrop) / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintComicBubble2(comicBubble2L, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.comicbubble2(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-comicbubble2';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
