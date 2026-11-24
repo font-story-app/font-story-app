@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'floatshadow', 'glowframe', 'cornerglow',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -197,6 +197,11 @@ const STYLE_PARAMS = {
   gradbarsCardH: { min: 0, max: 800 },
   gradbarsTopC: { color: true },
   gradbarsBottomC: { color: true },
+  // Side line text (Reza, 2026-11-24).
+  sidelineCardW: { min: 0, max: 900 },
+  sidelineCardH: { min: 0, max: 800 },
+  sidelineLineC: { color: true },
+  sidelineLineW: { min: 1, max: 12 },
   // Floating shadow card (Reza, 2026-11-24).
   floatShadowCardW: { min: 0, max: 900 },
   floatShadowCardH: { min: 0, max: 800 },

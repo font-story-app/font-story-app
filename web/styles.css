@@ -486,6 +486,10 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-gradbars {
   height: 60px;
 }
+/* Side line preview: same miniature treatment as the gradient-bars card. */
+.pick-card .sample canvas.sample-canvas-sideline {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
@@ -630,6 +634,7 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .sample-doubleline { background: transparent; color: #fff; border-top: 2px solid rgba(0, 0, 0, 0.24); border-bottom: 2px solid rgba(0, 0, 0, 0.24); padding: 6px; }
 .sample-yellowbars { background: rgba(26, 0, 8, 0.34); color: #fff; border-left: 6px solid #fce93a; border-right: 6px solid #fce93a; padding: 6px; }
 .sample-gradbars { background: transparent; color: #fff; border-left: 4px solid #ff0000; border-right: 4px solid #ff0000; padding: 6px; }
+.sample-sideline { background: transparent; color: #fff; border-right: 4px solid #ffffff; padding: 6px; }
 .sample-metallic { background: linear-gradient(90deg, #000, #fa432c, #000); color: #fff; border-radius: 10px; padding: 0 6px; }
 .sample-floatshadow { background: #da7689; color: #fff; border-radius: 10px; padding: 0 6px; box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.4); }
 .sample-glowframe { background: rgba(36, 2, 10, 0.27); color: #fff; border: 2px solid #9be8ac; border-radius: 10px; padding: 0 6px; }

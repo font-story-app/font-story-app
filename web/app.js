@@ -76,6 +76,7 @@ const STYLES = [
   { id: 'doubleline', label: 'دو خط' },
   { id: 'yellowbars', label: 'بنر زرد' },
   { id: 'gradbars', label: 'نوار گرادیان' },
+  { id: 'sideline', label: 'خط کناری' },
   // Reza 2026-11-23: doubleFrame + the two bubbles moved here, right
   // after the sticker.
   { id: 'doubleFrame', label: 'قاب دوتایی' },
@@ -708,6 +709,24 @@ const STYLE_CONTROLS = {
     { key: 'gradbarsCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
     { key: 'gradbarsTopC', label: 'رنگ بالای نوار', type: 'color', def: '#ff0000' },
     { key: 'gradbarsBottomC', label: 'رنگ پایین نوار', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Side line text (Reza, 2026-11-24 — his
+  // createSideLineTextStyle code): white text with one thin
+  // vertical line on its right side, the line stretching taller
+  // than the text (his vertical text padding). No card fill: the
+  // page background shows through, like the gradient-bars style.
+  // Width hugs the text + gap + line; height hugs the text above
+  // his padding (the 2026-11-24 CardH rule: the height knob
+  // starts at 0). The line stays on the right, as in his code
+  // (lineSide 'right'); there is no side toggle — the sheet has
+  // only range/color controls.
+  sideline: [
+    { key: 'sidelineCardW', label: 'عرض بلوک', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'sidelineCardH', label: 'ارتفاع بلوک', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'sidelineLineC', label: 'رنگ خط', type: 'color', def: '#ffffff' },
+    { key: 'sidelineLineW', label: 'ضخامت خط', type: 'range', min: 1, max: 12, step: 0.5, def: 3.5, unit: 'px' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1530,6 +1549,14 @@ const STYLE_PAINT = {
   // draw()). A colour picked in the رنگ tab wins; otherwise his
   // #ffffff.
   gradbars: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
+  },
+  // Side line text (Reza, 2026-11-24 — his
+  // createSideLineTextStyle code): plain white text — the line
+  // itself is painted block-level in draw(). A colour picked in
+  // the رنگ tab wins; otherwise his #ffffff.
+  sideline: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
@@ -4471,6 +4498,54 @@ function paintGradbars(l, fs) {
   ctx.fillRect(l.x + l.w - l.barW, l.y, l.barW, l.h);
 }
 
+// --- Side line text (Reza, 2026-11-24 — his
+// createSideLineTextStyle code): white text with one thin vertical
+// line on its right side. No card fill: the page background shows
+// through, like the gradient-bars style.
+
+// Geometry of the side-line block around the text block. Same shape
+// as the gradient-bars layout (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons).
+// His gap is his clamp max 56px; his vertical text padding is his
+// clamp max 66px top and bottom, so the line stretches taller than
+// the text. The block width is the text + gap + line width (his
+// max-width 720px is only a cap — the hug width is smaller for
+// short text, and the width knob can widen it).
+function sidelineLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const gap = 56, padTop = 66, padBottom = 66; // his max values
+  const lineW = sp('sidelineLineW') ?? 3.5;
+  const cardW = Math.max(maxLw + gap + lineW, sp('sidelineCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - gap - lineW - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the block is at least the set size; the extra
+  // space splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('sidelineCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop,
+    gap, lineW, blockShift, rtl,
+  };
+}
+
+// Paint the side-line block: one thin vertical line at the right
+// edge of the block, in the line colour, sharp-edged (no radius),
+// stretching the full block height. The text itself is painted
+// per line by STYLE_PAINT.sideline.
+function paintSideline(l, fs) {
+  const lineC = sp('sidelineLineC') || '#ffffff';
+  ctx.fillStyle = lineC;
+  ctx.fillRect(l.x + l.w - l.lineW, l.y, l.lineW, l.h);
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -5194,6 +5269,9 @@ function draw() {
   // The gradient-bars block wraps the text the same way.
   const gradbarsRTL = state.style === 'gradbars' ? isRTLText(lines[0] || '') : true;
   const gradbarsL = state.style === 'gradbars' ? gradbarsLayout(textFs, maxLw, blockH, lineHeight, h, cx, gradbarsRTL) : null;
+  // The side-line block wraps the text the same way.
+  const sidelineRTL = state.style === 'sideline' ? isRTLText(lines[0] || '') : true;
+  const sidelineL = state.style === 'sideline' ? sidelineLayout(textFs, maxLw, blockH, lineHeight, h, cx, sidelineRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -5215,7 +5293,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -5414,6 +5492,7 @@ function draw() {
   // painted per-line below, in white with the black outline).
   if (yellowBarsL) paintYellowBars(yellowBarsL, textFs);
   if (gradbarsL) paintGradbars(gradbarsL, textFs);
+  if (sidelineL) paintSideline(sidelineL, textFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -5556,7 +5635,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5594,6 +5673,7 @@ function redraw() {
   paintDoubleLineSamples();
   paintYellowBarsSamples();
   paintGradbarsSamples();
+  paintSidelineSamples();
 }
 
 // Caret blink.
@@ -6129,6 +6209,7 @@ function buildStylePicker() {
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
       if (item.id === 'gradbars') return '<canvas class="sample-canvas sample-canvas-gradbars" width="190" height="120"></canvas>';
+      if (item.id === 'sideline') return '<canvas class="sample-canvas sample-canvas-sideline" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -8117,6 +8198,72 @@ function paintGradbarsSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-gradbars';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the side-line preview with the REAL sideline code
+// (sidelineLayout + paintSideline + the body text) on its small
+// canvas — a miniature of the actual block, same pattern as the
+// gradient-bars preview. Called from redraw(), like the gradbars
+// samples. If painting fails, fall back to the CSS box.
+function paintSidelineSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-sideline')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the block chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const sidelineRTL = isRTLText(lines[0] || '');
+        const sidelineL = sidelineLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, sidelineRTL);
+        const blockCx = 540 + sidelineL.blockShift;
+        // Fit the whole block into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const s = Math.min(W / sidelineL.w, H / sidelineL.h);
+        const cardCx = sidelineL.x + sidelineL.w / 2, cardCy = sidelineL.y + sidelineL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintSideline(sidelineL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.sideline(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-sideline';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
