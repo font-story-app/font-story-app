@@ -75,6 +75,7 @@ const STYLES = [
   { id: 'sticker', label: 'استیکر' },
   { id: 'doubleline', label: 'دو خط' },
   { id: 'yellowbars', label: 'بنر زرد' },
+  { id: 'gradbars', label: 'نوار گرادیان' },
   // Reza 2026-11-23: doubleFrame + the two bubbles moved here, right
   // after the sticker.
   { id: 'doubleFrame', label: 'قاب دوتایی' },
@@ -641,6 +642,20 @@ const STYLE_CONTROLS = {
     { key: 'yellowBarsStrokeC', label: 'رنگ دورخط', type: 'color', def: '#111111' },
     { key: 'yellowBarsGlowC', label: 'رنگ هاله', type: 'color', def: '#1a0008' },
     { key: 'yellowBarsGlowO', label: 'غلظت هاله', type: 'range', min: 10, max: 100, step: 1, def: 34, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Gradient bars text (Reza, 2026-11-24 — his
+  // createGradientBarsTextStyle code): white text between two
+  // vertical bars, each a vertical gradient from the top colour to
+  // the bottom colour. Width is his 660px by default; height hugs
+  // the text above his 275px min-height floor (the 2026-11-24
+  // CardH rule: the height knob starts at 0).
+  gradbars: [
+    { key: 'gradbarsCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 660, unit: 'px' },
+    { key: 'gradbarsCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'gradbarsTopC', label: 'رنگ بالای نوار', type: 'color', def: '#ff0000' },
+    { key: 'gradbarsBottomC', label: 'رنگ پایین نوار', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1454,6 +1469,15 @@ const STYLE_PAINT = {
   yellowbars: (line, cx, y, visLw, fs) => {
     const strokeW = fs * 7 / 66; // his -webkit-text-stroke 7px at 66px
     strokeWords(line, cx, y, sp('yellowBarsStrokeC') || '#111111', strokeW);
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
+  },
+  // Gradient bars text (Reza, 2026-11-24 — his
+  // createGradientBarsTextStyle code): white text between two
+  // vertical gradient bars (the bars are painted block-level in
+  // draw()). A colour picked in the رنگ tab wins; otherwise his
+  // #ffffff.
+  gradbars: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
     drawWords(line, cx, y);
   },
@@ -3928,6 +3952,61 @@ function paintYellowBars(l, fs) {
   ctx.fillRect(l.x + l.w - l.barW, l.y, l.barW, l.h);
 }
 
+// --- Gradient bars text (Reza, 2026-11-24 — his
+// createGradientBarsTextStyle code): white text between two vertical
+// bars, each a vertical gradient from the top colour (red) to the
+// bottom colour (black). No card fill: the page background shows
+// through, like the yellow-bars banner.
+
+// Geometry of the gradient-bars block around the text block. Same
+// shape as the yellow-bars layout (bars at the block's left/right
+// edges, fixed px padding, height floor splitting evenly,
+// blockShift following the alignment buttons), plus his 275px
+// min-height floor (his minHeight clamp max: 34vw of the 1080
+// canvas, capped at 275).
+function gradbarsLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const barW = 15, padX = 44, padTop = 54, padBottom = 54; // his max values
+  const minH = 275; // his min-height clamp max
+  const cardW = Math.max(maxLw + padX * 2 + barW * 2, sp('gradbarsCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - barW * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // His min-height floor (275) and the height knob both grow the
+  // block; the extra space splits evenly above and below so the
+  // text stays centred.
+  const floorH = Math.max(minH, sp('gradbarsCardH'));
+  const extraH = Math.max(0, floorH - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop,
+    padX, barW, blockShift, rtl,
+  };
+}
+
+// Paint the gradient-bars block: the two vertical bars at the left
+// and right edges, each a vertical gradient from the top colour to
+// the bottom colour, sharp-edged (no radius). One gradient object
+// serves both bars (same vertical range). The text itself is
+// painted per line by STYLE_PAINT.gradbars.
+function paintGradbars(l, fs) {
+  const topC = sp('gradbarsTopC') || '#ff0000';
+  const bottomC = sp('gradbarsBottomC') || '#000000';
+  const g = ctx.createLinearGradient(0, l.y, 0, l.y + l.h);
+  g.addColorStop(0, topC);
+  g.addColorStop(1, bottomC);
+  ctx.fillStyle = g;
+  ctx.fillRect(l.x, l.y, l.barW, l.h);
+  ctx.fillRect(l.x + l.w - l.barW, l.y, l.barW, l.h);
+}
+
 // Message bubble geometry: the bubble is a WIDE bar, NOT a hug —
 // Reza's code sets min-width: min(88vw, 620px) with the text centred
 // in it. The 88% alone (950px) took the whole page length on his
@@ -4639,6 +4718,9 @@ function draw() {
   // The yellow-bars banner wraps the text the same way.
   const yellowBarsRTL = state.style === 'yellowbars' ? isRTLText(lines[0] || '') : true;
   const yellowBarsL = state.style === 'yellowbars' ? yellowBarsLayout(textFs, maxLw, blockH, lineHeight, h, cx, yellowBarsRTL) : null;
+  // The gradient-bars block wraps the text the same way.
+  const gradbarsRTL = state.style === 'gradbars' ? isRTLText(lines[0] || '') : true;
+  const gradbarsL = state.style === 'gradbars' ? gradbarsLayout(textFs, maxLw, blockH, lineHeight, h, cx, gradbarsRTL) : null;
   // The message bubble wraps the block the same way (it hugs the
   // text; the tail sits once at the bottom-right corner).
   const msgbubbleRTL = state.style === 'msgbubble' ? isRTLText(lines[0] || '') : true;
@@ -4660,7 +4742,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || slantQuoteL || doubleLineL || yellowBarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -4855,6 +4937,7 @@ function draw() {
   // fill, the page background shows through (the text itself is
   // painted per-line below, in white with the black outline).
   if (yellowBarsL) paintYellowBars(yellowBarsL, textFs);
+  if (gradbarsL) paintGradbars(gradbarsL, textFs);
 
   // Message bubble: blue bubble + tail around the whole text block
   // (the text itself is painted per-line below, in white).
@@ -4997,7 +5080,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5031,6 +5114,7 @@ function redraw() {
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
+  paintGradbarsSamples();
 }
 
 // Caret blink.
@@ -5562,6 +5646,7 @@ function buildStylePicker() {
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
+      if (item.id === 'gradbars') return '<canvas class="sample-canvas sample-canvas-gradbars" width="190" height="120"></canvas>';
       return `<span class="sample-${item.id}">متن شما</span>`;
     });
 }
@@ -7280,6 +7365,72 @@ function paintYellowBarsSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-yellowbars';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the gradient-bars preview with the REAL gradbars code
+// (gradbarsLayout + paintGradbars + the body text) on its small
+// canvas — a miniature of the actual block, same pattern as the
+// yellow-bars preview. Called from redraw(), like the yellow-bars
+// samples. If painting fails, fall back to the CSS box.
+function paintGradbarsSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-gradbars')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the block chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const gradbarsRTL = isRTLText(lines[0] || '');
+        const gradbarsL = gradbarsLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, gradbarsRTL);
+        const blockCx = 540 + gradbarsL.blockShift;
+        // Fit the whole block into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const s = Math.min(W / gradbarsL.w, H / gradbarsL.h);
+        const cardCx = gradbarsL.x + gradbarsL.w / 2, cardCy = gradbarsL.y + gradbarsL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintGradbars(gradbarsL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.gradbars(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-gradbars';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
