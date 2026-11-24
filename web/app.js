@@ -106,6 +106,7 @@ const STYLES = [
   { id: 'glowframe', label: 'قاب درخشان' },
   { id: 'cornerglow', label: 'گوشه‌های درخشان' },
   { id: 'vibrantshadow', label: 'سایه رنگی' },
+  { id: 'glossyglass', label: 'شیشه براق' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -669,6 +670,24 @@ const STYLE_CONTROLS = {
     { key: 'vibrantCardC', label: 'رنگ کارت', type: 'color', def: '#e91e63' },
     { key: 'vibrantShadowC', label: 'رنگ سایه', type: 'color', def: '#000000' },
     { key: 'vibrantShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 100, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Glossy glass card (Reza, 2026-11-24 — his
+  // createGlossyGlassCard code): a semi-transparent metallic
+  // streaked card — his 112deg white-sheen gradient — with a
+  // dark reddish border. Width is his 700px by default; height
+  // hugs the text (the 2026-11-24 CardH rule: the height knob
+  // starts at 0). Opacity 0.48 is the 48% default of the شفافیت
+  // شیشه knob. His backdrop blur (6px) has no canvas equivalent —
+  // the gradient itself is semi-transparent, so the page
+  // background shows through the card.
+  glossyglass: [
+    { key: 'glossCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 700, unit: 'px' },
+    { key: 'glossCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'glossSheenC', label: 'رنگ بازتاب', type: 'color', def: '#ffffff' },
+    { key: 'glossBorderC', label: 'رنگ کادر', type: 'color', def: '#74383f' },
+    { key: 'glossOpacity', label: 'شفافیت شیشه', type: 'range', min: 5, max: 95, step: 1, def: 48, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1671,6 +1690,14 @@ const STYLE_PAINT = {
     ctx.fillStyle = fill;
     drawWords(line, cx, y);
     ctx.restore();
+  },
+  // Glossy glass card (Reza, 2026-11-24 — his
+  // createGlossyGlassCard code): plain white text, no shadow —
+  // the glass card itself (painted block-level by paintGlossyCard)
+  // carries the look.
+  glossyglass: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#ffffff';
+    drawWords(line, cx, y);
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -4310,6 +4337,91 @@ function paintVibrantCard(l, fs) {
   }
 }
 
+// --- Glossy glass card (Reza, 2026-11-24 — his
+// createGlossyGlassCard code): a semi-transparent metallic
+// streaked card — his 112deg white-sheen gradient — with a dark
+// reddish border. His backdrop blur (6px) has no canvas
+// equivalent: the gradient itself is semi-transparent, so the
+// page background shows through the card.
+
+// Geometry of the glossy glass card around the text block. Same
+// shape as the other card layouts (fixed px padding, height floor
+// splitting evenly, blockShift following the alignment buttons).
+// His padding is his clamp max (76px vertical, 56px horizontal);
+// his radius is his clamp max 30px. Width is his 700px by
+// default; the height floor is 0, so the card hugs the text
+// vertically (the 2026-11-24 CardH rule).
+function glossyLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padX = 56, padTop = 76, padBottom = 76; // his max card padding
+  const cardW = Math.max(maxLw + padX * 2, sp('glossCardW'));
+  const cardX = cx - cardW / 2;
+  const slack = Math.max(0, cardW - padX * 2 - maxLw) / 2;
+  const blockShift = state.align === 'right' ? slack
+    : state.align === 'left' ? -slack
+    : state.align === 'justify' ? (rtl ? slack : -slack)
+    : 0;
+  const textTop = h / 2 - blockH / 2;
+  const textBottom = h / 2 + blockH / 2;
+  let cardTop = textTop - padTop;
+  let cardBottom = textBottom + padBottom;
+  // Height floor: the card is at least the set size; the extra space
+  // splits evenly above and below so the text stays centred.
+  const extraH = Math.max(0, sp('glossCardH') - (cardBottom - cardTop));
+  cardTop -= extraH / 2;
+  cardBottom += extraH / 2;
+  return {
+    x: cardX, y: cardTop, w: cardW, h: cardBottom - cardTop, r: 30,
+    padX, blockShift, rtl,
+  };
+}
+
+// Paint the glossy glass card: his 112deg streaked gradient,
+// built from the sheen colour with his tone() scales and alpha
+// multipliers, then the dark border stroked inside the card
+// bounds (the path is inset by half the width, like the typed
+// card's border). The gradient direction follows the CSS 112deg
+// angle: mostly rightward, slightly downward. The text itself
+// (plain white, no shadow) is painted per line by
+// STYLE_PAINT.glossyglass.
+function paintGlossyCard(l, fs) {
+  const sheenC = sp('glossSheenC') || '#ffffff';
+  const borderC = sp('glossBorderC') || '#74383f';
+  const op = Math.max(0.05, Math.min(0.95, (sp('glossOpacity') ?? 48) / 100));
+  // His tone(scale, alphaMul): sheen colour scaled down, alpha =
+  // opacity × multiplier, capped at 0.95.
+  const tone = (scale, alphaMul) => {
+    const [r, g, b] = hexToRgb(sheenC);
+    return `rgba(${Math.round(r * scale)}, ${Math.round(g * scale)}, ${Math.round(b * scale)}, ${Math.min(0.95, op * alphaMul).toFixed(3)})`;
+  };
+  const stops = [
+    [0, tone(0.68, 0.86)],
+    [0.15, tone(0.98, 1.04)],
+    [0.23, tone(0.88, 0.90)],
+    [0.36, tone(0.56, 0.92)],
+    [0.53, tone(0.96, 1.00)],
+    [0.71, tone(0.62, 0.88)],
+    [0.88, tone(1.00, 1.08)],
+    [1, tone(0.68, 0.86)],
+  ];
+  // CSS 112deg: direction (sin 112°, -cos 112°) in screen coords
+  // = (0.927, 0.375), down-right. The gradient line runs through
+  // the card centre, spanning the card's projection on that axis.
+  const dx = Math.sin(112 * Math.PI / 180), dy = -Math.cos(112 * Math.PI / 180);
+  const half = (l.w * Math.abs(dx) + l.h * Math.abs(dy)) / 2;
+  const cx = l.x + l.w / 2, cy = l.y + l.h / 2;
+  const g = ctx.createLinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half);
+  for (const [o, c] of stops) g.addColorStop(o, c);
+  ctx.fillStyle = g;
+  roundRect(l.x, l.y, l.w, l.h, l.r);
+  ctx.fill();
+  // The border: his clamp max 6.5px, stroked inside the card bounds.
+  const bw = 6.5;
+  ctx.strokeStyle = borderC;
+  ctx.lineWidth = bw;
+  roundRect(l.x + bw / 2, l.y + bw / 2, l.w - bw, l.h - bw, Math.max(0, l.r - bw / 2));
+  ctx.stroke();
+}
+
 // --- Slanted quote frame card (Reza, 2026-11-23 — his
 // createSlantedQuoteFrameCard code): a frameless quote — two white
 // frame paths with gaps in the top and bottom edges, and a pair of
@@ -5362,6 +5474,9 @@ function draw() {
   // The vibrant shadow card wraps the block the same way.
   const vibrantRTL = state.style === 'vibrantshadow' ? isRTLText(lines[0] || '') : true;
   const vibrantL = state.style === 'vibrantshadow' ? vibrantLayout(textFs, maxLw, blockH, lineHeight, h, cx, vibrantRTL) : null;
+  // The glossy glass card wraps the block the same way.
+  const glossyRTL = state.style === 'glossyglass' ? isRTLText(lines[0] || '') : true;
+  const glossyL = state.style === 'glossyglass' ? glossyLayout(textFs, maxLw, blockH, lineHeight, h, cx, glossyRTL) : null;
   // The slanted quote frame wraps the block the same way (the frame
   // geometry scales with the frame width, not the font — the layout
   // takes textFs for the shared signature only).
@@ -5400,7 +5515,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || slantQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || brushL || quotesL;
   const blockCx = frameL ? cx + frameL.blockShift : cx;
   // Message/droplet bubble and brush band: the alignment block is the
   // block's INNER width, not the text width (Reza 2026-11-22 22:09 —
@@ -5582,6 +5697,7 @@ function draw() {
   if (glowframeL) paintGlowframeCard(glowframeL, textFs);
   if (cornerGlowL) paintCornerGlowCard(cornerGlowL, textFs);
   if (vibrantL) paintVibrantCard(vibrantL, textFs);
+  if (glossyL) paintGlossyCard(glossyL, textFs);
 
   // Slanted quote frame card: two white frame paths with gaps and a
   // pair of slanted trapezoid quote marks straddling each gap — no
@@ -5743,7 +5859,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -5778,6 +5894,7 @@ function redraw() {
   paintGlowframeSamples();
   paintCornerGlowSamples();
   paintVibrantSamples();
+  paintGlossySamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -6315,6 +6432,7 @@ function buildStylePicker() {
       if (item.id === 'glowframe') return '<canvas class="sample-canvas sample-canvas-glowframe" width="190" height="120"></canvas>';
       if (item.id === 'cornerglow') return '<canvas class="sample-canvas sample-canvas-cornerglow" width="190" height="120"></canvas>';
       if (item.id === 'vibrantshadow') return '<canvas class="sample-canvas sample-canvas-vibrantshadow" width="190" height="120"></canvas>';
+      if (item.id === 'glossyglass') return '<canvas class="sample-canvas sample-canvas-glossyglass" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -8110,6 +8228,72 @@ function paintVibrantSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-vibrantshadow';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the glossy glass preview with the REAL glossyglass code
+// (glossyLayout + paintGlossyCard + the body text) on its small
+// canvas — a miniature of the actual card, same pattern as the
+// vibrant shadow preview. Called from redraw(), like the vibrant
+// samples. If painting fails, fall back to the CSS box.
+function paintGlossySamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-glossyglass')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the card chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const glossyRTL = isRTLText(lines[0] || '');
+        const glossyL = glossyLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, glossyRTL);
+        const blockCx = 540 + glossyL.blockShift;
+        // Fit the whole card into the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed.
+        const s = Math.min(W / glossyL.w, H / glossyL.h);
+        const cardCx = glossyL.x + glossyL.w / 2, cardCy = glossyL.y + glossyL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintGlossyCard(glossyL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.glossyglass(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-glossyglass';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
