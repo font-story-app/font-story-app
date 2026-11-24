@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow', 'vibrantshadow', 'glossyglass', 'gradientshadow',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow', 'vibrantshadow', 'glossyglass', 'gradientshadow', 'fading',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -240,6 +240,9 @@ const STYLE_PARAMS = {
   gradShadowStartC: { color: true },
   gradShadowEndC: { color: true },
   gradShadowO: { min: 0, max: 100 },
+  // Fading shadow text (Reza, 2026-11-24).
+  fadeO: { min: 0, max: 100 },
+  fadeShadowO: { min: 0, max: 100 },
   // Hearts tape card (Reza, 2026-11-23).
   heartsCardW: { min: 400, max: 900 },
   heartsCardH: { min: 0, max: 800 },

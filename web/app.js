@@ -108,6 +108,7 @@ const STYLES = [
   { id: 'vibrantshadow', label: 'سایه رنگی' },
   { id: 'glossyglass', label: 'شیشه براق' },
   { id: 'gradientshadow', label: 'گرادیان سایه‌دار' },
+  { id: 'fading', label: 'محو سایه‌دار' },
 ];
 
 const COLORS = ['#FFFFFF', '#1F2421', '#E6483F', '#F4D93E', '#3FA98A', '#2E7DD1',
@@ -705,6 +706,21 @@ const STYLE_CONTROLS = {
     { key: 'gradShadowStartC', label: 'رنگ شروع', type: 'color', def: '#ff00ff' },
     { key: 'gradShadowEndC', label: 'رنگ پایان', type: 'color', def: '#00e5e5' },
     { key: 'gradShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 55, unit: '٪' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Fading shadow text (Reza, 2026-11-24 — his
+  // createFadingShadowTextStyle code): white text with a soft
+  // two-layer shadow, fading out toward the left through a mask
+  // gradient (opaque on the right, fading to the left — his
+  // direction 'to left'). No card: the text sits straight on the
+  // page background. Fade 0.78 is the 78% default of the شدت محوی
+  // knob; shadow 0.65 is the 65% default of the شدت سایه knob.
+  // No direction toggle: the style sheet has no select control,
+  // so the direction stays his default 'to left'.
+  fading: [
+    { key: 'fadeO', label: 'شدت محوی', type: 'range', min: 0, max: 100, step: 1, def: 78, unit: '٪' },
+    { key: 'fadeShadowO', label: 'شدت سایه', type: 'range', min: 0, max: 100, step: 1, def: 65, unit: '٪' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -1734,6 +1750,42 @@ const STYLE_PAINT = {
     ctx.fillStyle = fill;
     drawWords(line, cx, y);
     ctx.restore();
+  },
+  // Fading shadow text (Reza, 2026-11-24 — his
+  // createFadingShadowTextStyle code): the white text carries his
+  // two soft shadow layers — the near one (0 0.05em, blur 0.09em,
+  // alpha 0.34 × intensity) and the far halo (0 0.13em, blur
+  // 0.24em, alpha 0.50 × intensity) — scaled by the same
+  // intensity knob as the fade. Each pass draws the same text, so
+  // the later pass paints identical pixels and only its shadow
+  // shows. Wrapped in save/restore so no shadow leaks into the
+  // next line (slider-bug lesson). The fade itself is NOT painted
+  // here: it is a block-level mask applied after all lines, in
+  // draw() (and in paintFadingSamples), so text and shadow fade
+  // together exactly like his masked wrapper.
+  fading: (line, cx, y, lw, fs) => {
+    const s = Math.max(0, Math.min(1, (sp('fadeShadowO') ?? 65) / 100));
+    const fill = state.colorTouched ? state.color : '#ffffff';
+    if (s <= 0) {
+      ctx.fillStyle = fill;
+      drawWords(line, cx, y);
+      return;
+    }
+    const em = fs || 100;
+    const shadows = [
+      { ox: 0, oy: 0.05 * em, blur: 0.09 * em, a: 0.34 * s },
+      { ox: 0, oy: 0.13 * em, blur: 0.24 * em, a: 0.50 * s },
+    ];
+    for (const sh of shadows) {
+      ctx.save();
+      ctx.shadowColor = `rgba(0, 0, 0, ${sh.a.toFixed(3)})`;
+      ctx.shadowBlur = sh.blur;
+      ctx.shadowOffsetX = sh.ox;
+      ctx.shadowOffsetY = sh.oy;
+      ctx.fillStyle = fill;
+      drawWords(line, cx, y);
+      ctx.restore();
+    }
   },
   // Messages frame: black text on the light-grey content area (the
   // card + green Messages header are painted block-level in draw()).
@@ -5420,6 +5472,28 @@ function quoteRefLayout() {
   return { refMaxLw, refBlockH };
 }
 
+// The fading text's mask gradient (Reza, 2026-11-24 — his
+// createFadingShadowTextStyle code): his mask stops, from the
+// fade strength — opaque for the first 28%, then mid1 at 45%,
+// mid2 at 70%, and the end alpha from 95% on. The gradient runs
+// from xRight (opaque) to xLeft (faded): his direction 'to left',
+// so the text stays solid on the right and fades toward the
+// left. Built on any context, so draw() and paintFadingSamples
+// share the exact same mask.
+function fadingMaskGradient(octx, xRight, xLeft, strength) {
+  const mid1 = Number((1 - strength * 0.16).toFixed(3));
+  const mid2 = Number((1 - strength * 0.56).toFixed(3));
+  const end = Number((1 - strength).toFixed(3));
+  const g = octx.createLinearGradient(xRight, 0, xLeft, 0);
+  g.addColorStop(0, 'rgba(0, 0, 0, 1)');
+  g.addColorStop(0.28, 'rgba(0, 0, 0, 1)');
+  g.addColorStop(0.45, `rgba(0, 0, 0, ${mid1})`);
+  g.addColorStop(0.70, `rgba(0, 0, 0, ${mid2})`);
+  g.addColorStop(0.95, `rgba(0, 0, 0, ${end})`);
+  g.addColorStop(1, `rgba(0, 0, 0, ${end})`);
+  return g;
+}
+
 function draw() {
   const [w, h] = ASPECTS[state.aspect];
   if (canvas.width !== w) canvas.width = w;
@@ -5913,6 +5987,40 @@ function draw() {
     ctx.imageSmoothingEnabled = true;
   }
 
+  // Fading shadow text: the mask pass. His DOM wraps the text in
+  // a masked container, so text AND shadow fade together across
+  // the block. Canvas has no mask, so the block is copied to an
+  // offscreen canvas, masked there with destination-in (the same
+  // gradient as his maskImage), and drawn back — the same
+  // offscreen pattern as the pixel pass above, in unrotated
+  // device space, after the rotation transform is restored. The
+  // mask spans the wrapper box (the text block plus his padding:
+  // 0.22em on the sides, 0.24em above, 0.42em below), so each
+  // line fades by its absolute position in the block, exactly
+  // like his wrapper. Skipped when the fade is 0, like his code
+  // (which only sets the mask when strength > 0).
+  if (state.style === 'fading') {
+    const strength = Math.max(0, Math.min(1, (sp('fadeO') ?? 78) / 100));
+    if (strength > 0) {
+      const padX = 0.22 * textFs, padTop = 0.24 * textFs, padBottom = 0.42 * textFs;
+      const bw = maxLw + padX * 2, bh = blockH + padTop + padBottom;
+      const bx = cx - bw / 2, by = h / 2 - bh / 2;
+      const m = 16; // margin for the shadow blur around the wrapper box
+      const px = Math.max(0, bx - m), py = Math.max(0, by - m);
+      const pw = Math.min(w - px, bw + m * 2), ph = Math.min(h - py, bh + m * 2);
+      const off = document.createElement('canvas');
+      off.width = Math.max(1, Math.round(pw));
+      off.height = Math.max(1, Math.round(ph));
+      const octx = off.getContext('2d');
+      octx.drawImage(canvas, px, py, pw, ph, 0, 0, off.width, off.height);
+      octx.globalCompositeOperation = 'destination-in';
+      octx.fillStyle = fadingMaskGradient(octx, bx - px + bw, bx - px, strength);
+      octx.fillRect(bx - px, by - py, bw, bh);
+      ctx.clearRect(px, py, pw, ph);
+      ctx.drawImage(off, px, py, pw, ph);
+    }
+  }
+
   syncEditorLayout(textFs, lineHeight, blockH, alignW, frameL ? frameL.blockShift : 0);
 }
 
@@ -5970,7 +6078,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintSlantQuoteCardSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -6007,6 +6115,7 @@ function redraw() {
   paintVibrantSamples();
   paintGlossySamples();
   paintGradShadowSamples();
+  paintFadingSamples();
   paintSlantQuoteCardSamples();
   paintDoubleLineSamples();
   paintYellowBarsSamples();
@@ -6546,6 +6655,7 @@ function buildStylePicker() {
       if (item.id === 'vibrantshadow') return '<canvas class="sample-canvas sample-canvas-vibrantshadow" width="190" height="120"></canvas>';
       if (item.id === 'glossyglass') return '<canvas class="sample-canvas sample-canvas-glossyglass" width="190" height="120"></canvas>';
       if (item.id === 'gradientshadow') return '<canvas class="sample-canvas sample-canvas-gradientshadow" width="190" height="120"></canvas>';
+      if (item.id === 'fading') return '<canvas class="sample-canvas sample-canvas-fading" width="190" height="120"></canvas>';
       if (item.id === 'slantquote') return '<canvas class="sample-canvas sample-canvas-slantquote" width="190" height="120"></canvas>';
       if (item.id === 'doubleline') return '<canvas class="sample-canvas sample-canvas-doubleline" width="190" height="120"></canvas>';
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
@@ -8475,6 +8585,82 @@ function paintGradShadowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-gradientshadow';
+      span.textContent = 'متن شما';
+      cv.replaceWith(span);
+    }
+  }
+}
+
+// Paint the fading text preview with the REAL fading code
+// (STYLE_PAINT.fading + the mask) on its small canvas — a
+// miniature of the actual block, same pattern as the gradient
+// shadow preview. Called from redraw(), like the gradient shadow
+// samples. The mask is applied inside the scaled block with
+// destination-in, so text and shadow fade together exactly like
+// the live canvas. If painting fails, fall back to the CSS box.
+function paintFadingSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-fading')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // body size follows the rail, the block chrome is fixed.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const blockCx = 540;
+        // Fit the whole block PLUS the shadow's spread into the
+        // sample canvas, centred, keeping the aspect — a uniform
+        // scale, so nothing is squashed.
+        const fitW = maxLw + 0.44 * textFs + 96, fitH = blockH + 0.66 * textFs + 120;
+        const s = Math.min(W / fitW, H / fitH);
+        const cardCx = 540, cardCy = 540;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, maxLw, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.fading(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+          // The mask: same gradient as draw(), spanning the wrapper
+          // box (the text block plus his padding), fading text and
+          // shadow together toward the left.
+          const strength = Math.max(0, Math.min(1, (sp('fadeO') ?? 78) / 100));
+          if (strength > 0) {
+            const bw = maxLw + 0.44 * textFs, bh = blockH + 0.66 * textFs;
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.fillStyle = fadingMaskGradient(ctx, blockCx + bw / 2, blockCx - bw / 2, strength);
+            ctx.fillRect(blockCx - bw / 2, 1080 / 2 - bh / 2, bw, bh);
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-fading';
       span.textContent = 'متن شما';
       cv.replaceWith(span);
     }
