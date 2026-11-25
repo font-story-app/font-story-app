@@ -1,9 +1,11 @@
 import { api } from 'sdk';
-import { ensureUser } from '../lib/users.js';
+import { ensureUser, getLanguage } from '../lib/users.js';
 import { isAdmin, adminPanelMessage, getStats, formatStats, broadcast, fa } from '../lib/admin.js';
+import { t, languageKeyboard } from '../lib/i18n.js';
 import {
-  SUPPORT_BUTTON,
-  CANCEL_BUTTON,
+  SUPPORT_BUTTONS,
+  LANGUAGE_BUTTONS,
+  CANCEL_BUTTONS,
   mainKeyboard,
   cancelKeyboard,
   setAwaiting,
@@ -17,36 +19,48 @@ import {
 // Mini App URL — live since the first deploy (2026-11-15).
 const MINI_APP_URL = 'https://app9160164486.tgcloud.ai/';
 
+// The welcome + Mini App button + persistent keyboard, in the user's
+// language. Sent right after a language is picked (or re-picked).
+async function sendWelcome(chatId, lang, isOwner) {
+  await api.sendMessage({
+    chat_id: chatId,
+    text: t(lang, 'welcome'),
+    reply_markup: {
+      inline_keyboard: [[{ text: t(lang, 'openApp'), web_app: { url: MINI_APP_URL } }]],
+    },
+  });
+  // Users (not the owner) also get the persistent support + language
+  // buttons — a reply keyboard, so they stay under the chat input.
+  if (!isOwner) {
+    await api.sendMessage({
+      chat_id: chatId,
+      text: t(lang, 'supportHint'),
+      reply_markup: mainKeyboard(lang),
+    });
+  }
+}
+
 export default async function (message) {
   if (message.chat?.type && message.chat.type !== 'private') return;
   const chatId = message.chat.id;
   const from = message.from;
   if (!from?.id) return;
 
-  await ensureUser(from);
+  const user = await ensureUser(from);
+  const lang = user?.language || 'fa';
 
   const text = message.text || '';
 
-  // /start (with or without args) — the only command this bot needs.
+  // /start (with or without args) — first asks the language, in
+  // English (Reza's ask, 2026-11-25): the picker lists all five
+  // languages, each in its own wording. The welcome follows once the
+  // user picks (handled in callback_query.js).
   if (text.startsWith('/start')) {
     await api.sendMessage({
       chat_id: chatId,
-      text:
-        '✨ به FontStory خوش اومدی!\n\n' +
-        'متنت رو بنویس، فونت و استایلش رو انتخاب کن و به‌صورت عکس شفاف برای استوری ذخیره یا کپی کن — بدون واترمارک، بدون ثبت‌نام.',
-      reply_markup: {
-        inline_keyboard: [[{ text: '🎨 باز کردن FontStory', web_app: { url: MINI_APP_URL } }]],
-      },
+      text: t('en', 'pickLanguage'),
+      reply_markup: languageKeyboard(),
     });
-    // Users (not the owner) also get the persistent support button —
-    // a reply keyboard, so it stays under the chat input.
-    if (!isAdmin(from)) {
-      await api.sendMessage({
-        chat_id: chatId,
-        text: 'اگه سوال یا مشکلی داشتی، از دکمه‌ی زیر به پشتیبانی پیام بده 👇',
-        reply_markup: mainKeyboard(),
-      });
-    }
     return;
   }
 
@@ -89,7 +103,8 @@ export default async function (message) {
       return;
     }
     // Owner answering a support message: reply to the owner's copy of
-    // it in this chat and the text goes back to that user.
+    // it in this chat and the text goes back to that user, with the
+    // prefix in the USER's language.
     const replied = message.reply_to_message;
     if (replied) {
       const targetId = (await lookupUser(replied.message_id)) || parseUserId(replied.text);
@@ -98,55 +113,70 @@ export default async function (message) {
           await api.sendMessage({ chat_id: chatId, text: 'پاسخ به کاربر باید متن باشه.' });
           return;
         }
-        await api.sendMessage({ chat_id: targetId, text: '💬 پاسخ پشتیبانی:\n\n' + text });
+        const targetLang = await getLanguage(targetId);
+        await api.sendMessage({ chat_id: targetId, text: t(targetLang, 'supportReplyPrefix') + text });
         await api.sendMessage({ chat_id: chatId, text: '✅ پاسخ به کاربر ارسال شد.' });
         return;
       }
     }
   }
 
-  // --- Support inbox (users only) ---
+  // --- Support inbox + language button (users only) ---
   if (!isAdmin(from)) {
-    if (text === SUPPORT_BUTTON) {
-      await setAwaiting(from.id);
-      await api.sendMessage({
-        chat_id: chatId,
-        text: 'پیامت رو بنویس — مستقیم برای پشتیبانی ارسال می‌شه.',
-        reply_markup: cancelKeyboard(),
-      });
-      return;
-    }
-    if (text === CANCEL_BUTTON) {
+    // The language button re-opens the picker (in English, like
+    // /start). Any half-written support message is dropped.
+    if (LANGUAGE_BUTTONS.includes(text)) {
       await clearAwaiting(from.id);
       await api.sendMessage({
         chat_id: chatId,
-        text: 'باشه، پیامت ارسال نشد.',
-        reply_markup: mainKeyboard(),
+        text: t('en', 'pickLanguage'),
+        reply_markup: languageKeyboard(),
+      });
+      return;
+    }
+    if (SUPPORT_BUTTONS.includes(text)) {
+      await setAwaiting(from.id);
+      await api.sendMessage({
+        chat_id: chatId,
+        text: t(lang, 'supportPrompt'),
+        reply_markup: cancelKeyboard(lang),
+      });
+      return;
+    }
+    if (CANCEL_BUTTONS.includes(text)) {
+      await clearAwaiting(from.id);
+      await api.sendMessage({
+        chat_id: chatId,
+        text: t(lang, 'supportCancelled'),
+        reply_markup: mainKeyboard(lang),
       });
       return;
     }
     if (await isAwaiting(from.id)) {
       if (!text) {
-        await api.sendMessage({ chat_id: chatId, text: 'لطفاً پیامت رو به صورت متن بفرست.' });
+        await api.sendMessage({ chat_id: chatId, text: t(lang, 'supportTextOnly') });
         return;
       }
       await forwardToOwner(from, text);
       await clearAwaiting(from.id);
       await api.sendMessage({
         chat_id: chatId,
-        text: '✅ پیامت به پشتیبانی رسید — به‌زودی جواب می‌دیم.',
-        reply_markup: mainKeyboard(),
+        text: t(lang, 'supportSent'),
+        reply_markup: mainKeyboard(lang),
       });
       return;
     }
   }
 
-  // Any other text: point back to the Mini App.
+  // Any other text: point back to the Mini App, in the user's language.
   await api.sendMessage({
     chat_id: chatId,
-    text: 'برای ساخت متن استوری، مینی‌اپ رو باز کن 👇',
+    text: t(lang, 'openAppPointer'),
     reply_markup: {
-      inline_keyboard: [[{ text: '🎨 باز کردن FontStory', web_app: { url: MINI_APP_URL } }]],
+      inline_keyboard: [[{ text: t(lang, 'openApp'), web_app: { url: MINI_APP_URL } }]],
     },
   });
 }
+
+// Shared by the language callback: exported for callback_query.js.
+export { sendWelcome };

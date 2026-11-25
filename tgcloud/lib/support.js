@@ -2,37 +2,61 @@ import { api, db } from 'sdk';
 import { eq } from 'sdk/db';
 import { supportPending, supportMap } from '../schema.js';
 import { OWNER_ID } from './owner.js';
+import { t, STRINGS, LANGUAGES } from './i18n.js';
 
 // Support inbox — users message the owner (support) through a
 // non-inline reply-keyboard button, and the owner answers by replying
 // to the forwarded message in the bot chat.
 //
 // Flow:
-//   1. User taps «💬 پیام به پشتیبانی» (persistent reply keyboard, set
-//      on /start) -> they are marked "awaiting" and get a prompt with
-//      an «❌ انصراف» button.
+//   1. User taps the support button (persistent reply keyboard, set
+//      on /start, in their language) -> they are marked "awaiting"
+//      and get a prompt with a cancel button.
 //   2. Their next text message is sent to the owner as one composed
 //      message (name, handle, numeric id, text) and the owner's copy
 //      is mapped back to them in support_map.
 //   3. The owner replies to that message in the bot chat; the reply
 //      text is delivered to the user. The numeric id is also in the
 //      message text, so the reply still works if the map row is gone.
+//
+// The keyboard carries TWO buttons since 2026-11-25 (Reza's ask):
+// support + «زبان» (language) — the language button re-opens the
+// language picker. All three button labels depend on the user's
+// language, so matching an incoming tap checks every language's
+// variant (a user can tap the button in any language's wording only
+// if their keyboard shows it — but the lists below make the match
+// robust to a stale keyboard after a language change).
 
-export const SUPPORT_BUTTON = '💬 پیام به پشتیبانی';
-export const CANCEL_BUTTON = '❌ انصراف';
+export const SUPPORT_BUTTONS = LANGUAGES.map((l) => STRINGS[l.code].supportButton);
+export const LANGUAGE_BUTTONS = LANGUAGES.map((l) => STRINGS[l.code].languageButton);
+export const CANCEL_BUTTONS = LANGUAGES.map((l) => STRINGS[l.code].cancelButton);
+// Backwards-compatible names (the old single-language constants).
+export const SUPPORT_BUTTON = STRINGS.fa.supportButton;
+export const CANCEL_BUTTON = STRINGS.fa.cancelButton;
 
-// Persistent reply keyboard shown to users (not the owner).
-export function mainKeyboard() {
+export function supportButton(lang) {
+  return t(lang, 'supportButton');
+}
+export function languageButton(lang) {
+  return t(lang, 'languageButton');
+}
+export function cancelButton(lang) {
+  return t(lang, 'cancelButton');
+}
+
+// Persistent reply keyboard shown to users (not the owner): support
+// and language side by side, in the user's language.
+export function mainKeyboard(lang = 'fa') {
   return {
-    keyboard: [[{ text: SUPPORT_BUTTON }]],
+    keyboard: [[{ text: supportButton(lang) }, { text: languageButton(lang) }]],
     resize_keyboard: true,
     is_persistent: true,
   };
 }
 
-export function cancelKeyboard() {
+export function cancelKeyboard(lang = 'fa') {
   return {
-    keyboard: [[{ text: CANCEL_BUTTON }]],
+    keyboard: [[{ text: cancelButton(lang) }]],
     resize_keyboard: true,
     is_persistent: true,
   };

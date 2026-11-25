@@ -16,13 +16,13 @@
   <div class="app">
     <!-- Top bar: export pill, brand, background + aspect controls -->
     <header class="topbar">
-      <button type="button" id="doneBtn" class="done-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ذخیره</button>
+      <button type="button" id="doneBtn" class="done-btn" data-i18n="ذخیره"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ذخیره</button>
       <div class="brand">
-        <span class="brand-title">فونت استوری</span>
+        <span class="brand-title" data-i18n="فونت استوری">فونت استوری</span>
       </div>
       <div class="top-actions">
-        <button type="button" id="clearBtn" class="round-btn" aria-label="پاک کردن متن" title="پاک کردن متن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
-        <button type="button" id="bgBtn" class="round-btn" aria-label="تغییر پس‌زمینه" title="تغییر پس‌زمینه"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg></button>
+        <button type="button" id="clearBtn" class="round-btn" aria-label="پاک کردن متن" title="پاک کردن متن" data-i18n-aria="پاک کردن متن" data-i18n-title="پاک کردن متن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+        <button type="button" id="bgBtn" class="round-btn" aria-label="تغییر پس‌زمینه" title="تغییر پس‌زمینه" data-i18n-aria="تغییر پس‌زمینه" data-i18n-title="تغییر پس‌زمینه"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg></button>
       </div>
     </header>
 
@@ -30,124 +30,124 @@
     <main class="stage" id="stage">
       <div class="size-rail">
         <span class="size-mark">A+</span>
-        <input type="range" id="sizeRange" min="48" max="200" value="110" orient="vertical" aria-label="اندازه متن">
+        <input type="range" id="sizeRange" min="48" max="200" value="110" orient="vertical" aria-label="اندازه متن" data-i18n-aria="اندازه متن">
         <span id="sizeValue" class="size-value">۱۱۰</span>
         <span class="size-mark">A−</span>
       </div>
       <button type="button" id="alignBtn" class="round-btn align-btn" aria-label="تراز متن: وسط‌چین" title="تراز متن: وسط‌چین"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg></button>
-      <button type="button" id="styleSettingsBtn" class="round-btn style-settings-btn" aria-label="تنظیمات استایل" title="تنظیمات استایل"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
+      <button type="button" id="styleSettingsBtn" class="round-btn style-settings-btn" aria-label="تنظیمات استایل" title="تنظیمات استایل" data-i18n-aria="تنظیمات استایل" data-i18n-title="تنظیمات استایل"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
       <div class="canvas-wrap" id="canvasWrap">
         <canvas id="preview" width="1080" height="1920"></canvas>
-        <p class="hint-pill" id="hintPill">برای نوشتن، روی متن بزن<button type="button" class="hint-close" id="hintClose" aria-label="بستن راهنما"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></p>
+        <p class="hint-pill" id="hintPill" data-i18n="برای نوشتن، روی متن بزن">برای نوشتن، روی متن بزن<button type="button" class="hint-close" id="hintClose" aria-label="بستن راهنما" data-i18n-aria="بستن راهنما"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></p>
         <!-- Real editor overlaid on the canvas: typing goes here (native
              keyboard, backspace and selection all work), the styled text
              renders on the canvas underneath. Transparent so the canvas
              shows through; the canvas draws its own blinking caret. -->
-        <textarea id="textInput" class="hidden-input" rows="3" maxlength="500" aria-label="متن">سلام دنیا</textarea>
+        <textarea id="textInput" class="hidden-input" rows="3" maxlength="500" aria-label="متن" data-i18n-aria="متن">سلام دنیا</textarea>
       </div>
     </main>
 
     <!-- Bottom sheet: one panel per tab -->
     <section class="sheet" id="sheet">
       <div class="sheet-panel" id="panel-style" hidden>
-        <div class="sheet-head"><span>استایل</span><span class="fav-pill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>محبوب‌ها</span></div>
+        <div class="sheet-head"><span data-i18n="استایل">استایل</span><span class="fav-pill" data-i18n="محبوب‌ها"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>محبوب‌ها</span></div>
         <div id="stylePicker" class="card-row"></div>
       </div>
       <div class="sheet-panel" id="panel-font">
         <div class="sheet-head">
-          <span>فونت<button type="button" id="fontSearchBtn" class="font-search-btn" aria-label="جستجوی فونت" aria-expanded="false" title="جستجوی فونت"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button></span>
+          <span data-i18n="فونت">فونت<button type="button" id="fontSearchBtn" class="font-search-btn" aria-label="جستجوی فونت" aria-expanded="false" title="جستجوی فونت" data-i18n-aria="جستجوی فونت" data-i18n-title="جستجوی فونت"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button></span>
           <span class="font-filters">
-            <button type="button" class="font-filter" data-filter="fa">فارسی</button>
-            <button type="button" class="font-filter" data-filter="en">انگلیسی</button>
-            <button type="button" class="font-filter" data-filter="fav">محبوب</button>
-            <button type="button" class="font-filter" data-filter="custom" id="customFilter" hidden>فونت‌های من</button>
+            <button type="button" class="font-filter" data-filter="fa" data-i18n="فارسی">فارسی</button>
+            <button type="button" class="font-filter" data-filter="en" data-i18n="انگلیسی">انگلیسی</button>
+            <button type="button" class="font-filter" data-filter="fav" data-i18n="محبوب">محبوب</button>
+            <button type="button" class="font-filter" data-filter="custom" id="customFilter" data-i18n="فونت‌های من" hidden>فونت‌های من</button>
           </span>
         </div>
         <div id="fontSearchWrap" class="font-search-wrap">
           <div class="font-search-inner">
-            <input type="search" id="fontSearch" class="font-search" dir="auto" placeholder="جستجوی فونت…&#x200F;" aria-label="جستجوی فونت" autocomplete="off">
-            <button type="button" id="fontSearchClose" class="font-search-close" aria-label="بستن جستجو"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <input type="search" id="fontSearch" class="font-search" dir="auto" placeholder="جستجوی فونت…&#x200F;" aria-label="جستجوی فونت" data-i18n-ph="جستجوی فونت…" data-i18n-aria="جستجوی فونت" autocomplete="off">
+            <button type="button" id="fontSearchClose" class="font-search-close" aria-label="بستن جستجو" data-i18n-aria="بستن جستجو"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
           </div>
         </div>
-        <p class="sheet-note" id="fontSearchEmpty" hidden>فونتی با این اسم پیدا نشد.</p>
+        <p class="sheet-note" id="fontSearchEmpty" data-i18n="فونتی با این اسم پیدا نشد." hidden>فونتی با این اسم پیدا نشد.</p>
         <div id="fontRow" class="card-row"></div>
-        <p class="sheet-note" id="favEmpty" hidden>هنوز فونتی رو محبوب نکردی — روی هر فونت چند ثانیه نگه دار تا اینجا بیاد.</p>
+        <p class="sheet-note" id="favEmpty" data-i18n="هنوز فونتی رو محبوب نکردی — روی هر فونت چند ثانیه نگه دار تا اینجا بیاد." hidden>هنوز فونتی رو محبوب نکردی — روی هر فونت چند ثانیه نگه دار تا اینجا بیاد.</p>
       </div>
       <div class="sheet-panel" id="panel-color" hidden>
-        <div class="sheet-head"><span>رنگ متن</span></div>
+        <div class="sheet-head"><span data-i18n="رنگ متن">رنگ متن</span></div>
         <div class="colors">
           <div id="swatches" class="swatches"></div>
           <div class="swatch-wrap">
-            <button type="button" class="swatch rainbow" aria-label="رنگ‌های بیشتر" title="رنگ‌های بیشتر" tabindex="-1"></button>
-            <input type="color" id="colorPicker" value="#FFFFFF" aria-label="رنگ دلخواه">
+            <button type="button" class="swatch rainbow" aria-label="رنگ‌های بیشتر" title="رنگ‌های بیشتر" data-i18n-aria="رنگ‌های بیشتر" data-i18n-title="رنگ‌های بیشتر" tabindex="-1"></button>
+            <input type="color" id="colorPicker" value="#FFFFFF" aria-label="رنگ دلخواه" data-i18n-aria="رنگ دلخواه">
           </div>
         </div>
       </div>
       <div class="sheet-panel" id="panel-template" hidden>
-        <div class="sheet-head"><span>قالب</span></div>
-        <button type="button" id="saveBtn" class="save-template"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>ذخیره این حالت</button>
-        <p class="sheet-note">فونت و استایل دلخواهت رو بچین، بعد «ذخیره این حالت» رو بزن تا هر وقت خواستی با یه لمس برگردی بهش.</p>
+        <div class="sheet-head"><span data-i18n="قالب">قالب</span></div>
+        <button type="button" id="saveBtn" class="save-template" data-i18n="ذخیره این حالت"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>ذخیره این حالت</button>
+        <p class="sheet-note" data-i18n="فونت و استایل دلخواهت رو بچین، بعد «ذخیره این حالت» رو بزن تا هر وقت خواستی با یه لمس برگردی بهش.">فونت و استایل دلخواهت رو بچین، بعد «ذخیره این حالت» رو بزن تا هر وقت خواستی با یه لمس برگردی بهش.</p>
         <ul id="recents" class="recents">
-          <li class="empty">هنوز طرحی ذخیره نکردی.</li>
+          <li class="empty" data-i18n="هنوز طرحی ذخیره نکردی.">هنوز طرحی ذخیره نکردی.</li>
         </ul>
       </div>
     </section>
 
     <!-- Bottom tab bar -->
     <nav class="tabbar">
-      <button type="button" class="tab" data-tab="style"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2c.7 5.2 2.8 7.3 8 8-5.2.7-7.3 2.8-8 8-.7-5.2-2.8-7.3-8-8 5.2-.7 7.3-2.8 8-8z"/></svg><span>استایل</span></button>
-      <button type="button" class="tab active" data-tab="font"><span class="icon-text">Aa</span><span>فونت</span></button>
-      <button type="button" class="tab" data-tab="color"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7s6.5 7 6.5 11.3a6.5 6.5 0 0 1-13 0C5.5 9.7 12 2.7 12 2.7z"/></svg><span>رنگ</span></button>
-      <button type="button" class="tab" data-tab="template"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><span>قالب</span></button>
-      <button type="button" id="settingsBtn" class="settings-tab" aria-label="تنظیمات متن" title="تنظیمات متن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>تنظیمات</span></button>
+      <button type="button" class="tab" data-tab="style" data-i18n="استایل"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2c.7 5.2 2.8 7.3 8 8-5.2.7-7.3 2.8-8 8-.7-5.2-2.8-7.3-8-8 5.2-.7 7.3-2.8 8-8z"/></svg><span>استایل</span></button>
+      <button type="button" class="tab active" data-tab="font" data-i18n="فونت"><span class="icon-text">Aa</span><span>فونت</span></button>
+      <button type="button" class="tab" data-tab="color" data-i18n="رنگ"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7s6.5 7 6.5 11.3a6.5 6.5 0 0 1-13 0C5.5 9.7 12 2.7 12 2.7z"/></svg><span>رنگ</span></button>
+      <button type="button" class="tab" data-tab="template" data-i18n="قالب"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><span>قالب</span></button>
+      <button type="button" id="settingsBtn" class="settings-tab" aria-label="تنظیمات متن" title="تنظیمات متن" data-i18n="تنظیمات" data-i18n-aria="تنظیمات متن" data-i18n-title="تنظیمات متن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>تنظیمات</span></button>
     </nav>
   </div>
 
   <!-- Export sheet -->
   <div class="export-overlay" id="exportSheet" hidden>
     <div class="export-sheet">
-      <button type="button" id="exportClose" class="export-close" aria-label="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-      <h2>استیکر آماده‌ست</h2>
-      <div class="export-preview"><img id="exportImg" alt="پیش‌نمایش استیکر"></div>
+      <button type="button" id="exportClose" class="export-close" aria-label="بستن" data-i18n-aria="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <h2 data-i18n="استیکر آماده‌ست">استیکر آماده‌ست</h2>
+      <div class="export-preview"><img id="exportImg" alt="پیش‌نمایش استیکر" data-i18n-alt="پیش‌نمایش استیکر"></div>
       <div class="export-grid">
-        <button type="button" id="copyIg" class="export-btn ig"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>کپی برای اینستاگرام</button>
-        <button type="button" id="copyTg" class="export-btn tg"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>کپی برای تلگرام</button>
-        <button type="button" id="copyWa" class="export-btn wa"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>کپی برای واتساپ</button>
-        <button type="button" id="saveGallery" class="export-btn gallery"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>ذخیره در گالری</button>
-        <button type="button" id="copyAll" class="export-btn all"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>کپی در کلیپ‌بورد عمومی</button>
+        <button type="button" id="copyIg" class="export-btn ig" data-i18n="کپی برای اینستاگرام"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>کپی برای اینستاگرام</button>
+        <button type="button" id="copyTg" class="export-btn tg" data-i18n="کپی برای تلگرام"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>کپی برای تلگرام</button>
+        <button type="button" id="copyWa" class="export-btn wa" data-i18n="کپی برای واتساپ"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>کپی برای واتساپ</button>
+        <button type="button" id="saveGallery" class="export-btn gallery" data-i18n="ذخیره در گالری"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>ذخیره در گالری</button>
+        <button type="button" id="copyAll" class="export-btn all" data-i18n="کپی در کلیپ‌بورد عمومی"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>کپی در کلیپ‌بورد عمومی</button>
       </div>
-      <p class="export-hint">با لمس هرکدوم از دکمه‌ها استیکر کپی می‌شه، بعد وارد برنامه شو و Paste کن.</p>
+      <p class="export-hint" data-i18n="با لمس هرکدوم از دکمه‌ها استیکر کپی می‌شه، بعد وارد برنامه شو و Paste کن.">با لمس هرکدوم از دکمه‌ها استیکر کپی می‌شه، بعد وارد برنامه شو و Paste کن.</p>
     </div>
   </div>
 
   <!-- Text settings sheet -->
   <div class="settings-overlay" id="settingsSheet" hidden>
     <div class="settings-sheet">
-      <button type="button" id="settingsClose" class="export-close" aria-label="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-      <h2>تنظیمات متن</h2>
+      <button type="button" id="settingsClose" class="export-close" aria-label="بستن" data-i18n-aria="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <h2 data-i18n="تنظیمات متن">تنظیمات متن</h2>
       <div class="slider-row">
-        <div class="slider-head"><span>وزن فونت</span><span id="weightValue" class="slider-value">800</span></div>
-        <input type="range" id="weightRange" min="400" max="900" step="100" value="800" aria-label="وزن فونت">
+        <div class="slider-head"><span data-i18n="وزن فونت">وزن فونت</span><span id="weightValue" class="slider-value">800</span></div>
+        <input type="range" id="weightRange" min="400" max="900" step="100" value="800" aria-label="وزن فونت" data-i18n-aria="وزن فونت">
       </div>
       <div class="slider-row">
-        <div class="slider-head"><span>فاصله حروف</span><span id="letterValue" class="slider-value">0px</span></div>
-        <input type="range" id="letterRange" min="0" max="40" step="1" value="0" aria-label="فاصله حروف">
+        <div class="slider-head"><span data-i18n="فاصله حروف">فاصله حروف</span><span id="letterValue" class="slider-value">0px</span></div>
+        <input type="range" id="letterRange" min="0" max="40" step="1" value="0" aria-label="فاصله حروف" data-i18n-aria="فاصله حروف">
       </div>
       <div class="slider-row">
-        <div class="slider-head"><span>فاصله کلمات</span><span id="wordValue" class="slider-value">0px</span></div>
-        <input type="range" id="wordRange" min="0" max="60" step="1" value="0" aria-label="فاصله کلمات">
+        <div class="slider-head"><span data-i18n="فاصله کلمات">فاصله کلمات</span><span id="wordValue" class="slider-value">0px</span></div>
+        <input type="range" id="wordRange" min="0" max="60" step="1" value="0" aria-label="فاصله کلمات" data-i18n-aria="فاصله کلمات">
       </div>
       <div class="slider-row">
-        <div class="slider-head"><span>ارتفاع خط</span><span id="lineValue" class="slider-value">1.4</span></div>
-        <input type="range" id="lineRange" min="1" max="2" step="0.1" value="1.4" aria-label="ارتفاع خط">
+        <div class="slider-head"><span data-i18n="ارتفاع خط">ارتفاع خط</span><span id="lineValue" class="slider-value">1.4</span></div>
+        <input type="range" id="lineRange" min="1" max="2" step="0.1" value="1.4" aria-label="ارتفاع خط" data-i18n-aria="ارتفاع خط">
       </div>
       <div class="slider-row">
-        <div class="slider-head"><span>چرخش افقی (X)</span><span id="rotXValue" class="slider-value">0°</span></div>
-        <input type="range" id="rotXRange" min="-45" max="45" step="1" value="0" aria-label="چرخش افقی">
+        <div class="slider-head"><span data-i18n="چرخش افقی (X)">چرخش افقی (X)</span><span id="rotXValue" class="slider-value">0°</span></div>
+        <input type="range" id="rotXRange" min="-45" max="45" step="1" value="0" aria-label="چرخش افقی" data-i18n-aria="چرخش افقی (X)">
       </div>
       <div class="slider-row">
-        <div class="slider-head"><span>چرخش عمودی (Y)</span><span id="rotYValue" class="slider-value">0°</span></div>
-        <input type="range" id="rotYRange" min="-45" max="45" step="1" value="0" aria-label="چرخش عمودی">
+        <div class="slider-head"><span data-i18n="چرخش عمودی (Y)">چرخش عمودی (Y)</span><span id="rotYValue" class="slider-value">0°</span></div>
+        <input type="range" id="rotYRange" min="-45" max="45" step="1" value="0" aria-label="چرخش عمودی" data-i18n-aria="چرخش عمودی (Y)">
       </div>
     </div>
   </div>
@@ -156,8 +156,8 @@
        align button (same bottom-sheet pattern as the text settings). -->
   <div class="settings-overlay" id="styleSheet" hidden>
     <div class="settings-sheet">
-      <button type="button" id="styleSheetClose" class="export-close" aria-label="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-      <h2 id="styleSheetTitle">تنظیمات استایل</h2>
+      <button type="button" id="styleSheetClose" class="export-close" aria-label="بستن" data-i18n-aria="بستن"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <h2 id="styleSheetTitle" data-i18n="تنظیمات استایل">تنظیمات استایل</h2>
       <div id="styleSheetControls"></div>
     </div>
   </div>
@@ -165,6 +165,7 @@
   <p id="status" class="toast" role="status" hidden></p>
 
   <script src="google-fonts.js"></script>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

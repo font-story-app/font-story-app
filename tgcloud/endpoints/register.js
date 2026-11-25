@@ -2,7 +2,8 @@ import { EndpointError } from 'sdk';
 import { ensureUser } from '../lib/users.js';
 
 // Called by the Mini App on load. Registers (or refreshes) the caller
-// in the users table from verified initData. No body needed.
+// in the users table from verified initData, and returns the user's
+// chosen language so the app opens in it. No body needed.
 export default async function (_input, ctx) {
   const user = ctx.initData?.user;
   if (!user?.id) {
@@ -12,5 +13,6 @@ export default async function (_input, ctx) {
   return {
     ok: true,
     user: { tg_id: row?.tgId ?? user.id, first_name: row?.firstName ?? user.first_name ?? null },
+    language: row?.language ?? 'fa',
   };
 }

@@ -11,6 +11,12 @@ export const users = table('users', {
   username: text('username'),
   firstName: text('first_name'),
   languageCode: text('language_code'),
+  // The user's chosen app/bot language (added 2026-11-25): 'en' |
+  // 'fa' | 'zh' | 'ar' | 'ru'. Picked in the bot (language picker on
+  // /start, or the «زبان» button); the Mini App reads it from the
+  // register endpoint. NOT the same as language_code (Telegram's own
+  // UI language) and never overwritten by it.
+  language: text('language').notNull().default('fa'),
   createdAt: integer('created_at').default(sql`(unixepoch())`),
   lastSeenAt: integer('last_seen_at').default(sql`(unixepoch())`),
 });

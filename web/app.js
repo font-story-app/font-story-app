@@ -1295,11 +1295,11 @@ function inTelegram() { return typeof Telegram !== 'undefined' && Telegram.WebAp
 function callEndpoint(name, input) {
   return new Promise((resolve, reject) => {
     if (!inTelegram() || !Telegram.WebApp.Serverless) {
-      reject(new Error('خارج از تلگرام باز شده — ذخیره و کارهای اخیر فقط داخل تلگرام کار می‌کنه.'));
+      reject(new Error(tr('خارج از تلگرام باز شده — ذخیره و کارهای اخیر فقط داخل تلگرام کار می‌کنه.')));
       return;
     }
     Telegram.WebApp.Serverless.call(name, input || {}, (err, result) => {
-      if (err) reject(new Error(err.message || 'خطا در تماس با سرور'));
+      if (err) reject(new Error(err.message || tr('خطا در تماس با سرور')));
       else resolve(result);
     });
   });
@@ -8235,7 +8235,7 @@ function buildCardPicker(el, items, current, onPick, sampleHtml) {
     b.type = 'button';
     b.className = 'pick-card' + (item.id === current ? ' active' : '');
     b.innerHTML = `<span class="sample">${sampleHtml(item)}</span><span class="name"></span>`;
-    b.querySelector('.name').textContent = item.label;
+    b.querySelector('.name').textContent = tr(item.label);
     b.addEventListener('click', () => {
       onPick(item.id);
       el.querySelectorAll('.pick-card').forEach((x) => x.classList.remove('active'));
@@ -8264,7 +8264,7 @@ function fontEntry(id) {
 function fontLabel(id) {
   const f = fontEntry(id);
   if (f) return f.label;
-  return CUSTOM_FONT_RE.test(id || '') ? 'فونت واردشده' : id;
+  return CUSTOM_FONT_RE.test(id || '') ? tr('فونت واردشده') : id;
 }
 // Infinite scroll for the font row (Reza, 2026-11-22): the English list
 // is ~2,000 Google fonts, so the row renders in batches of FONT_BATCH
@@ -8446,9 +8446,9 @@ const importedReady = loadImportedFonts();
 async function importFontFile(file) {
   if (!file) return;
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  if (!['ttf', 'otf', 'woff', 'woff2'].includes(ext)) { setStatus('فایل فونت معتبر نیست — ttf، otf، woff یا woff2 انتخاب کن.'); return; }
-  if (file.size > MAX_FONT_BYTES) { setStatus('این فونت خیلی بزرگه (حداکثر ۱۰ مگابایت).'); return; }
-  setStatus('در حال اضافه کردن فونت…');
+  if (!['ttf', 'otf', 'woff', 'woff2'].includes(ext)) { setStatus(tr('فایل فونت معتبر نیست — ttf، otf، woff یا woff2 انتخاب کن.')); return; }
+  if (file.size > MAX_FONT_BYTES) { setStatus(tr('این فونت خیلی بزرگه (حداکثر ۱۰ مگابایت).')); return; }
+  setStatus(tr('در حال اضافه کردن فونت…'));
   try {
     const buf = await file.arrayBuffer();
     const id = 'custom-' + await hashFontId(buf);
@@ -8456,10 +8456,10 @@ async function importFontFile(file) {
       fontFilter = 'custom';
       buildFontPicker();
       selectFont(id);
-      setStatus('این فونت قبلاً اضافه شده.');
+      setStatus(tr('این فونت قبلاً اضافه شده.'));
       return;
     }
-    if (importedFonts.size >= MAX_IMPORTED_FONTS) { setStatus('حداکثر ۱۰ فونت می‌تونی اضافه کنی — اول یکی رو حذف کن.'); return; }
+    if (importedFonts.size >= MAX_IMPORTED_FONTS) { setStatus(tr('حداکثر ۱۰ فونت می‌تونی اضافه کنی — اول یکی رو حذف کن.')); return; }
     // Hand FontFace a COPY of the bytes: some engines neuter the buffer
     // they are given, and the original is what IndexedDB must store —
     // storing the neutered buffer failed silently and the font was lost
@@ -8481,9 +8481,9 @@ async function importFontFile(file) {
     fontFilter = 'custom';
     buildFontPicker();
     selectFont(id);
-    setStatus(persisted ? 'فونت اضافه شد.' : 'فونت اضافه شد، ولی ذخیره نشد.');
+    setStatus(persisted ? tr('فونت اضافه شد.') : tr('فونت اضافه شد، ولی ذخیره نشد.'));
   } catch (e) {
-    setStatus('این فایل فونت معتبر نیست.');
+    setStatus(tr('این فایل فونت معتبر نیست.'));
   }
 }
 
@@ -8498,7 +8498,7 @@ async function removeImportedFont(id) {
   if (!importedFonts.size && fontFilter === 'custom') fontFilter = 'fa';
   syncCustomFilter();
   buildFontPicker();
-  setStatus('فونت حذف شد.');
+  setStatus(tr('فونت حذف شد.'));
 }
 
 // --- Tweet avatar (customisable, device-local like imported fonts) ---
@@ -8554,9 +8554,9 @@ function downscaleImageFile(file, maxSide) {
 
 async function importTweetAvatar(file) {
   if (!file) return;
-  if (!file.type.startsWith('image/')) { setStatus('فایل عکس معتبر نیست — یک عکس انتخاب کن.'); return; }
-  if (file.size > MAX_AVATAR_BYTES) { setStatus('این عکس خیلی بزرگه (حداکثر ۵ مگابایت).'); return; }
-  setStatus('در حال اضافه کردن آواتار…');
+  if (!file.type.startsWith('image/')) { setStatus(tr('فایل عکس معتبر نیست — یک عکس انتخاب کن.')); return; }
+  if (file.size > MAX_AVATAR_BYTES) { setStatus(tr('این عکس خیلی بزرگه (حداکثر ۵ مگابایت).')); return; }
+  setStatus(tr('در حال اضافه کردن آواتار…'));
   try {
     const dataUrl = await downscaleImageFile(file, 512);
     // Persist, then read back and verify it actually landed (same
@@ -8572,9 +8572,9 @@ async function importTweetAvatar(file) {
     setTweetAvatarImage(dataUrl);
     renderStyleControls();
     redraw();
-    setStatus(persisted ? 'آواتار عوض شد.' : 'آواتار عوض شد، ولی ذخیره نشد.');
+    setStatus(persisted ? tr('آواتار عوض شد.') : tr('آواتار عوض شد، ولی ذخیره نشد.'));
   } catch (e) {
-    setStatus('این فایل عکس معتبر نیست.');
+    setStatus(tr('این فایل عکس معتبر نیست.'));
   }
 }
 
@@ -8593,7 +8593,7 @@ async function resetTweetAvatar() {
 function importCard() {
   const d = document.createElement('div');
   d.className = 'pick-card import-card';
-  d.innerHTML = `<span class="sample import-plus"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="name">فونت خودم</span><input type="file" accept=".ttf,.otf,.woff,.woff2" class="font-file-input" aria-label="ایمپورت فونت">`;
+  d.innerHTML = `<span class="sample import-plus"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="name">${tr('فونت خودم')}</span><input type="file" accept=".ttf,.otf,.woff,.woff2" class="font-file-input" aria-label="${tr('ایمپورت فونت')}">`;
   const input = d.querySelector('input');
   input.addEventListener('change', () => {
     const f = input.files && input.files[0];
@@ -8618,8 +8618,8 @@ function saveFavs(ids) {
 function toggleFav(id) {
   const favs = getFavs();
   const i = favs.indexOf(id);
-  if (i >= 0) { favs.splice(i, 1); saveFavs(favs); setStatus('از محبوب‌ها حذف شد.'); }
-  else { favs.push(id); saveFavs(favs); setStatus('به محبوب‌ها اضافه شد.'); }
+  if (i >= 0) { favs.splice(i, 1); saveFavs(favs); setStatus(tr('از محبوب‌ها حذف شد.')); }
+  else { favs.push(id); saveFavs(favs); setStatus(tr('به محبوب‌ها اضافه شد.')); }
   if (inTelegram() && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('medium');
   buildFontPicker();
 }
@@ -8672,11 +8672,11 @@ function fontCard(item, favs) {
   b.type = 'button';
   b.className = 'pick-card' + (item.id === state.font ? ' active' : '');
   b.dataset.fontId = item.id;
-  const sample = item.sample || 'متن شما';
+  const sample = item.sample || (item.lang === 'fa' ? 'متن شما' : tr('متن شما'));
   b.innerHTML = `<span class="sample"><span style="font-family:${item.family}">${sample}</span></span><span class="name"></span>` +
     (favs.includes(item.id) ? `<span class="fav-badge" aria-hidden="true">${HEART_SVG}</span>` : '') +
-    (item.custom ? `<span class="del-badge" role="button" aria-label="حذف فونت"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>` : '');
-  b.querySelector('.name').textContent = item.label;
+    (item.custom ? `<span class="del-badge" role="button" aria-label="${tr('حذف فونت')}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>` : '');
+  b.querySelector('.name').textContent = tr(item.label);
   const del = b.querySelector('.del-badge');
   if (del) del.addEventListener('click', (e) => { e.stopPropagation(); removeImportedFont(item.id); });
   // Tap picks the font; a ~1s hold (un)favourites it instead.
@@ -8770,7 +8770,7 @@ function buildStylePicker() {
       if (item.id === 'yellowbars') return '<canvas class="sample-canvas sample-canvas-yellowbars" width="190" height="120"></canvas>';
       if (item.id === 'gradbars') return '<canvas class="sample-canvas sample-canvas-gradbars" width="190" height="120"></canvas>';
       if (item.id === 'sideline') return '<canvas class="sample-canvas sample-canvas-sideline" width="190" height="120"></canvas>';
-      return `<span class="sample-${item.id}">متن شما</span>`;
+      return `<span class="sample-${item.id}">${tr('متن شما')}</span>`;
     });
 }
 
@@ -8797,9 +8797,9 @@ function paintStickerSamples() {
         };
         setFont(fs);
         const maxW = W * 0.82;
-        while (fs > 10 && lineWidth('متن شما') > maxW) { fs -= 1; setFont(fs); }
+        while (fs > 10 && lineWidth(tr('متن شما')) > maxW) { fs -= 1; setFont(fs); }
         lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
-        STYLE_PAINT.sticker('متن شما', W / 2, H / 2 + fs * 0.06, lineWidth('متن شما'), fs);
+        STYLE_PAINT.sticker(tr('متن شما'), W / 2, H / 2 + fs * 0.06, lineWidth(tr('متن شما')), fs);
       } finally {
         ctx = prevCtx;
       }
@@ -8807,7 +8807,7 @@ function paintStickerSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sticker';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -8838,9 +8838,9 @@ function paintPastilleSamples() {
         };
         setFont(fs);
         const maxW = W * 0.78;
-        while (fs > 10 && lineWidth('متن شما') > maxW) { fs -= 1; setFont(fs); }
+        while (fs > 10 && lineWidth(tr('متن شما')) > maxW) { fs -= 1; setFont(fs); }
         lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
-        STYLE_PAINT.pastille('متن شما', W / 2, H / 2 + fs * 0.06, lineWidth('متن شما'), fs);
+        STYLE_PAINT.pastille(tr('متن شما'), W / 2, H / 2 + fs * 0.06, lineWidth(tr('متن شما')), fs);
       } finally {
         ctx = prevCtx;
       }
@@ -8848,7 +8848,7 @@ function paintPastilleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-pastille';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -8879,11 +8879,11 @@ function paintUnderlineSamples() {
         };
         setFont(fs);
         const maxW = W * 0.82;
-        while (fs > 10 && lineWidth('متن شما') > maxW) { fs -= 1; setFont(fs); }
+        while (fs > 10 && lineWidth(tr('متن شما')) > maxW) { fs -= 1; setFont(fs); }
         lineJustifyGap = 0; // the sample is one line — natural spacing, never stretched
         // The line centre sits slightly above the canvas centre so the
         // bar + its shadow fit below without clipping.
-        STYLE_PAINT.underline('متن شما', W / 2, H * 0.45, lineWidth('متن شما'), fs);
+        STYLE_PAINT.underline(tr('متن شما'), W / 2, H * 0.45, lineWidth(tr('متن شما')), fs);
       } finally {
         ctx = prevCtx;
       }
@@ -8891,7 +8891,7 @@ function paintUnderlineSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-underline';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -8920,7 +8920,7 @@ function paintTweetSamples() {
         const textFs = state.size * (sp('tweetTextSize') / 100);
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -8960,7 +8960,7 @@ function paintTweetSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-tweet';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -8987,7 +8987,7 @@ function paintNoteSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9027,7 +9027,7 @@ function paintNoteSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-note';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9054,7 +9054,7 @@ function paintMessageSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9094,7 +9094,7 @@ function paintMessageSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-message';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9120,7 +9120,7 @@ function paintPinSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9159,7 +9159,7 @@ function paintPinSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-pin';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9186,7 +9186,7 @@ function paintMusicSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9225,7 +9225,7 @@ function paintMusicSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-music';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9251,7 +9251,7 @@ function paintFrameSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9290,7 +9290,7 @@ function paintFrameSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-frame';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9316,7 +9316,7 @@ function paintBellSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9359,7 +9359,7 @@ function paintBellSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-bell';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9385,7 +9385,7 @@ function paintHeartsSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9424,7 +9424,7 @@ function paintHeartsSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-hearts';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9450,7 +9450,7 @@ function paintDoubleFrameSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9489,7 +9489,7 @@ function paintDoubleFrameSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-doubleFrame';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9515,7 +9515,7 @@ function paintMsgnotifSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9559,7 +9559,7 @@ function paintMsgnotifSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-msgnotif';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9585,7 +9585,7 @@ function paintStitchedSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9624,7 +9624,7 @@ function paintStitchedSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-stitched';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9652,7 +9652,7 @@ function paintSewingPinSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9691,7 +9691,7 @@ function paintSewingPinSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sewingpin';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9720,7 +9720,7 @@ function paintSpiralSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9762,7 +9762,7 @@ function paintSpiralSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-spiral';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9788,7 +9788,7 @@ function paintWindowCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9827,7 +9827,7 @@ function paintWindowCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-windowcard';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9853,7 +9853,7 @@ function paintSplitWindowCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9893,7 +9893,7 @@ function paintSplitWindowCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-splitwindow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9919,7 +9919,7 @@ function paintMacWindowCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -9958,7 +9958,7 @@ function paintMacWindowCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-macwindow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -9984,7 +9984,7 @@ function paintHeartCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10023,7 +10023,7 @@ function paintHeartCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-heart';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10049,7 +10049,7 @@ function paintGlassNotifCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10088,7 +10088,7 @@ function paintGlassNotifCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glassnotif';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10114,7 +10114,7 @@ function paintTypedCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10155,7 +10155,7 @@ function paintTypedCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-typed';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10181,7 +10181,7 @@ function paintCornerCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10222,7 +10222,7 @@ function paintCornerCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-corner';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10247,7 +10247,7 @@ function paintMetallicSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10288,7 +10288,7 @@ function paintMetallicSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-metallic';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10314,7 +10314,7 @@ function paintFloatShadowSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10356,7 +10356,7 @@ function paintFloatShadowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-floatshadow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10382,7 +10382,7 @@ function paintGlowframeSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10424,7 +10424,7 @@ function paintGlowframeSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glowframe';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10450,7 +10450,7 @@ function paintCornerGlowSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10492,7 +10492,7 @@ function paintCornerGlowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-cornerglow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10518,7 +10518,7 @@ function paintVibrantSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10560,7 +10560,7 @@ function paintVibrantSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-vibrantshadow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10586,7 +10586,7 @@ function paintGlossySamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10626,7 +10626,7 @@ function paintGlossySamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glossyglass';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10652,7 +10652,7 @@ function paintGradShadowSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10694,7 +10694,7 @@ function paintGradShadowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-gradientshadow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10722,7 +10722,7 @@ function paintFadingSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10770,7 +10770,7 @@ function paintFadingSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-fading';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10796,7 +10796,7 @@ function paintShinyGoldSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10837,7 +10837,7 @@ function paintShinyGoldSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-shinygold';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10863,7 +10863,7 @@ function paintLiftedShadowSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10904,7 +10904,7 @@ function paintLiftedShadowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-liftedshadow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10928,7 +10928,7 @@ function paintCenterDropSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -10970,7 +10970,7 @@ function paintCenterDropSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-centerdrop';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -10996,7 +10996,7 @@ function paintSheenRibbonSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11036,7 +11036,7 @@ function paintSheenRibbonSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sheenribbon';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11062,7 +11062,7 @@ function paintEmeraldGradientSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11103,7 +11103,7 @@ function paintEmeraldGradientSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-emeraldgradient';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11129,7 +11129,7 @@ function paintSharpHighlightSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11169,7 +11169,7 @@ function paintSharpHighlightSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sharphighlight';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11193,7 +11193,7 @@ function paintGlassOutlineSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const line = 'متن شما';
+        const line = tr('متن شما');
         const lw = lineWidth(line);
         // Fit the line (plus its outline and shadow) into the sample
         // canvas, centred, keeping the aspect — a uniform scale, so
@@ -11216,7 +11216,7 @@ function paintGlassOutlineSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-glassoutline';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11240,7 +11240,7 @@ function paintLayeredGoldSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const line = 'متن شما';
+        const line = tr('متن شما');
         const lw = lineWidth(line);
         // Fit the line (plus its double outline and shadow) into the
         // sample canvas, centred, keeping the aspect — a uniform
@@ -11263,7 +11263,7 @@ function paintLayeredGoldSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-layeredgold';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11287,7 +11287,7 @@ function paintMetallicGoldSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const line = 'متن شما';
+        const line = tr('متن شما');
         const lw = lineWidth(line);
         // Fit the line (plus its two-layer shadow) into the sample
         // canvas, centred, keeping the aspect — a uniform scale, so
@@ -11310,7 +11310,7 @@ function paintMetallicGoldSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-metallicgold';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11334,7 +11334,7 @@ function paintNeonGlowSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const line = 'متن شما';
+        const line = tr('متن شما');
         const lw = lineWidth(line);
         // Fit the line (plus its four-layer halo) into the sample
         // canvas, centred, keeping the aspect — a uniform scale, so
@@ -11357,7 +11357,7 @@ function paintNeonGlowSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-neonglow';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11384,7 +11384,7 @@ function paintSlantQuoteCardSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11425,7 +11425,7 @@ function paintSlantQuoteCardSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-slantquote';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11453,7 +11453,7 @@ function paintBrushQuoteSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11494,7 +11494,7 @@ function paintBrushQuoteSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-brushquote';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11520,7 +11520,7 @@ function paintDoubleLineSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11560,7 +11560,7 @@ function paintDoubleLineSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-doubleline';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11586,7 +11586,7 @@ function paintYellowBarsSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11626,7 +11626,7 @@ function paintYellowBarsSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-yellowbars';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11652,7 +11652,7 @@ function paintGradbarsSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11692,7 +11692,7 @@ function paintGradbarsSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-gradbars';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11718,7 +11718,7 @@ function paintSidelineSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11758,7 +11758,7 @@ function paintSidelineSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-sideline';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11783,7 +11783,7 @@ function paintMsgbubbleSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11827,7 +11827,7 @@ function paintMsgbubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-msgbubble';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11852,7 +11852,7 @@ function paintDropbubbleSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11896,7 +11896,7 @@ function paintDropbubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-dropbubble';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11922,7 +11922,7 @@ function paintComicBubbleSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -11966,7 +11966,7 @@ function paintComicBubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-comicbubble';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -11992,7 +11992,7 @@ function paintComicBubble2Samples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -12036,7 +12036,7 @@ function paintComicBubble2Samples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-comicbubble2';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -12063,7 +12063,7 @@ function paintBrushSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -12107,7 +12107,7 @@ function paintBrushSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-brushstroke';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -12139,14 +12139,14 @@ function paintQuotesSamples() {
         const textFs = state.size * (sp('quoteTextSize') / 100);
         ctx.font = `${state.weight} ${QUOTE_REF_FS}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const refRanges = wrapLineRanges('متن شما', 1080 - 160);
+        const refRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
         const refLines = refRanges.map((r) => r.text);
         const refLineHeight = QUOTE_REF_FS * state.lineHeight + styleLineGapPx(QUOTE_REF_FS);
         const refBlockH = refLines.length * refLineHeight;
         const refMaxLw = Math.max(0, ...refLines.map((l) => lineWidth(l)));
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges('متن شما', refMaxLw);
+        const lineRanges = wrapLineRanges(tr('متن شما'), refMaxLw);
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -12182,7 +12182,7 @@ function paintQuotesSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-quotes';
-      span.textContent = 'متن شما';
+      span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
   }
@@ -12198,7 +12198,7 @@ const BOX_STYLES = ['highlight'];
 // saved design — so the sheet always shows the current style's knobs.
 function renderStyleControls() {
   const wrap = $('styleSheetControls');
-  $('styleSheetTitle').textContent = STYLES.find((s) => s.id === state.style)?.label || 'تنظیمات استایل';
+  $('styleSheetTitle').textContent = tr(STYLES.find((s) => s.id === state.style)?.label || 'تنظیمات استایل');
   wrap.innerHTML = '';
   const controls = STYLE_CONTROLS[state.style] || [];
   // The note only makes sense when the sheet would otherwise be empty:
@@ -12207,7 +12207,7 @@ function renderStyleControls() {
   if (!controls.length && !BOX_STYLES.includes(state.style)) {
     const p = document.createElement('p');
     p.className = 'sheet-note';
-    p.textContent = 'برای این استایل تنظیم جداگانه‌ای نیست.';
+    p.textContent = tr('برای این استایل تنظیم جداگانه‌ای نیست.');
     wrap.appendChild(p);
   }
   for (const c of controls) {
@@ -12216,7 +12216,7 @@ function renderStyleControls() {
     const head = document.createElement('div');
     head.className = 'slider-head';
     const label = document.createElement('span');
-    label.textContent = c.label;
+    label.textContent = tr(c.label);
     const value = document.createElement('span');
     value.className = 'slider-value';
     head.append(label, value);
@@ -12227,7 +12227,7 @@ function renderStyleControls() {
       const input = document.createElement('input');
       input.type = 'range';
       input.min = c.min; input.max = c.max; input.step = c.step; input.value = val;
-      input.setAttribute('aria-label', c.label);
+      input.setAttribute('aria-label', tr(c.label));
       input.addEventListener('input', (e) => {
         const v = Number(e.target.value);
         // 'wordSpacing' writes the shared global (see sp()), not a
@@ -12288,7 +12288,7 @@ function renderStyleControls() {
       input.maxLength = c.max || 30;
       input.value = val;
       input.placeholder = c.def;
-      input.setAttribute('aria-label', c.label);
+      input.setAttribute('aria-label', tr(c.label));
       input.addEventListener('input', (e) => {
         state.styleParams[c.key] = e.target.value;
         redraw();
@@ -12301,7 +12301,7 @@ function renderStyleControls() {
       input.className = 'style-color-input';
       input.value = val;
       input.style.background = val;
-      input.setAttribute('aria-label', c.label);
+      input.setAttribute('aria-label', tr(c.label));
       input.addEventListener('input', (e) => {
         state.styleParams[c.key] = e.target.value;
         input.style.background = e.target.value;
@@ -12323,7 +12323,7 @@ function renderStyleControls() {
     const head = document.createElement('div');
     head.className = 'slider-head';
     const label = document.createElement('span');
-    label.textContent = 'آواتار';
+    label.textContent = tr('آواتار');
     head.appendChild(label);
     row.appendChild(head);
     const box = document.createElement('div');
@@ -12334,11 +12334,11 @@ function renderStyleControls() {
     img.src = tweetAvatarImg ? tweetAvatarImg.src : 'logo-avatar.webp';
     const pick = document.createElement('span');
     pick.className = 'avatar-pick';
-    pick.textContent = 'تغییر آواتار';
+    pick.textContent = tr('تغییر آواتار');
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
-    fileInput.setAttribute('aria-label', 'تغییر آواتار');
+    fileInput.setAttribute('aria-label', tr('تغییر آواتار'));
     fileInput.addEventListener('change', () => {
       const f = fileInput.files && fileInput.files[0];
       fileInput.value = '';
@@ -12350,7 +12350,7 @@ function renderStyleControls() {
       const reset = document.createElement('button');
       reset.type = 'button';
       reset.className = 'avatar-reset';
-      reset.textContent = 'بازنشانی';
+      reset.textContent = tr('بازنشانی');
       reset.addEventListener('click', resetTweetAvatar);
       box.appendChild(reset);
     }
@@ -12371,14 +12371,14 @@ function renderStyleControls() {
   if (BOX_STYLES.includes(state.style)) {
     const sub = document.createElement('div');
     sub.className = 'settings-sub';
-    sub.textContent = 'استایل';
+    sub.textContent = tr('استایل');
     wrap.appendChild(sub);
     const colorRow = document.createElement('div');
     colorRow.className = 'slider-row';
     const colorHead = document.createElement('div');
     colorHead.className = 'slider-head';
     const colorLabel = document.createElement('span');
-    colorLabel.textContent = 'رنگ استایل';
+    colorLabel.textContent = tr('رنگ استایل');
     const colorValue = document.createElement('span');
     colorValue.className = 'slider-value';
     colorValue.id = 'styleColorValue';
@@ -12391,7 +12391,7 @@ function renderStyleControls() {
     colorInput.id = 'styleColorInput';
     colorInput.value = state.styleColor;
     colorInput.style.background = state.styleColor;
-    colorInput.setAttribute('aria-label', 'رنگ استایل');
+    colorInput.setAttribute('aria-label', tr('رنگ استایل'));
     colorInput.addEventListener('input', (e) => {
       state.styleColor = e.target.value;
       colorInput.style.background = state.styleColor;
@@ -12405,7 +12405,7 @@ function renderStyleControls() {
     const radiusHead = document.createElement('div');
     radiusHead.className = 'slider-head';
     const radiusLabel = document.createElement('span');
-    radiusLabel.textContent = 'گردی کادر';
+    radiusLabel.textContent = tr('گردی کادر');
     const radiusValue = document.createElement('span');
     radiusValue.className = 'slider-value';
     radiusValue.id = 'radiusValue';
@@ -12417,7 +12417,7 @@ function renderStyleControls() {
     radiusInput.id = 'radiusRange';
     radiusInput.min = 0; radiusInput.max = 40; radiusInput.step = 1;
     radiusInput.value = state.borderRadius;
-    radiusInput.setAttribute('aria-label', 'گردی کادر');
+    radiusInput.setAttribute('aria-label', tr('گردی کادر'));
     radiusInput.addEventListener('input', (e) => {
       state.borderRadius = Number(e.target.value);
       radiusValue.textContent = state.borderRadius + 'px';
@@ -12510,7 +12510,7 @@ function applyDesign(d) {
   // device (deleted, or another phone) — fall back to Vazir and say so.
   if (d.font && CUSTOM_FONT_RE.test(d.font) && !importedFonts.has(d.font)) {
     state.font = 'Vazir';
-    setStatus('فونت این طرح روی این گوشی نیست، با وزیر باز شد.');
+    setStatus(tr('فونت این طرح روی این گوشی نیست، با وزیر باز شد.'));
   } else {
     state.font = d.font || 'Vazir';
   }
@@ -12610,13 +12610,13 @@ async function loadRecents() {
     const rows = res?.designs || [];
     list.innerHTML = '';
     if (!rows.length) {
-      list.innerHTML = '<li class="empty">هنوز طرحی ذخیره نکردی.</li>';
+      list.innerHTML = '<li class="empty">' + tr('هنوز طرحی ذخیره نکردی.') + '</li>';
       return;
     }
     for (const d of rows) {
       const li = document.createElement('li');
-      const date = d.created_at ? new Date(d.created_at * 1000).toLocaleDateString('fa-IR') : '';
-      li.innerHTML = `<div class="recent-text"></div><div class="meta">${fontLabel(d.font)} · ${d.style} · ${d.aspect} · ${date}</div>`;
+      const date = d.created_at ? new Date(d.created_at * 1000).toLocaleDateString(appLang === 'fa' ? 'fa-IR' : appLang) : '';
+      li.innerHTML = `<div class="recent-text"></div><div class="meta">${fontLabel(d.font)} · ${tr((STYLES.find((s) => s.id === d.style) || {}).label || d.style)} · ${d.aspect} · ${date}</div>`;
       li.querySelector('.recent-text').textContent = d.text;
       li.addEventListener('click', () => applyDesign(d));
       // Delete button: first tap arms it («حذف؟»), second tap within
@@ -12637,7 +12637,7 @@ async function loadRecents() {
         if (!armed) {
           armed = setTimeout(disarm, 4000);
           del.classList.add('armed');
-          del.textContent = 'حذف؟';
+          del.textContent = tr('حذف؟');
           return;
         }
         clearTimeout(armed); armed = null;
@@ -12646,20 +12646,20 @@ async function loadRecents() {
           await callEndpoint('deleteDesign', { id: d.id });
           li.remove();
           if (!list.querySelector('li:not(.empty)')) {
-            list.innerHTML = '<li class="empty">هنوز طرحی ذخیره نکردی.</li>';
+            list.innerHTML = '<li class="empty">' + tr('هنوز طرحی ذخیره نکردی.') + '</li>';
           }
-          setStatus('حذف شد.');
+          setStatus(tr('حذف شد.'));
         } catch (err) {
           del.disabled = false;
           disarm();
-          setStatus('حذف نشد: ' + (err.message || err));
+          setStatus(tr('حذف نشد: ') + (err.message || err));
         }
       });
       li.appendChild(del);
       list.appendChild(li);
     }
   } catch (e) {
-    list.innerHTML = '<li class="empty">کارهای اخیر فقط داخل تلگرام نمایش داده می‌شه.</li>';
+    list.innerHTML = '<li class="empty">' + tr('کارهای اخیر فقط داخل تلگرام نمایش داده می‌شه.') + '</li>';
   }
 }
 
@@ -12678,7 +12678,7 @@ async function copyPng() {
       // browser (Chrome for Android). Otherwise the PNG goes to the bot
       // chat, where it can be saved or shared to any app from Telegram.
       try {
-        if (await sharePng(blob)) { setStatus('استیکر به اشتراک گذاشته شد.'); return; }
+        if (await sharePng(blob)) { setStatus(tr('استیکر به اشتراک گذاشته شد.')); return; }
       } catch (e) {
         if (e && e.name === 'AbortError') return; // user closed the sheet
         // Any other share error: fall through to the chat fallback.
@@ -12689,9 +12689,9 @@ async function copyPng() {
       return;
     }
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    setStatus('استیکر کپی شد — حالا توی برنامه Paste کن.');
+    setStatus(tr('استیکر کپی شد — حالا توی برنامه Paste کن.'));
   } catch (e) {
-    setStatus('کپی نشد: ' + (e.message || e));
+    setStatus(tr('کپی نشد: ') + (e.message || e));
   }
 }
 
@@ -12722,7 +12722,7 @@ async function sharePng(blob) {
 
 async function downloadPng() {
   const blob = await canvasBlob();
-  if (!blob) { setStatus('ساخت PNG ناموفق بود'); return; }
+  if (!blob) { setStatus(tr('ساخت PNG ناموفق بود')); return; }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -12732,7 +12732,7 @@ async function downloadPng() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  setStatus('استیکر ذخیره شد.');
+  setStatus(tr('استیکر ذخیره شد.'));
 }
 
 // Inside Telegram, <a download> is ignored by the in-app WebView, so the
@@ -12758,15 +12758,15 @@ async function sendToChat() {
   const galleryBtn = $('saveGallery');
   if (galleryBtn) galleryBtn.disabled = true;
   try {
-    setStatus('در حال فرستادن استیکر به چت…', true);
+    setStatus(tr('در حال فرستادن استیکر به چت…'), true);
     const blob = await canvasBlob();
     if (!blob) throw new Error('ساخت PNG ناموفق بود');
     if (blob.size > 5 * 1024 * 1024) throw new Error('استیکر خیلی بزرگه');
     const image = await blobToBase64(blob);
     await callEndpoint('sendSticker', { image, text: state.text });
-    setStatus('استیکر توی چت بات فرستاده شد — بازش کن، از اونجا ذخیره‌اش کن یا برای اینستاگرام/واتساپ بفرست.');
+    setStatus(tr('استیکر توی چت بات فرستاده شد — بازش کن، از اونجا ذخیره‌اش کن یا برای اینستاگرام/واتساپ بفرست.'));
   } catch (e) {
-    setStatus('فرستادن نشد: ' + (e.message || e));
+    setStatus(tr('فرستادن نشد: ') + (e.message || e));
   } finally {
     sendingToChat = false;
     if (galleryBtn) galleryBtn.disabled = false;
@@ -12789,7 +12789,7 @@ function closeExport() { $('exportSheet').hidden = true; }
 
 async function saveDesign() {
   try {
-    setStatus('در حال ذخیره…');
+    setStatus(tr('در حال ذخیره…'));
     const res = await callEndpoint('saveDesign', {
       text: state.text,
       font: state.font,
@@ -12807,10 +12807,10 @@ async function saveDesign() {
       borderRadius: state.borderRadius,
       styleParams: state.styleParams,
     });
-    setStatus(`ذخیره شد (شماره ${res?.id ?? '؟'})`);
+    setStatus(tr('ذخیره شد (شماره ') + (res?.id ?? '?') + ')');
     await loadRecents();
   } catch (e) {
-    setStatus('ذخیره نشد: ' + (e.message || e));
+    setStatus(tr('ذخیره نشد: ') + (e.message || e));
   }
 }
 
@@ -12926,7 +12926,7 @@ $('clearBtn').addEventListener('click', () => {
   if (!clearArmed) {
     clearArmed = true;
     $('clearBtn').classList.add('armed');
-    setStatus('برای پاک کردن متن، دوباره روی سطل بزن.');
+    setStatus(tr('برای پاک کردن متن، دوباره روی سطل بزن.'));
     clearTimeout(clearArmTimer);
     clearArmTimer = setTimeout(disarmClear, 5000);
     return;
@@ -12941,7 +12941,7 @@ $('clearBtn').addEventListener('click', () => {
 });
 $('sizeRange').addEventListener('input', (e) => {
   state.size = Number(e.target.value);
-  $('sizeValue').textContent = state.size;
+  $('sizeValue').textContent = fmtNum(state.size);
   redraw();
 });
 $('colorPicker').addEventListener('input', (e) => {
@@ -12974,14 +12974,14 @@ function setAlign(a) {
   state.align = a;
   const btn = $('alignBtn');
   btn.innerHTML = ALIGN_ICONS[a];
-  btn.setAttribute('aria-label', 'تراز متن: ' + ALIGN_LABELS[a]);
-  btn.title = 'تراز متن: ' + ALIGN_LABELS[a];
+  btn.setAttribute('aria-label', tr('تراز متن: ') + tr(ALIGN_LABELS[a]));
+  btn.title = tr('تراز متن: ') + tr(ALIGN_LABELS[a]);
   redraw();
 }
 $('alignBtn').addEventListener('click', () => {
   const next = ALIGN_ORDER[(ALIGN_ORDER.indexOf(state.align) + 1) % ALIGN_ORDER.length];
   setAlign(next);
-  setStatus('تراز متن: ' + ALIGN_LABELS[next]);
+  setStatus(tr('تراز متن: ') + tr(ALIGN_LABELS[next]));
 });
 $('doneBtn').addEventListener('click', openExport);
 $('exportClose').addEventListener('click', closeExport);
@@ -13030,6 +13030,14 @@ bindSetting('lineRange', 'lineValue', (v) => v.toFixed(1), (v) => { state.lineHe
 bindSetting('rotXRange', 'rotXValue', (v) => v + '°', (v) => { state.rotX = v; });
 bindSetting('rotYRange', 'rotYValue', (v) => v + '°', (v) => { state.rotY = v; });
 
+// Language first (2026-11-25): the choice from the bot (?lang=,
+// localStorage, or Telegram's language) applies before the pickers
+// render, so the first paint is already in the right language.
+setAppLang(detectLang());
+applyI18n();
+$('sizeValue').textContent = fmtNum(state.size);
+setAlign(state.align);
+
 buildFontPicker();
 buildStylePicker();
 buildSwatches();
@@ -13039,15 +13047,30 @@ redraw();
 
 (async () => {
   if (!inTelegram()) {
-    setStatus('خارج از تلگرام باز شده — پیش‌نمایش و خروجی PNG کار می‌کنه، ولی ذخیره و کارهای اخیر نیاز به باز کردن از داخل بات داره.');
+    setStatus(tr('خارج از تلگرام باز شده — پیش‌نمایش و خروجی PNG کار می‌کنه، ولی ذخیره و کارهای اخیر نیاز به باز کردن از داخل بات داره.'));
     return;
   }
   Telegram.WebApp.ready();
   Telegram.WebApp.expand();
   try {
-    await callEndpoint('register', {});
-    setStatus('خوش اومدی!');
+    const res = await callEndpoint('register', {});
+    // The server returns the language the user picked in the bot —
+    // if it differs from the local guess, re-render everything in it.
+    if (res && res.language && res.language !== appLang) {
+      setAppLang(res.language);
+      saveLang(res.language);
+      applyI18n();
+      setAlign(state.align);
+      $('sizeValue').textContent = fmtNum(state.size);
+      buildFontPicker();
+      buildStylePicker();
+      buildSwatches();
+      renderStyleControls();
+      updateDoneBtn();
+      redraw();
+    }
+    setStatus(tr('خوش اومدی!'));
   } catch (e) {
-    setStatus('ثبت‌نام ناموفق: ' + (e.message || e));
+    setStatus(tr('ثبت‌نام ناموفق: ') + (e.message || e));
   }
 })();

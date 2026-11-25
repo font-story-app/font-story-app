@@ -1,6 +1,7 @@
 import { db } from 'sdk';
 import { eq } from 'sdk/db';
 import { users } from '../schema.js';
+import { normalizeLang } from './i18n.js';
 
 // Upsert a Telegram user on first sight, refreshing last_seen and any
 // changed profile fields on every sight. `from` is a Telegram User
@@ -33,4 +34,17 @@ export async function ensureUser(from) {
   if (row) return row;
   // Fallback if the platform returns no RETURNING row: re-read it.
   return await db.select().from(users).where(eq(users.tgId, from.id)).get();
+}
+
+// The user's chosen language ('en' | 'fa' | 'zh' | 'ar' | 'ru'),
+// defaulting to Persian. Unknown codes never reach the table.
+export async function getLanguage(tgId) {
+  const row = await db.select().from(users).where(eq(users.tgId, tgId)).get();
+  return normalizeLang(row?.language);
+}
+
+export async function setLanguage(tgId, lang) {
+  const code = normalizeLang(lang);
+  await db.update(users).set({ language: code }).where(eq(users.tgId, tgId)).run();
+  return code;
 }
