@@ -7602,18 +7602,46 @@ function paintPixelBubble(l, fs) {
   ctx.save();
   ctx.translate(l.x, l.y);
   ctx.scale(l.w / 54, l.h / 27);
+  // His RLE, but the runs are accumulated into two single paths and
+  // filled once each (white first, then black). Filling every run as
+  // its own fillRect left hairline seams between the rows: the row
+  // heights are fractional after the non-uniform scale (h/27 ≈ 11.9
+  // canvas px), so the background bled through as faint horizontal
+  // lines across the white body (Reza's screenshot, 2026-11-25).
+  // A single fill of the whole white region has no interior edges,
+  // so no seams. The white rects are expanded 0.1 grid units on
+  // every side so the white underlies the black border slightly —
+  // the black is drawn on top, so the border keeps its exact shape
+  // and no hairline can appear where the two colours meet. (Safe:
+  // no white cell touches a transparent cell — every white cell's
+  // neighbours are white or black — so the expansion never paints
+  // outside the silhouette.)
+  ctx.beginPath();
   PIXEL_BUBBLE_GRID.forEach((rowStr, y) => {
     let x = 0;
     while (x < rowStr.length) {
-      const ch = rowStr[x];
-      if (ch === '.') { x++; continue; }
+      if (rowStr[x] !== 'W') { x++; continue; }
       let span = 1;
-      while (x + span < rowStr.length && rowStr[x + span] === ch) span++;
-      ctx.fillStyle = ch === 'B' ? strokeC : bubbleC;
-      ctx.fillRect(x, y, span, 1);
+      while (x + span < rowStr.length && rowStr[x + span] === 'W') span++;
+      ctx.rect(x - 0.1, y - 0.1, span + 0.2, 1.2);
       x += span;
     }
   });
+  ctx.fillStyle = bubbleC;
+  ctx.fill();
+  ctx.beginPath();
+  PIXEL_BUBBLE_GRID.forEach((rowStr, y) => {
+    let x = 0;
+    while (x < rowStr.length) {
+      if (rowStr[x] !== 'B') { x++; continue; }
+      let span = 1;
+      while (x + span < rowStr.length && rowStr[x + span] === 'B') span++;
+      ctx.rect(x, y, span, 1);
+      x += span;
+    }
+  });
+  ctx.fillStyle = strokeC;
+  ctx.fill();
   ctx.restore();
 }
 
