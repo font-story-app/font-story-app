@@ -94,6 +94,7 @@ const STYLES = [
   { id: 'angularbubble', label: 'حباب زاویه‌دار' },
   { id: 'pixelbubble', label: 'حباب پیکسلی' },
   { id: 'handbubble', label: 'حباب دست‌ساز' },
+  { id: 'asypixelbubble', label: 'حباب پیکسلی نامتقارن' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
@@ -559,6 +560,19 @@ const STYLE_CONTROLS = {
     { key: 'handPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 60, unit: 'px', editable: true },
     { key: 'handBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
     { key: 'handStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  asypixelbubble: [
+    { key: 'asyTextSize', label: 'اندازه فونت متن', type: 'range', min: 50, max: 150, step: 5, def: 100, unit: '٪' },
+    { key: 'asyCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'asyCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'asyPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 52, unit: 'px', editable: true },
+    { key: 'asyPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 72, unit: 'px', editable: true },
+    { key: 'asyPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 58, unit: 'px', editable: true },
+    { key: 'asyPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 58, unit: 'px', editable: true },
+    { key: 'asyBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
+    { key: 'asyStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2938,6 +2952,10 @@ const STYLE_PAINT = {
   },
   // Hand-drawn speech bubble: black text on the white hand-drawn body.
   handbubble: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  asypixelbubble: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -7688,6 +7706,16 @@ function paintPixelBubble(l, fs) {
 // precedent), min-height clamp(195, 44vw, 295) -> 295px floor at the
 // 1080 canvas, padding top 56 / bottom 122 / left-right 60 (his
 // clamps evaluated at 1080: 8vw -> 56, 18vw -> 122, 8.5vw -> 60).
+// Asymmetric pixel bubble (Reza, 2026-11-25 — his
+// createAsymmetricPixelBubble code): a 68x33 grid, NO tail — an
+// asymmetric stepped rectangle. The white inner body is one
+// stepped polygon (x 2..65, y 3..29); the black border is 19
+// axis-aligned 1-unit rects in ONE path, so a single fill has
+// no interior seams (the pixelbubble lesson). Outer bounds
+// x 1..66, y 2..31.
+const ASY_PIXEL_INNER = 'M 7,3 H 54 V 4 H 59 V 5 H 61 V 6 H 62 V 7 H 63 V 8 H 64 V 10 H 65 V 29 H 64 V 28 H 7 V 27 H 5 V 26 H 4 V 25 H 3 V 23 H 2 V 9 H 3 V 6 H 4 V 5 H 5 V 4 H 7 Z';
+const ASY_PIXEL_BORDER = 'M 7,2 H 54 V 3 H 7 Z M 54,3 H 59 V 4 H 54 Z M 59,4 H 61 V 5 H 59 Z M 61,5 H 62 V 6 H 61 Z M 62,6 H 63 V 7 H 62 Z M 63,7 H 64 V 8 H 63 Z M 64,8 H 65 V 10 H 64 Z M 65,10 H 66 V 31 H 65 Z M 64,29 H 65 V 30 H 64 Z M 7,28 H 64 V 29 H 7 Z M 5,27 H 7 V 28 H 5 Z M 4,26 H 5 V 27 H 4 Z M 3,25 H 4 V 26 H 3 Z M 2,23 H 3 V 25 H 2 Z M 1,9 H 2 V 23 H 1 Z M 2,6 H 3 V 9 H 2 Z M 3,5 H 4 V 6 H 3 Z M 4,4 H 5 V 5 H 4 Z M 5,3 H 7 V 4 H 5 Z';
+
 const HAND_BUBBLE_OUTER = 'M 95,46 C 210,36 390,34 498,46 C 556,53 582,92 580,142 C 578,192 544,219 478,223 C 442,225 406,226 376,226 C 372,258 367,294 358,295 C 349,296 341,260 335,227 C 252,230 162,231 94,225 C 42,220 20,188 20,136 C 20,84 44,51 95,46 Z';
 const HAND_BUBBLE_INNER = 'M 101,60 C 212,51 388,49 492,60 C 545,66 568,99 566,142 C 564,185 534,207 472,211 C 436,213 400,214 366,214 C 363,242 359,272 357,272 C 355,272 350,242 345,214 C 258,217 166,218 100,212 C 53,208 33,181 33,136 C 33,91 55,65 101,60 Z';
 
@@ -7752,6 +7780,51 @@ function paintHandBubble(l, fs) {
   ctx.fill(new Path2D(HAND_BUBBLE_OUTER));
   ctx.fillStyle = bubbleC;
   ctx.fill(new Path2D(HAND_BUBBLE_INNER));
+  ctx.restore();
+}
+
+// Asymmetric pixel bubble layout — mirrors the oval/hand v1 pattern
+// (pads + min-height floor, slack splits evenly). His clamps at the
+// 1080 canvas: padTop 52, padBottom 72, padLeft/Right 58;
+// min-height floor 285. No band sizing is needed (unlike
+// handbubble): the shape is nearly a full-box rectangle — the body
+// spans x 1..66 of 68 (0.97) and y 2..31 of 33 (0.88) — so the text
+// block always sits well inside it, and no wrap cap is needed
+// either (the text width is capped by the box width itself).
+function asyPixelBubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padLeft = Math.max(0, sp('asyPadLeft') ?? 58);
+  const padRight = Math.max(0, sp('asyPadRight') ?? 58);
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, sp('asyPadTop') ?? 52);
+  const padBottom = Math.max(0, sp('asyPadBottom') ?? 72);
+  const w = Math.max(maxLw + padLeft + padRight, sp('asyCardW'));
+  const contentH = blockH + padTop + padBottom;
+  const hh = Math.max(285, contentH);
+  const extraH = Math.max(0, sp('asyCardH') - hh);
+  const slack = (hh - contentH) + extraH;
+  const blockShift = (padLeft - padRight) / 2;
+  return {
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop - slack / 2, w, h: hh + extraH, r: 0,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
+    tailOut: 0, tailDrop: 0, rtl,
+  };
+}
+
+// Paint the asymmetric pixel bubble — his two SVG paths as Path2D
+// fills under a non-uniform scale (his preserveAspectRatio="none"):
+// the white inner body first, then the black 1-unit border on top
+// (his DOM order; the rects abut the body without overlapping it).
+// One fill per path, so the stepped border has no seams.
+function paintAsyPixelBubble(l, fs) {
+  const bubbleC = sp('asyBubbleC') || '#ffffff';
+  const strokeC = sp('asyStrokeC') || '#000000';
+  ctx.save();
+  ctx.translate(l.x, l.y);
+  ctx.scale(l.w / 68, l.h / 33);
+  ctx.fillStyle = bubbleC;
+  ctx.fill(new Path2D(ASY_PIXEL_INNER));
+  ctx.fillStyle = strokeC;
+  ctx.fill(new Path2D(ASY_PIXEL_BORDER));
   ctx.restore();
 }
 
@@ -8210,7 +8283,7 @@ function draw() {
   // «اندازه فونت متن» % knob in its sheet (the tweetTextSize /
   // quoteTextSize pattern); the body text follows the rail times
   // that %. Handbubble defaults to 85% (Reza: a bit smaller).
-  const BUBBLE_TEXT_SIZE = { msgbubble: 'msgbubbleTextSize', dropbubble: 'dropbubbleTextSize', comicbubble: 'comicTextSize', comicbubble2: 'comic2TextSize', ovalbubble: 'ovalTextSize', curvedoval: 'curvedTextSize', angularbubble: 'angularTextSize', pixelbubble: 'pixelTextSize', handbubble: 'handTextSize' };
+  const BUBBLE_TEXT_SIZE = { msgbubble: 'msgbubbleTextSize', dropbubble: 'dropbubbleTextSize', comicbubble: 'comicTextSize', comicbubble2: 'comic2TextSize', ovalbubble: 'ovalTextSize', curvedoval: 'curvedTextSize', angularbubble: 'angularTextSize', pixelbubble: 'pixelTextSize', handbubble: 'handTextSize', asypixelbubble: 'asyTextSize' };
   const _bts = BUBBLE_TEXT_SIZE[state.style];
   const textFs = state.style === 'tweet' ? fontSize * (sp('tweetTextSize') / 100) : state.style === 'quotes' ? fontSize * (sp('quoteTextSize') / 100) : _bts ? fontSize * (sp(_bts) / 100) : fontSize;
   const chromeFs = state.style === 'tweet' ? TWEET_CHROME_FS : state.style === 'note' ? NOTE_CHROME_FS : state.style === 'message' ? MESSAGE_CHROME_FS : fontSize;
@@ -8443,6 +8516,8 @@ function draw() {
   const pixelBubbleL = state.style === 'pixelbubble' ? pixelBubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, pixelBubbleRTL) : null;
   const handBubbleRTL = state.style === 'handbubble' ? isRTLText(lines[0] || '') : true;
   const handBubbleL = state.style === 'handbubble' ? handBubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, handBubbleRTL) : null;
+  const asyPixelBubbleRTL = state.style === 'asypixelbubble' ? isRTLText(lines[0] || '') : true;
+  const asyPixelBubbleL = state.style === 'asypixelbubble' ? asyPixelBubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, asyPixelBubbleRTL) : null;
   // The dry-brush band wraps the block the same way (a wide band
   // behind the whole text block, with a pink shadow copy).
   const brushL = state.style === 'brushstroke' ? brushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
@@ -8456,7 +8531,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || asyPixelBubbleL || brushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -8469,7 +8544,7 @@ function draw() {
   // itself stays centred). alignW is maxLw for every other style, so
   // the three call sites below (line anchor, caret, editor) are
   // unchanged for them.
-  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || brushL || quotesL;
+  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || asyPixelBubbleL || brushL || quotesL;
   const alignW = bubbleL ? bubbleL.w - (bubbleL.padLeft ?? bubbleL.padX) - (bubbleL.padRight ?? bubbleL.padX) : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -8723,6 +8798,7 @@ function draw() {
   // around the whole text block (text painted per-line below, in
   // black).
   if (handBubbleL) paintHandBubble(handBubbleL, textFs);
+  if (asyPixelBubbleL) paintAsyPixelBubble(asyPixelBubbleL, textFs);
 
   // Dry-brush band: navy brush stroke + pale-pink shadow around the
   // whole text block (text painted per-line below, in white).
@@ -8891,7 +8967,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintCurvedOvalSamples(); paintAngularBubbleSamples(); paintPixelBubbleSamples(); paintHandBubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintCurvedOvalSamples(); paintAngularBubbleSamples(); paintPixelBubbleSamples(); paintHandBubbleSamples(); paintAsyPixelBubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -8909,6 +8985,7 @@ function redraw() {
   paintAngularBubbleSamples();
   paintPixelBubbleSamples();
   paintHandBubbleSamples();
+  paintAsyPixelBubbleSamples();
   paintBrushSamples();
   paintQuotesSamples();
   paintPinSamples();
@@ -9468,6 +9545,7 @@ function buildStylePicker() {
       if (item.id === 'angularbubble') return '<canvas class="sample-canvas sample-canvas-angularbubble" width="190" height="120"></canvas>';
       if (item.id === 'pixelbubble') return '<canvas class="sample-canvas sample-canvas-pixelbubble" width="190" height="120"></canvas>';
       if (item.id === 'handbubble') return '<canvas class="sample-canvas sample-canvas-handbubble" width="190" height="120"></canvas>';
+      if (item.id === 'asypixelbubble') return '<canvas class="sample-canvas sample-canvas-asypixelbubble" width="190" height="120"></canvas>';
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
@@ -13126,6 +13204,71 @@ function paintHandBubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-handbubble';
+      span.textContent = tr('متن شما');
+      cv.replaceWith(span);
+    }
+  }
+}
+
+function paintAsyPixelBubbleSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-asypixelbubble')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // bubble scales with the rail, like the body text.
+        const textFs = state.size * (sp('asyTextSize') / 100);
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const asyPixelBubbleRTL = isRTLText(lines[0] || '');
+        const asyPixelBubbleL = asyPixelBubbleLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, asyPixelBubbleRTL);
+        const blockCx = 540 + asyPixelBubbleL.blockShift;
+        // The sample's text aligns inside the bubble too (same alignW
+        // rule as draw()).
+        const alignW = asyPixelBubbleL.w - asyPixelBubbleL.padLeft - asyPixelBubbleL.padRight;
+        // Fit the whole bubble INTO the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed. Everything stays inside the box, so the fit
+        // counts only the bubble itself.
+        const s = Math.min(W / (asyPixelBubbleL.w + asyPixelBubbleL.tailOut), H / (asyPixelBubbleL.h + asyPixelBubbleL.tailDrop));
+        const cardCx = asyPixelBubbleL.x + (asyPixelBubbleL.w + asyPixelBubbleL.tailOut) / 2, cardCy = asyPixelBubbleL.y + (asyPixelBubbleL.h + asyPixelBubbleL.tailDrop) / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintAsyPixelBubble(asyPixelBubbleL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.asypixelbubble(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-asypixelbubble';
       span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
