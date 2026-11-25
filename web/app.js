@@ -493,19 +493,22 @@ const STYLE_CONTROLS = {
   // createAngularComicBubble code): a white angular polygon with a
   // sharp tail on the left, built from 11 filled polygons in a
   // 660x290 viewBox (preserveAspectRatio="none" — the shapes stretch
-  // non-uniformly with the box). Same knobs as the oval bubbles: the
-  // card hugs the text by default (CardW/CardH 0); his 660px is a
-  // max-width, not a fixed width. His padding, evaluated at the
-  // 1080px canvas width: top 68, right 76, bottom 80, left 185 (the
-  // left side is wide because the tail eats it); his min-height
-  // floor is 290px.
+  // non-uniformly with the box). The white body is only a fraction
+  // of the box (x 165..578, 0.6258 wide; y ~50..222 at the text's
+  // height, 0.5931 tall), so the pads are the gaps between the text
+  // and the WHITE BODY's edges — not the box edges (see
+  // angularBubbleLayout). His DOM padding (top 68, right 76, bottom
+  // 80, left 185) was box padding for small DOM text; at the app's
+  // 110px text it left the text touching the body (0px right gap on
+  // canvas, 2026-11-25), so the defaults are body margins now
+  // (40/40/30/30). His min-height floor is 290px.
   angularbubble: [
     { key: 'angularCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
     { key: 'angularCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
-    { key: 'angularPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 68, unit: 'px', editable: true },
-    { key: 'angularPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 80, unit: 'px', editable: true },
-    { key: 'angularPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 76, unit: 'px', editable: true },
-    { key: 'angularPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 185, unit: 'px', editable: true },
+    { key: 'angularPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 30, unit: 'px', editable: true },
+    { key: 'angularPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 30, unit: 'px', editable: true },
+    { key: 'angularPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 40, unit: 'px', editable: true },
+    { key: 'angularPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 40, unit: 'px', editable: true },
     { key: 'angularBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
     { key: 'angularStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
@@ -7415,23 +7418,50 @@ function paintCurvedOval(l, fs) {
 // default (CardW/CardH 0); his 660px is a max-width, not a fixed
 // width. The tail tip (x=52 in his 660x290 viewBox) stays INSIDE
 // the wrapper box, so tailOut/tailDrop are both 0.
+// The widest line the angular bubble ever wraps at: the white body's
+// inner width when the box is at the house max card width (1026px,
+// the brushstroke precedent) — (413/660)*1026 ≈ 642px minus the two
+// body margins. Longer text wraps instead of widening the box past
+// the canvas (the body is only 0.6258 of the box, so an unwrapped
+// long line would outgrow it and poke past its edges).
+function angularWrapWidth() {
+  const mL = Math.max(0, sp('angularPadLeft') ?? 40);
+  const mR = Math.max(0, sp('angularPadRight') ?? 40);
+  return Math.max(40, (413 / 660) * 1026 - mL - mR);
+}
+
 function angularBubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
-  const padLeft = Math.max(0, sp('angularPadLeft') ?? 185);
-  const padRight = Math.max(0, sp('angularPadRight') ?? 76);
+  const mL = Math.max(0, sp('angularPadLeft') ?? 40);
+  const mR = Math.max(0, sp('angularPadRight') ?? 40);
+  const mT = Math.max(0, sp('angularPadTop') ?? 30);
+  const mB = Math.max(0, sp('angularPadBottom') ?? 30);
+  // The white body is only a FRACTION of the box: it spans x 165..578
+  // (413/660 = 0.6258 of the width) and, at the text's height, y
+  // ~50..222 (172/290 = 0.5931 of the height). The old layout sized
+  // the BOX around the text (w = maxLw + pads), so the text — much
+  // bigger relative to the box than in his DOM version — filled the
+  // body edge to edge and poked past its right edge (measured 0px on
+  // canvas, 2026-11-25). The box is now sized so the BODY fits the
+  // text plus the margins: the pads are the gaps between the text and
+  // the white body's edges, not the box edges.
+  const w = Math.max((maxLw + mL + mR) / 0.6258, sp('angularCardW'));
+  const bodyH = blockH + mT + mB;
+  // His min-height floor (290px); the CardH knob is the floor above
+  // that. The body is 0.5931 of the box height, so the box must be at
+  // least bodyH / 0.5931 tall for the text to fit inside it.
+  const H = Math.max(bodyH / 0.5931, 290, sp('angularCardH'));
+  // Box pads, derived so the text sits inside the body with exactly
+  // the knob margins — or centred on the body when the card is wider
+  // than the text needs (CardW), via the max() with the centring term
+  // (the two terms agree when the box is body-sized and mL == mR).
+  const padLeft = Math.max(0.25 * w + mL, 0.5629 * w - maxLw / 2);
+  const padRight = w - padLeft - maxLw;
+  const padTop = Math.max(0.1724 * H + mT, 0.4690 * H - blockH / 2);
+  const padBottom = H - padTop - blockH;
   const padX = (padLeft + padRight) / 2;
-  const padTop = Math.max(0, sp('angularPadTop') ?? 68);
-  const padBottom = Math.max(0, sp('angularPadBottom') ?? 80);
-  const w = Math.max(maxLw + padLeft + padRight, sp('angularCardW'));
-  // His min-height floor (290px at the 1080 canvas); the CardH knob
-  // is the floor above that. Any slack (floor or CardH) splits
-  // evenly above and below so the text stays centred.
-  const contentH = blockH + padTop + padBottom;
-  const hh = Math.max(290, contentH);
-  const extraH = Math.max(0, sp('angularCardH') - hh);
-  const slack = (hh - contentH) + extraH;
   const blockShift = (padLeft - padRight) / 2;
   return {
-    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop - slack / 2, w, h: hh + extraH, r: 0,
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop, w, h: H, r: 0,
     padX, padLeft, padRight, padTop, padBottom, blockShift,
     tailOut: 0, tailDrop: 0, rtl,
   };
@@ -7534,17 +7564,27 @@ function pixelBubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
   const padTop = Math.max(0, sp('pixelPadTop') ?? 54);
   const padBottom = Math.max(0, sp('pixelPadBottom') ?? 114);
   const w = Math.max(maxLw + padLeft + padRight, sp('pixelCardW'));
-  // His min-height floor (285px at the 1080 canvas); the CardH knob
-  // is the floor above that. Any slack (floor or CardH) splits
-  // evenly above and below so the text stays centred.
   const contentH = blockH + padTop + padBottom;
-  const hh = Math.max(285, contentH);
-  const extraH = Math.max(0, sp('pixelCardH') - hh);
-  const slack = (hh - contentH) + extraH;
+  // The white body is only the top 18 of the 27 grid rows (2/3 of the
+  // box); the stepped tail hangs below it. The old layout centred the
+  // text in the BOX, so it sat low in the body (measured 24px top /
+  // 2-3px bottom on canvas, 2026-11-25) and a second line poked below
+  // the body into the tail. The box is now placed so the body's centre
+  // (H/3 from the box top) sits at the canvas centre: y = h/2 - H/3.
+  // The body is 2/3 of H, so the text plus 25px margins top and
+  // bottom needs H >= 1.5 * (blockH + 50) — otherwise a tall
+  // multi-line text outgrows the body even when centred.
+  const H = Math.max(contentH, 1.5 * blockH + 75, 285, sp('pixelCardH'));
+  // Effective pads: the text's actual offsets from the box edges once
+  // the body-centring shift is applied (the knob pads above stay the
+  // design inputs). The text block is centred on the body, so the
+  // effective top pad is H/3 - blockH/2.
+  const effPadTop = H / 3 - blockH / 2;
+  const effPadBottom = H - effPadTop - blockH;
   const blockShift = (padLeft - padRight) / 2;
   return {
-    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop - slack / 2, w, h: hh + extraH, r: 0,
-    padX, padLeft, padRight, padTop, padBottom, blockShift,
+    x: cx - w / 2, y: h / 2 - H / 3, w, h: H, r: 0,
+    padX, padLeft, padRight, padTop: effPadTop, padBottom: effPadBottom, blockShift,
     tailOut: 0, tailDrop: 0, rtl,
   };
 }
@@ -8040,7 +8080,10 @@ function draw() {
   // not the canvas width, so a bigger font re-wraps instead of
   // widening the frame.
   const quoteRef = state.style === 'quotes' ? quoteRefLayout() : null;
-  const wrapWidth = quoteRef ? quoteRef.refMaxLw : maxWidth;
+  // Angular bubble: the text wraps inside the white body (see
+  // angularWrapWidth) — the body is only 0.6258 of the box, so a
+  // line wrapped at the canvas width would outgrow it.
+  const wrapWidth = quoteRef ? quoteRef.refMaxLw : state.style === 'angularbubble' ? angularWrapWidth() : maxWidth;
   const lineRanges = wrapLineRanges(state.text || '…', wrapWidth);
   const lines = lineRanges.map((r) => r.text);
   const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
@@ -12746,7 +12789,7 @@ function paintAngularBubbleSamples() {
         const textFs = state.size;
         ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
         if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
-        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
+        const lineRanges = wrapLineRanges(tr('متن شما'), angularWrapWidth());
         const lines = lineRanges.map((r) => r.text);
         const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
         const blockH = lines.length * lineHeight;
@@ -13382,6 +13425,18 @@ function applyDesign(d) {
   // and radius are computed from the frame size, not saved).
   if (state.style === 'quotes') {
     if (!state.styleParams.quoteC && typeof d.styleColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.styleColor)) state.styleParams.quoteC = d.styleColor;
+  }
+  // Angular bubble used box padding until 2026-11-25 (pads 185/76/68/
+  // 80); the pads are now the gaps between the text and the white
+  // body's edges (defs 40/40/30/30). Old saved designs that still
+  // carry the exact old defaults reopen with the new ones; a design
+  // whose pads were deliberately changed keeps its values (they now
+  // read as body margins, which is the roomier direction anyway).
+  if (state.style === 'angularbubble') {
+    if (state.styleParams.angularPadLeft === 185) state.styleParams.angularPadLeft = 40;
+    if (state.styleParams.angularPadRight === 76) state.styleParams.angularPadRight = 40;
+    if (state.styleParams.angularPadTop === 68) state.styleParams.angularPadTop = 30;
+    if (state.styleParams.angularPadBottom === 80) state.styleParams.angularPadBottom = 30;
   }
   textInput.value = state.text;
   $('colorPicker').value = flatColor(state.color);

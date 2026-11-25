@@ -558,6 +558,22 @@ body.editing .sheet, body.editing .tabbar { display: none; }
 .pick-card .sample canvas.sample-canvas-sideline {
   height: 60px;
 }
+/* Bubble miniatures (Reza, 2026-11-25): the four new speech-bubble
+   styles paint real 190x120 canvases, so they need the same 60px
+   height as the other card miniatures — without it they fall back
+   to the 27px default and render as a squashed flat strip. */
+.pick-card .sample canvas.sample-canvas-ovalbubble {
+  height: 60px;
+}
+.pick-card .sample canvas.sample-canvas-curvedoval {
+  height: 60px;
+}
+.pick-card .sample canvas.sample-canvas-angularbubble {
+  height: 60px;
+}
+.pick-card .sample canvas.sample-canvas-pixelbubble {
+  height: 60px;
+}
 .pick-card .name { display: block; font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.85); }
 /* Font filter pills next to the «فونت» heading */
 .font-filters { display: flex; gap: 6px; }
