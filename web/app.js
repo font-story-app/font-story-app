@@ -90,6 +90,7 @@ const STYLES = [
   { id: 'comicbubble', label: 'حباب کمیک' },
   { id: 'comicbubble2', label: 'حباب کمیک ۲' },
   { id: 'ovalbubble', label: 'حباب بیضی' },
+  { id: 'curvedoval', label: 'حباب بیضی خمیده' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
@@ -462,6 +463,27 @@ const STYLE_CONTROLS = {
     { key: 'ovalPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 108, unit: 'px', editable: true },
     { key: 'ovalBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
     { key: 'ovalStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Curved oval speech bubble (Reza, 2026-11-25 — his
+  // createCurvedOvalSpeechBubble code): the same white ellipse, but
+  // the tail is a curved tail sweeping down-left (two cubic curves
+  // instead of straight lines), and the depth layer is a white back
+  // highlight poking out at the top-left instead of a black offset
+  // copy. Same knobs as the oval bubble: the card hugs the text by
+  // default (CardW/CardH 0); his 570px is a max-width, not a fixed
+  // width. His padding, evaluated at the 1080px canvas width: top
+  // 76, bottom 145, sides 110; his min-height floor is 355px.
+  curvedoval: [
+    { key: 'curvedCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'curvedCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'curvedPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 76, unit: 'px', editable: true },
+    { key: 'curvedPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 145, unit: 'px', editable: true },
+    { key: 'curvedPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 110, unit: 'px', editable: true },
+    { key: 'curvedPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 110, unit: 'px', editable: true },
+    { key: 'curvedBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
+    { key: 'curvedStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2821,6 +2843,11 @@ const STYLE_PAINT = {
   },
   // Oval speech bubble: black text on the white ellipse.
   ovalbubble: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Curved oval speech bubble: black text on the white ellipse.
+  curvedoval: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -7205,6 +7232,123 @@ function paintOvalBubble(l, fs) {
   ctx.restore();
 }
 
+// Geometry of the curved oval speech bubble around the text block.
+// His createCurvedOvalSpeechBubble code (2026-11-25), translated
+// from DOM+SVG into canvas paths: the wrapper is min(94vw, 570px)
+// wide with min-height clamp(220px, 50vw, 355px) — at the 1080px
+// canvas that is 570 wide, 355 tall minimum — and padding
+// clamp(48px, 10.5vw, 76px) top, clamp(92px, 19.5vw, 145px)
+// bottom, clamp(60px, 13.5vw, 110px) on the sides (76/145/110/110).
+// Like the oval bubble the card hugs the text by default
+// (CardW/CardH 0); his 570px is a max-width, not a fixed width.
+// The tail stays INSIDE the wrapper box (its tip ends just above
+// the bottom edge), so tailOut/tailDrop are both 0 — the white back
+// highlight's up-left overhang is counted separately, in the
+// miniature's fit (see paintCurvedOvalSamples).
+function curvedOvalLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padLeft = Math.max(0, sp('curvedPadLeft') ?? 110);
+  const padRight = Math.max(0, sp('curvedPadRight') ?? 110);
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, sp('curvedPadTop') ?? 76);
+  const padBottom = Math.max(0, sp('curvedPadBottom') ?? 145);
+  const w = Math.max(maxLw + padLeft + padRight, sp('curvedCardW'));
+  // His min-height floor (355px at the 1080 canvas); the CardH knob
+  // is the floor above that. Any slack (floor or CardH) splits
+  // evenly above and below so the text stays centred.
+  const contentH = blockH + padTop + padBottom;
+  const hh = Math.max(355, contentH);
+  const extraH = Math.max(0, sp('curvedCardH') - hh);
+  const slack = (hh - contentH) + extraH;
+  const blockShift = (padLeft - padRight) / 2;
+  return {
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop - slack / 2, w, h: hh + extraH, r: 0,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
+    tailOut: 0, tailDrop: 0, rtl,
+  };
+}
+
+// His ellipse + curved-tail geometry, in bubble-local coords
+// (origin at the bubble's top-left): the ellipse lives in the top
+// (h - tailH) of the box, the tail joins its lower arc at 0.585PI
+// (left) and 0.478PI (right) and sweeps down-left to a tip left of
+// centre, on two cubic curves (his control points verbatim).
+function curvedOvalPath(l) {
+  const bw = l.w, bh = l.h;
+  const strokeW = Math.max(5.5, Math.min(8.5, bw * 0.0155));
+  const tailH = Math.max(46, bh * 0.215);
+  const cx = bw * 0.518;
+  const cy = (bh - tailH) * 0.525;
+  const rx = bw * 0.456;
+  const ry = (bh - tailH) * 0.445;
+  const angleLeft = Math.PI * 0.585;
+  const angleRight = Math.PI * 0.478;
+  const x1 = cx + rx * Math.cos(angleLeft);
+  const y1 = cy + ry * Math.sin(angleLeft);
+  const x2 = cx + rx * Math.cos(angleRight);
+  const y2 = cy + ry * Math.sin(angleRight);
+  // The curved tail's sharp tip, down and to the left of centre.
+  const tipX = cx - rx * 0.36;
+  const tipY = cy + ry + tailH;
+  // The tail's two cubic curves (his control points verbatim).
+  const c1X = x1 - rx * 0.015;
+  const c1Y = y1 + tailH * 0.44;
+  const c2X = tipX + rx * 0.14;
+  const c2Y = tipY - tailH * 0.22;
+  const c3X = tipX + rx * 0.28;
+  const c3Y = tipY - tailH * 0.16;
+  const c4X = x2 - rx * 0.04;
+  const c4Y = y2 + tailH * 0.42;
+  // The white back highlight pokes out at the top-left (his
+  // translate(-max(8, W*0.021), -max(4, H*0.014))).
+  const shiftX = -Math.max(8, bw * 0.021);
+  const shiftY = -Math.max(4, bh * 0.014);
+  return { strokeW, tailH, cx, cy, rx, ry, angleLeft, angleRight, x1, y1, x2, y2, tipX, tipY, c1X, c1Y, c2X, c2Y, c3X, c3Y, c4X, c4Y, shiftX, shiftY };
+}
+
+// Paint the curved oval speech bubble — one continuous path
+// (ellipse arc the long way around + two cubic curves to the tail
+// tip and back), drawn twice: first the white back highlight,
+// shifted up-left, then the bubble itself. His SVG arc
+// `A rx ry 0 1 1` from the lower-left join to the lower-right join
+// is the long way around through the top, which is exactly
+// ctx.ellipse(..., 0.585PI, 0.478PI, false) — canvas angles grow
+// clockwise in y-down coords, so the long way through 180/270/0
+// degrees is the default direction. The app paints everything on
+// canvas, so his SVG path becomes this canvas path; his stroke is
+// miter-joined, miterlimit 12, so the tail tip stays sharp.
+function paintCurvedOval(l, fs) {
+  const bubbleC = sp('curvedBubbleC') || '#ffffff';
+  const strokeC = sp('curvedStrokeC') || '#000000';
+  const g = curvedOvalPath(l);
+  const path = () => {
+    ctx.beginPath();
+    ctx.ellipse(g.cx, g.cy, g.rx, g.ry, 0, g.angleLeft, g.angleRight, false);
+    ctx.bezierCurveTo(g.c4X, g.c4Y, g.c3X, g.c3Y, g.tipX, g.tipY);
+    ctx.bezierCurveTo(g.c2X, g.c2Y, g.c1X, g.c1Y, g.x1, g.y1);
+    ctx.closePath();
+  };
+  ctx.save();
+  ctx.translate(l.x, l.y);
+  ctx.lineJoin = 'miter';
+  ctx.miterLimit = 12;
+  ctx.lineWidth = g.strokeW;
+  // The white back highlight, shifted up-left (his translate).
+  // Same path, fill only, no stroke.
+  ctx.save();
+  ctx.translate(g.shiftX, g.shiftY);
+  path();
+  ctx.fillStyle = bubbleC;
+  ctx.fill();
+  ctx.restore();
+  // The bubble itself.
+  path();
+  ctx.fillStyle = bubbleC;
+  ctx.strokeStyle = strokeC;
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Dry-brush stroke (Reza 2026-11-22 23:02 — his createBrushTextStyle
 // code): a wide horizontal brush band behind the whole text block,
 // dark navy #241e5a with a pale-pink #fce8f3 shadow copy offset
@@ -7870,6 +8014,10 @@ function draw() {
   // ellipse + triangular tail + black depth copy).
   const ovalBubbleRTL = state.style === 'ovalbubble' ? isRTLText(lines[0] || '') : true;
   const ovalBubbleL = state.style === 'ovalbubble' ? ovalBubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, ovalBubbleRTL) : null;
+  // The curved oval speech bubble wraps the block the same way
+  // (white ellipse + curved tail down-left + white back highlight).
+  const curvedOvalRTL = state.style === 'curvedoval' ? isRTLText(lines[0] || '') : true;
+  const curvedOvalL = state.style === 'curvedoval' ? curvedOvalLayout(textFs, maxLw, blockH, lineHeight, h, cx, curvedOvalRTL) : null;
   // The dry-brush band wraps the block the same way (a wide band
   // behind the whole text block, with a pink shadow copy).
   const brushL = state.style === 'brushstroke' ? brushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
@@ -7883,7 +8031,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || brushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -7896,7 +8044,7 @@ function draw() {
   // itself stays centred). alignW is maxLw for every other style, so
   // the three call sites below (line anchor, caret, editor) are
   // unchanged for them.
-  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || brushL || quotesL;
+  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || brushL || quotesL;
   const alignW = bubbleL ? bubbleL.w - (bubbleL.padLeft ?? bubbleL.padX) - (bubbleL.padRight ?? bubbleL.padX) : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -8131,6 +8279,11 @@ function draw() {
   // below, in black).
   if (ovalBubbleL) paintOvalBubble(ovalBubbleL, textFs);
 
+  // Curved oval speech bubble: white ellipse + curved tail
+  // down-left + white back highlight around the whole text block
+  // (text painted per-line below, in black).
+  if (curvedOvalL) paintCurvedOval(curvedOvalL, textFs);
+
   // Dry-brush band: navy brush stroke + pale-pink shadow around the
   // whole text block (text painted per-line below, in white).
   if (brushL) paintBrush(brushL, textFs);
@@ -8298,7 +8451,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintCurvedOvalSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -8312,6 +8465,7 @@ function redraw() {
   paintComicBubbleSamples();
   paintComicBubble2Samples();
   paintOvalBubbleSamples();
+  paintCurvedOvalSamples();
   paintBrushSamples();
   paintQuotesSamples();
   paintPinSamples();
@@ -8867,6 +9021,7 @@ function buildStylePicker() {
       if (item.id === 'comicbubble') return '<canvas class="sample-canvas sample-canvas-comicbubble" width="190" height="120"></canvas>';
       if (item.id === 'comicbubble2') return '<canvas class="sample-canvas sample-canvas-comicbubble2" width="190" height="120"></canvas>';
       if (item.id === 'ovalbubble') return '<canvas class="sample-canvas sample-canvas-ovalbubble" width="190" height="120"></canvas>';
+      if (item.id === 'curvedoval') return '<canvas class="sample-canvas sample-canvas-curvedoval" width="190" height="120"></canvas>';
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
@@ -12244,6 +12399,77 @@ function paintOvalBubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-ovalbubble';
+      span.textContent = tr('متن شما');
+      cv.replaceWith(span);
+    }
+  }
+}
+
+
+// (curvedOvalLayout + paintCurvedOval + the body text) on its small
+// canvas — a miniature of the actual bubble, so the preview always
+// matches the canvas. Called from redraw(), like the oval samples.
+function paintCurvedOvalSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-curvedoval')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // bubble scales with the rail, like the body text.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const curvedOvalRTL = isRTLText(lines[0] || '');
+        const curvedOvalL = curvedOvalLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, curvedOvalRTL);
+        const blockCx = 540 + curvedOvalL.blockShift;
+        // The sample's text aligns inside the bubble too (same alignW
+        // rule as draw()).
+        const alignW = curvedOvalL.w - curvedOvalL.padLeft - curvedOvalL.padRight;
+        // Fit the whole bubble INTO the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed. The white back highlight pokes out up-left, so
+        // the fit counts that overhang too (shiftX/shiftY are
+        // negative) and centres on the union box.
+        const g = curvedOvalPath(curvedOvalL);
+        const s = Math.min(W / (curvedOvalL.w - g.shiftX), H / (curvedOvalL.h - g.shiftY));
+        const cardCx = curvedOvalL.x + (curvedOvalL.w + g.shiftX) / 2, cardCy = curvedOvalL.y + (curvedOvalL.h + g.shiftY) / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintCurvedOval(curvedOvalL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.curvedoval(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-curvedoval';
       span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
