@@ -63,6 +63,7 @@ const STYLES = [
   { id: 'shadowline', label: 'خط سایه‌دار' },
   { id: 'halo', label: 'هاله' },
   { id: 'brushstroke', label: 'براش' },
+  { id: 'bluebrush', label: 'براش آبی' },
   { id: 'neon', label: 'نئون' },
   { id: 'glassoutline', label: 'شیشه دورخط' },
   { id: 'layeredgold', label: 'طلایی چندلایه' },
@@ -587,6 +588,16 @@ const STYLE_CONTROLS = {
     { key: 'widePadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 56, unit: 'px', editable: true },
     { key: 'wideBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
     { key: 'wideStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  bluebrush: [
+    { key: 'blueBrushC', label: 'رنگ براش', type: 'color', def: '#2097F3' },
+    { key: 'blueBrushPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 150, step: 1, def: 55, unit: '٪', editable: true },
+    { key: 'blueBrushPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 150, step: 1, def: 55, unit: '٪', editable: true },
+    { key: 'blueBrushPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 150, step: 1, def: 140, unit: '٪', editable: true },
+    { key: 'blueBrushPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 150, step: 1, def: 140, unit: '٪', editable: true },
+    { key: 'blueBrushShadowC', label: 'رنگ سایه', type: 'color', def: '#0A3D62' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2976,6 +2987,20 @@ const STYLE_PAINT = {
   widepixelbubble: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
+  },
+  bluebrush: (line, cx, y, visLw, fs) => {
+    // The reference text is white with a dark drop shadow offset
+    // down-right, cast on the blue band. One drawWords call with a
+    // canvas shadow (wrapped in save/restore — the floatshadow
+    // lesson: shadow* must never leak into the next paint).
+    ctx.save();
+    ctx.shadowColor = hexToRgba(sp('blueBrushShadowC') || '#0A3D62', 0.5);
+    ctx.shadowOffsetX = fs * 0.05;
+    ctx.shadowOffsetY = fs * 0.07;
+    ctx.shadowBlur = fs * 0.02;
+    ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
+    drawWords(line, cx, y);
+    ctx.restore();
   },
   brushstroke: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#FFFFFF';
@@ -7974,6 +7999,69 @@ function getBrushImage(brushColor, shadowColor) {
   return img;
 }
 
+// Blue brush band (Reza 2026-11-25 — from his reference IMAGE, no
+// pasted code): a long horizontal bright-blue (#2097F3, sampled
+// from the image) dry-brush stroke with bristled top/bottom edges,
+// thin streak tapers at both ends and splatter dots, white text
+// with a dark drop shadow on top. The red in his screenshot is the
+// canvas background, NOT part of the style. Same pattern as the
+// brushstroke band: the SVG is drawn as an image (no external
+// refs, so the canvas export is never tainted), with a flat Path2D
+// fallback while it loads. The band has NO offset shadow copy —
+// the reference's shadow is on the TEXT (see STYLE_PAINT). The
+// shapes span y 12..188 of the 200 viewBox (88% fill): the layout
+// sizes the box as if the band filled it, so with the original
+// 59% fill (y 40..158) a two-line text block was taller than the
+// painted band and poked out top and bottom (browser check
+// 2026-11-25). There is NO scratches mask — the reference band is
+// solid blue inside, only the edges are ragged (the mask cut
+// background streaks through the interior; removed 2026-11-25).
+const BLUE_BRUSH_PATHS = [
+  'M 62 61 L 538 52 L 546 90 L 538 134 L 68 140 L 60 96 Z',
+  'M 92 27 L 520 21 L 528 54 L 88 60 Z',
+  'M 72 137 L 528 131 L 534 167 L 80 173 Z',
+  'M 24 72 L 96 66 L 72 78 L 26 81 Z',
+  'M 30 104 L 110 99 L 86 110 L 32 113 Z',
+  'M 28 137 L 92 131 L 68 143 L 30 146 Z',
+  'M 504 60 L 576 54 L 550 66 L 506 69 Z',
+  'M 498 99 L 574 93 L 548 104 L 500 107 Z',
+  'M 510 140 L 572 134 L 546 146 L 512 149 Z',
+  'M 44 39 L 54 39 L 54 48 L 44 48 Z',
+  'M 556 39 L 568 39 L 568 49 L 556 49 Z',
+  'M 36 161 L 48 161 L 48 172 L 36 172 Z',
+  'M 552 170 L 564 170 L 564 181 L 552 181 Z',
+  'M 200 12 L 214 12 L 214 21 L 200 21 Z',
+  'M 380 179 L 396 179 L 396 188 L 380 188 Z',
+];
+function blueBrushSvgString(brushColor) {
+  const uid = 'bluebrush-svg';
+  const shape = BLUE_BRUSH_PATHS.map((d) => `<path d="${d}" />`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200" preserveAspectRatio="none"><defs>`
+    + `<filter id="${uid}-drybrush" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">`
+    + `<feTurbulence type="fractalNoise" baseFrequency="0.007 0.34" numOctaves="3" seed="11" result="fineBristles" />`
+    + `<feColorMatrix in="fineBristles" type="matrix" values="1 0 0 0 0 0 0.10 0 0 0.45 0 0 0 0 0.5 0 0 0 1 0" result="horizontalNoise" />`
+    + `<feDisplacementMap in="SourceGraphic" in2="horizontalNoise" scale="36" xChannelSelector="R" yChannelSelector="G" result="displaced" />`
+    + `<feComponentTransfer in="displaced"><feFuncA type="linear" slope="2.4" intercept="-0.55" /></feComponentTransfer>`
+    + `</filter>`
+    + `<g id="${uid}-shape" filter="url(#${uid}-drybrush)">${shape}</g>`
+    + `</defs>`
+    + `<use href="#${uid}-shape" fill="${brushColor}" />`
+    + `</svg>`;
+}
+const blueBrushImgCache = new Map();
+function getBlueBrushImage(brushColor) {
+  const key = brushColor;
+  let img = blueBrushImgCache.get(key);
+  if (!img) {
+    img = new Image();
+    img.onload = () => { redraw(); };
+    // On error the fallback below keeps painting the flat shape.
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(blueBrushSvgString(brushColor));
+    blueBrushImgCache.set(key, img);
+  }
+  return img;
+}
+
 // Realistic pushpin (Reza 2026-11-23 — his createRealisticPushpin /
 // createPinnedNoteCard code): the pin is his exact SVG, rendered as an
 // image (same pattern as the brushstroke band: the SVG has no external
@@ -8189,6 +8277,43 @@ function paintBrush(l, fs) {
   ctx.restore();
   ctx.fillStyle = sp('brushC');
   for (const d of BRUSH_PATHS) ctx.fill(new Path2D(d));
+  ctx.restore();
+}
+
+// Blue brush band geometry (mirror of brushLayout, % pads): the
+// side pads are 140% of fs (the reference band is LONG, with big
+// overhangs), the vertical pads 55%. The band never moves; the
+// text aligns inside it via the inner width (see alignW in
+// draw()). The 760px minimum keeps align room inside the band
+// (452 inner at defaults) and the long look.
+function blueBrushLayout(fs, maxLw, blockH, lineHeight, h, cx) {
+  const padLeft = Math.max(0, (sp('blueBrushPadLeft') ?? 140) / 100) * fs;
+  const padRight = Math.max(0, (sp('blueBrushPadRight') ?? 140) / 100) * fs;
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, (sp('blueBrushPadTop') ?? 55) / 100) * fs;
+  const padBottom = Math.max(0, (sp('blueBrushPadBottom') ?? 55) / 100) * fs;
+  const w = Math.min(Math.max(maxLw + padLeft + padRight, 760), 1026);
+  const hh = blockH + padTop + padBottom;
+  const blockShift = (padLeft - padRight) / 2;
+  return {
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop, w, h: hh,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
+  };
+}
+function paintBlueBrush(l, fs) {
+  const bx = l.x, by = l.y, bw = l.w, bh = l.h;
+  const img = getBlueBrushImage(sp('blueBrushC'));
+  if (img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, bx, by, bw, bh);
+    return;
+  }
+  // Fallback (image still loading, or it failed): the same paths as
+  // flat canvas fills.
+  ctx.save();
+  ctx.translate(bx, by);
+  ctx.scale(bw / 600, bh / 200);
+  ctx.fillStyle = sp('blueBrushC');
+  for (const d of BLUE_BRUSH_PATHS) ctx.fill(new Path2D(d));
   ctx.restore();
 }
 
@@ -8601,6 +8726,7 @@ function draw() {
   // The dry-brush band wraps the block the same way (a wide band
   // behind the whole text block, with a pink shadow copy).
   const brushL = state.style === 'brushstroke' ? brushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
+  const blueBrushL = state.style === 'bluebrush' ? blueBrushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
   // The quotes frame is a fixed card (see quoteRefLayout): sized from
   // the reference text width and the taller of the reference / current
   // block height, so the sliders never move it — only the text inside
@@ -8611,7 +8737,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || asyPixelBubbleL || widePixelBubbleL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || asyPixelBubbleL || widePixelBubbleL || brushL || blueBrushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -8624,7 +8750,7 @@ function draw() {
   // itself stays centred). alignW is maxLw for every other style, so
   // the three call sites below (line anchor, caret, editor) are
   // unchanged for them.
-  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || asyPixelBubbleL || widePixelBubbleL || brushL || quotesL;
+  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || pixelBubbleL || handBubbleL || asyPixelBubbleL || widePixelBubbleL || brushL || blueBrushL || quotesL;
   const alignW = bubbleL ? bubbleL.w - (bubbleL.padLeft ?? bubbleL.padX) - (bubbleL.padRight ?? bubbleL.padX) : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -8884,6 +9010,7 @@ function draw() {
   // Dry-brush band: navy brush stroke + pale-pink shadow around the
   // whole text block (text painted per-line below, in white).
   if (brushL) paintBrush(brushL, textFs);
+  if (blueBrushL) paintBlueBrush(blueBrushL, textFs);
 
   // Re-assert the text font state before painting the lines: the card
   // paints above may change ctx.font for their chrome (the glass
@@ -9048,7 +9175,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintCurvedOvalSamples(); paintAngularBubbleSamples(); paintPixelBubbleSamples(); paintHandBubbleSamples(); paintAsyPixelBubbleSamples(); paintWidePixelBubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintCurvedOvalSamples(); paintAngularBubbleSamples(); paintPixelBubbleSamples(); paintHandBubbleSamples(); paintAsyPixelBubbleSamples(); paintWidePixelBubbleSamples(); paintBlueBrushSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -9068,6 +9195,7 @@ function redraw() {
   paintHandBubbleSamples();
   paintAsyPixelBubbleSamples();
   paintWidePixelBubbleSamples();
+  paintBlueBrushSamples();
   paintBrushSamples();
   paintQuotesSamples();
   paintPinSamples();
@@ -9630,6 +9758,7 @@ function buildStylePicker() {
       if (item.id === 'asypixelbubble') return '<canvas class="sample-canvas sample-canvas-asypixelbubble" width="190" height="120"></canvas>';
       if (item.id === 'widepixelbubble') return '<canvas class="sample-canvas sample-canvas-widepixelbubble" width="190" height="120"></canvas>';
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
+      if (item.id === 'bluebrush') return '<canvas class="sample-canvas sample-canvas-bluebrush" width="190" height="120"></canvas>';
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
       if (item.id === 'frame') return '<canvas class="sample-canvas sample-canvas-frame" width="190" height="120"></canvas>';
@@ -13417,6 +13546,70 @@ function paintWidePixelBubbleSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-widepixelbubble';
+      span.textContent = tr('متن شما');
+      cv.replaceWith(span);
+    }
+  }
+}
+
+function paintBlueBrushSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-bluebrush')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // band scales with the rail, like the body text.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const blueBrushL = blueBrushLayout(textFs, maxLw, blockH, lineHeight, 1080, 540);
+        const blockCx = 540 + blueBrushL.blockShift;
+        // The sample's text aligns inside the band too (same alignW
+        // rule as draw()).
+        const alignW = blueBrushL.w - blueBrushL.padLeft - blueBrushL.padRight;
+        // Fit the whole band INTO the sample canvas, centred, keeping
+        // the aspect — a uniform scale, so nothing is squashed. The
+        // band has no offset shadow copy, so the fit counts only the
+        // band itself.
+        const s = Math.min(W / blueBrushL.w, H / blueBrushL.h);
+        const cardCx = blueBrushL.x + blueBrushL.w / 2, cardCy = blueBrushL.y + blueBrushL.h / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintBlueBrush(blueBrushL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.bluebrush(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-bluebrush';
       span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }

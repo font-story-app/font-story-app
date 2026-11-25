@@ -14,7 +14,7 @@ const ALLOWED_STYLES = [
   'bold', 'highlight', 'neon', 'glass', 'retro', 'shadow',
   'glow', 'gradient', 'stroke', 'brush', 'pastille',
   'arcadia', 'underline', 'pixel', 'quotes',
-  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'comicbubble', 'comicbubble2', 'ovalbubble', 'curvedoval', 'angularbubble', 'pixelbubble', 'handbubble', 'asypixelbubble', 'widepixelbubble', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'brushquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow', 'vibrantshadow', 'glossyglass', 'gradientshadow', 'fading', 'shinygold', 'liftedshadow', 'centerdrop', 'sheenribbon', 'emeraldgradient', 'sharphighlight', 'glassoutline', 'layeredgold', 'metallicgold', 'neonglow',
+  'sticker', 'tweet', 'note', 'message', 'halo', 'msgbubble', 'dropbubble', 'comicbubble', 'comicbubble2', 'ovalbubble', 'curvedoval', 'angularbubble', 'pixelbubble', 'handbubble', 'asypixelbubble', 'widepixelbubble', 'bluebrush', 'brushstroke', 'pin', 'music', 'frame', 'bell', 'hearts', 'doubleFrame', 'msgnotif', 'stitched', 'sewingpin', 'spiral', 'windowcard', 'splitwindow', 'macwindow', 'heart', 'glassnotif', 'typed', 'corner', 'slantquote', 'brushquote', 'doubleline', 'yellowbars', 'metallic', 'gradbars', 'sideline', 'floatshadow', 'glowframe', 'cornerglow', 'vibrantshadow', 'glossyglass', 'gradientshadow', 'fading', 'shinygold', 'liftedshadow', 'centerdrop', 'sheenribbon', 'emeraldgradient', 'sharphighlight', 'glassoutline', 'layeredgold', 'metallicgold', 'neonglow',
   // StoryFont styles (Reza, 2026-11-22).
   'gradline',
   'squarebox', 'lightbox', 'shadowline',
@@ -180,6 +180,12 @@ const STYLE_PARAMS = {
   widePadLeft: { min: 0, max: 300 },
   wideBubbleC: { color: true },
   wideStrokeC: { color: true },
+  blueBrushC: { color: true },
+  blueBrushPadTop: { min: 0, max: 150 },
+  blueBrushPadBottom: { min: 0, max: 150 },
+  blueBrushPadRight: { min: 0, max: 150 },
+  blueBrushPadLeft: { min: 0, max: 150 },
+  blueBrushShadowC: { color: true },
   // Bubble font-size knobs (Reza, 2026-11-25): each bubble style's
   // «اندازه فونت متن» % in its sheet.
   msgbubbleTextSize: { min: 50, max: 150 },
