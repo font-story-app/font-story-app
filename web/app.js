@@ -91,6 +91,7 @@ const STYLES = [
   { id: 'comicbubble2', label: 'حباب کمیک ۲' },
   { id: 'ovalbubble', label: 'حباب بیضی' },
   { id: 'curvedoval', label: 'حباب بیضی خمیده' },
+  { id: 'angularbubble', label: 'حباب زاویه‌دار' },
   { id: 'tweet', label: 'توییت' },
   { id: 'note', label: 'یادداشت' },
   { id: 'message', label: 'پیام' },
@@ -484,6 +485,28 @@ const STYLE_CONTROLS = {
     { key: 'curvedPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 110, unit: 'px', editable: true },
     { key: 'curvedBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
     { key: 'curvedStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
+    { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
+    { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
+  ],
+  // Angular comic bubble (Reza, 2026-11-25 — his
+  // createAngularComicBubble code): a white angular polygon with a
+  // sharp tail on the left, built from 11 filled polygons in a
+  // 660x290 viewBox (preserveAspectRatio="none" — the shapes stretch
+  // non-uniformly with the box). Same knobs as the oval bubbles: the
+  // card hugs the text by default (CardW/CardH 0); his 660px is a
+  // max-width, not a fixed width. His padding, evaluated at the
+  // 1080px canvas width: top 68, right 76, bottom 80, left 185 (the
+  // left side is wide because the tail eats it); his min-height
+  // floor is 290px.
+  angularbubble: [
+    { key: 'angularCardW', label: 'عرض کارت', type: 'range', min: 0, max: 900, step: 10, def: 0, unit: 'px' },
+    { key: 'angularCardH', label: 'ارتفاع کارت', type: 'range', min: 0, max: 800, step: 10, def: 0, unit: 'px' },
+    { key: 'angularPadTop', label: 'فاصله بالا', type: 'range', min: 0, max: 300, step: 1, def: 68, unit: 'px', editable: true },
+    { key: 'angularPadBottom', label: 'فاصله پایین', type: 'range', min: 0, max: 300, step: 1, def: 80, unit: 'px', editable: true },
+    { key: 'angularPadRight', label: 'فاصله راست', type: 'range', min: 0, max: 300, step: 1, def: 76, unit: 'px', editable: true },
+    { key: 'angularPadLeft', label: 'فاصله چپ', type: 'range', min: 0, max: 300, step: 1, def: 185, unit: 'px', editable: true },
+    { key: 'angularBubbleC', label: 'رنگ حباب', type: 'color', def: '#ffffff' },
+    { key: 'angularStrokeC', label: 'رنگ دورخط', type: 'color', def: '#000000' },
     { key: 'lineGap', label: 'فاصله خطوط', type: 'range', min: 0, max: 80, step: 1, def: 0, unit: '٪' },
     { key: 'wordSpacing', label: 'فاصله کلمات', type: 'range', min: 0, max: 60, step: 1, def: 0, unit: 'px' },
   ],
@@ -2848,6 +2871,11 @@ const STYLE_PAINT = {
   },
   // Curved oval speech bubble: black text on the white ellipse.
   curvedoval: (line, cx, y) => {
+    ctx.fillStyle = state.colorTouched ? state.color : '#000000';
+    drawWords(line, cx, y);
+  },
+  // Angular comic bubble: black text on the white polygon.
+  angularbubble: (line, cx, y) => {
     ctx.fillStyle = state.colorTouched ? state.color : '#000000';
     drawWords(line, cx, y);
   },
@@ -7349,6 +7377,83 @@ function paintCurvedOval(l, fs) {
   ctx.restore();
 }
 
+// Geometry of the angular comic bubble around the text block. His
+// createAngularComicBubble code (2026-11-25): the wrapper is
+// min(95vw, 660px) wide with min-height clamp(195px, 42vw, 290px)
+// — at the 1080px canvas that is 660 wide, 290 tall minimum — and
+// padding clamp(42px, 9vw, 68px) top, clamp(44px, 9vw, 76px) right,
+// clamp(50px, 10.5vw, 80px) bottom, clamp(115px, 24vw, 185px) left
+// (68/76/80/185). Like the oval bubbles the card hugs the text by
+// default (CardW/CardH 0); his 660px is a max-width, not a fixed
+// width. The tail tip (x=52 in his 660x290 viewBox) stays INSIDE
+// the wrapper box, so tailOut/tailDrop are both 0.
+function angularBubbleLayout(fs, maxLw, blockH, lineHeight, h, cx, rtl = true) {
+  const padLeft = Math.max(0, sp('angularPadLeft') ?? 185);
+  const padRight = Math.max(0, sp('angularPadRight') ?? 76);
+  const padX = (padLeft + padRight) / 2;
+  const padTop = Math.max(0, sp('angularPadTop') ?? 68);
+  const padBottom = Math.max(0, sp('angularPadBottom') ?? 80);
+  const w = Math.max(maxLw + padLeft + padRight, sp('angularCardW'));
+  // His min-height floor (290px at the 1080 canvas); the CardH knob
+  // is the floor above that. Any slack (floor or CardH) splits
+  // evenly above and below so the text stays centred.
+  const contentH = blockH + padTop + padBottom;
+  const hh = Math.max(290, contentH);
+  const extraH = Math.max(0, sp('angularCardH') - hh);
+  const slack = (hh - contentH) + extraH;
+  const blockShift = (padLeft - padRight) / 2;
+  return {
+    x: cx - w / 2, y: h / 2 - blockH / 2 - padTop - slack / 2, w, h: hh + extraH, r: 0,
+    padX, padLeft, padRight, padTop, padBottom, blockShift,
+    tailOut: 0, tailDrop: 0, rtl,
+  };
+}
+
+// Paint the angular comic bubble — his 11 polygons verbatim, in his
+// 660x290 viewBox, drawn in his order (the drop shadow first, the
+// white body in the middle, the black edge/slash/hatch details on
+// top). His SVG uses preserveAspectRatio="none", so the shapes
+// stretch non-uniformly with the box: the canvas does the same with
+// a non-uniform ctx.scale(w/660, h/290). All 11 layers are fills
+// (no strokes), so the stretch distorts nothing. The drop shadow is
+// his hardcoded rgba(0,0,0,0.22).
+function paintAngularBubble(l, fs) {
+  const bubbleC = sp('angularBubbleC') || '#ffffff';
+  const strokeC = sp('angularStrokeC') || '#000000';
+  const poly = (points, fill) => {
+    ctx.beginPath();
+    points.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+  };
+  ctx.save();
+  ctx.translate(l.x, l.y);
+  ctx.scale(l.w / 660, l.h / 290);
+  // 1. The translucent dark drop shadow under the body and tail.
+  poly([[132, 202], [82, 202], [82, 217], [148, 217], [148, 242], [566, 258], [566, 232], [132, 218]], 'rgba(0, 0, 0, 0.22)');
+  // 2. The black angled bar above the white body.
+  poly([[209, 54], [209, 42], [586, 29], [586, 44]], strokeC);
+  // 3. The black triangular spike above the tail root, on the left.
+  poly([[165, 128], [153, 108], [153, 136]], strokeC);
+  // 4. The black bar under the tail and the bottom-left root.
+  poly([[80, 196], [156, 196], [156, 214], [166, 218], [166, 190], [80, 190]], strokeC);
+  // 5. The main white polygon, with its sharp tail on the left.
+  poly([[165, 57], [578, 43], [578, 229], [165, 215], [165, 190], [52, 190], [165, 126]], bubbleC);
+  // 6. The thick black vertical-diagonal accent on the right edge.
+  poly([[578, 43], [589, 43], [589, 243], [175, 229], [175, 221], [578, 234]], strokeC);
+  // 7. First diagonal cut on the right edge (upper).
+  poly([[571, 71], [581, 82], [581, 96], [571, 85]], strokeC);
+  // 8. Second diagonal cut on the right edge (middle).
+  poly([[571, 103], [581, 114], [581, 128], [571, 117]], strokeC);
+  // 9. The black diagonal line inside the body's bottom edge.
+  poly([[175, 210], [558, 223], [558, 230], [175, 217]], strokeC);
+  // 10. Two diagonal hatch lines in the bottom-right corner.
+  poly([[562, 223], [576, 207], [576, 214], [567, 224]], strokeC);
+  poly([[568, 229], [578, 218], [578, 225], [573, 230]], strokeC);
+  ctx.restore();
+}
+
 // Dry-brush stroke (Reza 2026-11-22 23:02 — his createBrushTextStyle
 // code): a wide horizontal brush band behind the whole text block,
 // dark navy #241e5a with a pale-pink #fce8f3 shadow copy offset
@@ -8018,6 +8123,10 @@ function draw() {
   // (white ellipse + curved tail down-left + white back highlight).
   const curvedOvalRTL = state.style === 'curvedoval' ? isRTLText(lines[0] || '') : true;
   const curvedOvalL = state.style === 'curvedoval' ? curvedOvalLayout(textFs, maxLw, blockH, lineHeight, h, cx, curvedOvalRTL) : null;
+  // The angular comic bubble wraps the block the same way (white
+  // angular polygon + sharp tail on the left).
+  const angularBubbleRTL = state.style === 'angularbubble' ? isRTLText(lines[0] || '') : true;
+  const angularBubbleL = state.style === 'angularbubble' ? angularBubbleLayout(textFs, maxLw, blockH, lineHeight, h, cx, angularBubbleRTL) : null;
   // The dry-brush band wraps the block the same way (a wide band
   // behind the whole text block, with a pink shadow copy).
   const brushL = state.style === 'brushstroke' ? brushLayout(textFs, maxLw, blockH, lineHeight, h, cx) : null;
@@ -8031,7 +8140,7 @@ function draw() {
     const L = quoteFrameLayout(QUOTE_REF_FS, quoteRef.refMaxLw, Math.max(quoteRef.refBlockH, blockH));
     return { L, w: L.bw, h: L.bh, padX: L.framePadX, blockShift: 0, y: h / 2 - L.bh / 2, x: cx - L.bw / 2 };
   })() : null;
-  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || brushL || quotesL;
+  const frameL = tweetL || noteL || messageL || pinL || musicL || pinkFrameL || bellL || heartsL || doubleFrameL || msgnotifL || stitchedL || sewingpinL || spiralL || windowcardL || splitwindowL || macwindowL || heartL || glassnotifL || typedL || cornerL || metallicL || floatShadowL || glowframeL || cornerGlowL || vibrantL || glossyL || gradShadowL || shinyGoldL || liftedShadowL || centerDropL || sheenRibbonL || emeraldL || sharpL || slantQuoteL || brushQuoteL || doubleLineL || yellowBarsL || gradbarsL || sidelineL || msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || brushL || quotesL;
   // Box styles (squarebox/lightbox/gradline) have no frame layout:
   // their side pads are read here so the text centres in the box's
   // inner width, and the box paint below reuses them.
@@ -8044,7 +8153,7 @@ function draw() {
   // itself stays centred). alignW is maxLw for every other style, so
   // the three call sites below (line anchor, caret, editor) are
   // unchanged for them.
-  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || brushL || quotesL;
+  const bubbleL = msgbubbleL || dropbubbleL || comicBubbleL || comicBubble2L || ovalBubbleL || curvedOvalL || angularBubbleL || brushL || quotesL;
   const alignW = bubbleL ? bubbleL.w - (bubbleL.padLeft ?? bubbleL.padX) - (bubbleL.padRight ?? bubbleL.padX) : maxLw;
   lastBlock = {
     cx, cy: frameL ? frameL.y + frameL.h / 2 : h / 2,
@@ -8284,6 +8393,11 @@ function draw() {
   // (text painted per-line below, in black).
   if (curvedOvalL) paintCurvedOval(curvedOvalL, textFs);
 
+  // Angular comic bubble: white angular polygon + sharp tail on the
+  // left around the whole text block (text painted per-line below,
+  // in black).
+  if (angularBubbleL) paintAngularBubble(angularBubbleL, textFs);
+
   // Dry-brush band: navy brush stroke + pale-pink shadow around the
   // whole text block (text painted per-line below, in white).
   if (brushL) paintBrush(brushL, textFs);
@@ -8451,7 +8565,7 @@ function syncEditorLayout(fontSize, lineHeight, blockH, maxLw, shift = 0) {
 function redraw() {
   // Wait for webfonts so the canvas uses the real font, not a fallback.
   if (document.fonts?.load) {
-    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintCurvedOvalSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
+    document.fonts.load(`${state.weight} ${state.size}px ${fontFamily()}`).catch(() => {}).finally(() => { draw(); paintStickerSamples(); paintPastilleSamples(); paintUnderlineSamples(); paintTweetSamples(); paintNoteSamples(); paintMessageSamples(); paintMsgbubbleSamples(); paintDropbubbleSamples(); paintComicBubbleSamples(); paintComicBubble2Samples(); paintOvalBubbleSamples(); paintCurvedOvalSamples(); paintAngularBubbleSamples(); paintBrushSamples(); paintQuotesSamples(); paintPinSamples(); paintMusicSamples(); paintFrameSamples(); paintBellSamples(); paintHeartsSamples(); paintDoubleFrameSamples(); paintMsgnotifSamples(); paintStitchedSamples(); paintSewingPinSamples(); paintSpiralSamples(); paintWindowCardSamples(); paintSplitWindowCardSamples(); paintMacWindowCardSamples(); paintHeartCardSamples(); paintGlassNotifCardSamples(); paintTypedCardSamples(); paintCornerCardSamples(); paintMetallicSamples(); paintFloatShadowSamples(); paintGlowframeSamples(); paintCornerGlowSamples(); paintVibrantSamples(); paintGlossySamples(); paintGradShadowSamples(); paintFadingSamples(); paintShinyGoldSamples(); paintLiftedShadowSamples(); paintCenterDropSamples(); paintSheenRibbonSamples(); paintEmeraldGradientSamples(); paintSharpHighlightSamples(); paintGlassOutlineSamples(); paintLayeredGoldSamples(); paintMetallicGoldSamples(); paintNeonGlowSamples(); paintSlantQuoteCardSamples(); paintBrushQuoteSamples(); paintDoubleLineSamples(); paintYellowBarsSamples(); paintGradbarsSamples(); paintSidelineSamples(); });
   }
   draw();
   paintStickerSamples();
@@ -8466,6 +8580,7 @@ function redraw() {
   paintComicBubble2Samples();
   paintOvalBubbleSamples();
   paintCurvedOvalSamples();
+  paintAngularBubbleSamples();
   paintBrushSamples();
   paintQuotesSamples();
   paintPinSamples();
@@ -9022,6 +9137,7 @@ function buildStylePicker() {
       if (item.id === 'comicbubble2') return '<canvas class="sample-canvas sample-canvas-comicbubble2" width="190" height="120"></canvas>';
       if (item.id === 'ovalbubble') return '<canvas class="sample-canvas sample-canvas-ovalbubble" width="190" height="120"></canvas>';
       if (item.id === 'curvedoval') return '<canvas class="sample-canvas sample-canvas-curvedoval" width="190" height="120"></canvas>';
+      if (item.id === 'angularbubble') return '<canvas class="sample-canvas sample-canvas-angularbubble" width="190" height="120"></canvas>';
       if (item.id === 'brushstroke') return '<canvas class="sample-canvas sample-canvas-brushstroke" width="190" height="120"></canvas>';
       if (item.id === 'pin') return '<canvas class="sample-canvas sample-canvas-pin" width="190" height="120"></canvas>';
       if (item.id === 'music') return '<canvas class="sample-canvas sample-canvas-music" width="190" height="120"></canvas>';
@@ -12470,6 +12586,76 @@ function paintCurvedOvalSamples() {
       // If painting fails, fall back to the CSS approximation.
       const span = document.createElement('span');
       span.className = 'sample-curvedoval';
+      span.textContent = tr('متن شما');
+      cv.replaceWith(span);
+    }
+  }
+}
+
+
+// (angularBubbleLayout + paintAngularBubble + the body text) on its
+// small canvas — a miniature of the actual bubble, so the preview
+// always matches the canvas. Called from redraw(), like the curved
+// oval samples.
+function paintAngularBubbleSamples() {
+  for (const cv of document.querySelectorAll('#stylePicker canvas.sample-canvas-angularbubble')) {
+    try {
+      const sctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      sctx.clearRect(0, 0, W, H);
+      const prevCtx = ctx;
+      ctx = sctx;
+      try {
+        ctx.textBaseline = 'middle';
+        // The sample text, laid out exactly like draw() does it: the
+        // bubble scales with the rail, like the body text.
+        const textFs = state.size;
+        ctx.font = `${state.weight} ${textFs}px ${fontFamily()}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${state.letterSpacing}px`;
+        const lineRanges = wrapLineRanges(tr('متن شما'), 1080 - 160);
+        const lines = lineRanges.map((r) => r.text);
+        const lineHeight = textFs * state.lineHeight + styleLineGapPx(textFs);
+        const blockH = lines.length * lineHeight;
+        const maxLw = Math.max(0, ...lines.map((l) => lineWidth(l)));
+        const gaps = lineRanges.map((lr, li) => justifyGap(lines[li], lineWidth(lines[li]), maxLw));
+        const angularBubbleRTL = isRTLText(lines[0] || '');
+        const angularBubbleL = angularBubbleLayout(textFs, maxLw, blockH, lineHeight, 1080, 540, angularBubbleRTL);
+        const blockCx = 540 + angularBubbleL.blockShift;
+        // The sample's text aligns inside the bubble too (same alignW
+        // rule as draw()).
+        const alignW = angularBubbleL.w - angularBubbleL.padLeft - angularBubbleL.padRight;
+        // Fit the whole bubble INTO the sample canvas, centred,
+        // keeping the aspect — a uniform scale, so nothing is
+        // squashed. Everything stays inside the box, so the fit
+        // counts only the bubble itself.
+        const s = Math.min(W / (angularBubbleL.w + angularBubbleL.tailOut), H / (angularBubbleL.h + angularBubbleL.tailDrop));
+        const cardCx = angularBubbleL.x + (angularBubbleL.w + angularBubbleL.tailOut) / 2, cardCy = angularBubbleL.y + (angularBubbleL.h + angularBubbleL.tailDrop) / 2;
+        ctx.save();
+        try {
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(s, s);
+          ctx.translate(-cardCx, -cardCy);
+          paintAngularBubble(angularBubbleL, textFs);
+          let y = 1080 / 2 - blockH / 2 + lineHeight / 2;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            const lw = lineWidth(line);
+            const lcx = alignCx(lw, alignW, line, gaps[li], blockCx);
+            const visLw = lw + gaps[li] * Math.max(0, line.split(' ').filter((w) => w !== '').length - 1);
+            lineJustifyGap = gaps[li];
+            STYLE_PAINT.angularbubble(line, lcx, y, visLw, textFs);
+            y += lineHeight;
+          }
+        } finally {
+          ctx.restore();
+        }
+      } finally {
+        ctx = prevCtx;
+      }
+    } catch {
+      // If painting fails, fall back to the CSS approximation.
+      const span = document.createElement('span');
+      span.className = 'sample-angularbubble';
       span.textContent = tr('متن شما');
       cv.replaceWith(span);
     }
