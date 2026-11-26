@@ -94,26 +94,166 @@ export function formatStats(s) {
   );
 }
 
-// --- Broadcast ---
+// --- Broadcast (batched — reworked 2026-11-26) ---
+//
+// The old code sent to every user one by one inside the webhook
+// handler. With 948 users that takes minutes; the platform kills
+// the handler mid-loop, so the «sending…» message stayed stuck for
+// 1.5 h, only the first users were reached, and no summary ever
+// came. A /broadcast now only CREATES a job (fast) and the work
+// runs in short batches: 25 users per batch, 8 parallel lanes,
+// 40 ms gap per lane (stays under Telegram's ~30 msg/sec broadcast
+// limit), a 20 s time budget per invocation, and the cursor is
+// checkpointed to the DB after every batch. If an invocation runs
+// out of budget, the owner taps «ادامه ارسال» and it resumes from
+// the cursor — no user is ever sent to twice (a 429 flood-wait
+// retries once after retry_after instead of counting as failed).
 
-// Send `text` to every registered user, one by one. Returns the counts.
-// Users who blocked the bot (or deleted their account) count as failed.
-export async function broadcast(text) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Time budget per invocation (ms) — keep well under any webhook /
+// isolate timeout so an invocation always ends cleanly with a
+// progress message instead of dying mid-loop.
+export const BROADCAST_BUDGET_MS = 20000;
+export const BROADCAST_BATCH_SIZE = 25;
+export const BROADCAST_LANES = 8;
+
+export async function getRunningBroadcast() {
+  return await db.get(sql`SELECT * FROM broadcasts WHERE status = 'running' ORDER BY id DESC LIMIT 1`);
+}
+
+export async function getBroadcast(id) {
+  if (!id) return null;
+  return await db.get(sql`SELECT * FROM broadcasts WHERE id = ${id}`);
+}
+
+// Create a broadcast job. Throws EMPTY / TOO_LONG (same validation
+// as before) or ALREADY_RUNNING if a job is still in flight.
+export async function createBroadcast(text) {
   const clean = (text || '').trim();
   if (!clean) throw new Error('EMPTY');
   if (clean.length > 4096) throw new Error('TOO_LONG');
-  const rows = await db.all(sql`SELECT tg_id FROM users`);
-  let sent = 0;
-  let failed = 0;
-  for (const row of rows || []) {
-    try {
-      await api.sendMessage({ chat_id: row.tg_id, text: clean });
-      sent++;
-    } catch {
-      failed++;
-    }
-    // Stay well under Telegram's ~30 msg/sec broadcast limit.
-    await new Promise((r) => setTimeout(r, 40));
+  const running = await getRunningBroadcast();
+  if (running) throw new Error('ALREADY_RUNNING');
+  const count = await db.get(sql`SELECT count(*) AS c FROM users`);
+  const total = count?.c ?? 0;
+  const now = Math.floor(Date.now() / 1000);
+  await db.run(
+    sql`INSERT INTO broadcasts (text, total, sent, failed, cursor, status, created_at) VALUES (${clean}, ${total}, 0, 0, NULL, 'running', ${now})`,
+  );
+  return await db.get(sql`SELECT * FROM broadcasts WHERE id = last_insert_rowid()`);
+}
+
+// Send ONE batch (the next users after the job's cursor). Updates
+// sent/failed/cursor in the DB and returns the fresh job plus
+// whether the queue is exhausted.
+export async function sendBroadcastBatch(job, opts = {}) {
+  const batchSize = opts.batchSize || BROADCAST_BATCH_SIZE;
+  const lanes = opts.lanes || BROADCAST_LANES;
+  const doSleep = opts.sleep || sleep;
+  const rows = await db.all(
+    sql`SELECT tg_id FROM users WHERE tg_id > ${job.cursor ?? 0} ORDER BY tg_id ASC LIMIT ${batchSize}`,
+  );
+  if (!rows || !rows.length) {
+    return { done: true, job };
   }
-  return { total: (rows || []).length, sent, failed };
+  const text = job.text;
+  let sent = job.sent || 0;
+  let failed = job.failed || 0;
+  let lastId = job.cursor ?? 0;
+  const sendOne = async (tgId) => {
+    const attempt = async () => await api.sendMessage({ chat_id: tgId, text });
+    try {
+      await attempt();
+      sent++;
+    } catch (e) {
+      // Flood-wait: pause for Telegram's retry_after, then try once
+      // more. Anything else (blocked bot, deleted account) is a
+      // permanent failure for this user.
+      if (e?.code === 429) {
+        const waitSec = Math.min(Math.max(Number(e?.parameters?.retry_after) || 1, 1), 30);
+        await doSleep(waitSec * 1000);
+        try {
+          await attempt();
+          sent++;
+        } catch {
+          failed++;
+        }
+      } else {
+        failed++;
+      }
+    }
+    // The cursor is the HIGHEST id in the batch, not the last one to
+    // finish — lanes complete out of order, and taking the last
+    // finisher would re-send the higher ids on resume.
+    lastId = Math.max(lastId, tgId);
+  };
+  // Split the batch across parallel lanes; each lane works its
+  // share sequentially with a small gap between sends.
+  const groups = Array.from({ length: lanes }, () => []);
+  rows.forEach((row, i) => groups[i % lanes].push(row.tg_id));
+  await Promise.all(
+    groups.map(async (ids) => {
+      for (const tgId of ids) {
+        await sendOne(tgId);
+        await doSleep(40);
+      }
+    }),
+  );
+  await db.run(
+    sql`UPDATE broadcasts SET sent = ${sent}, failed = ${failed}, cursor = ${lastId} WHERE id = ${job.id}`,
+  );
+  const fresh = await getBroadcast(job.id);
+  return { done: false, job: fresh || { ...job, sent, failed, cursor: lastId } };
+}
+
+// Run batches until the queue is done or the time budget is spent.
+// Returns { done, job } with the fresh job row.
+export async function runBroadcast(job, opts = {}) {
+  const budgetMs = opts.budgetMs ?? BROADCAST_BUDGET_MS;
+  const nowFn = opts.now || Date.now;
+  const start = nowFn();
+  let current = job;
+  for (;;) {
+    if (nowFn() - start >= budgetMs) return { done: false, job: current };
+    const result = await sendBroadcastBatch(current, opts);
+    current = result.job;
+    if (result.done) return { done: true, job: current };
+  }
+}
+
+export async function finishBroadcast(job) {
+  const now = Math.floor(Date.now() / 1000);
+  await db.run(sql`UPDATE broadcasts SET status = 'done', finished_at = ${now} WHERE id = ${job.id}`);
+  return await getBroadcast(job.id);
+}
+
+export function broadcastProgressText(job) {
+  const total = job.total || 0;
+  const sent = job.sent || 0;
+  const failed = job.failed || 0;
+  const remaining = Math.max(0, total - sent - failed);
+  return (
+    '📣 دارم پیام رو می‌فرستم…\n\n' +
+    `✅ رسید: ${fa(sent)}\n` +
+    `❌ نرسید (بلاک/حذف): ${fa(failed)}\n` +
+    `⏳ باقی‌مونده: ${fa(remaining)} از ${fa(total)}`
+  );
+}
+
+export function broadcastSummaryText(job) {
+  return (
+    '📣 پیام همگانی تموم شد.\n\n' +
+    `کل کاربرا: ${fa(job.total || 0)}\n` +
+    `رسید: ${fa(job.sent || 0)}\n` +
+    `نرسید (بلاک/حذف): ${fa(job.failed || 0)}`
+  );
+}
+
+export function broadcastResumeKeyboard(job) {
+  return {
+    inline_keyboard: [
+      [{ text: '➡️ ادامه ارسال', callback_data: `broadcast:resume:${job.id}` }],
+    ],
+  };
 }

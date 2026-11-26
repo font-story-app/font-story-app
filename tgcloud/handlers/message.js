@@ -1,6 +1,6 @@
 import { api } from 'sdk';
 import { ensureUser, getLanguage } from '../lib/users.js';
-import { isAdmin, adminPanelMessage, getStats, formatStats, broadcast, fa } from '../lib/admin.js';
+import { isAdmin, adminPanelMessage, getStats, formatStats, createBroadcast, getRunningBroadcast, getBroadcast, runBroadcast, finishBroadcast, broadcastProgressText, broadcastSummaryText, broadcastResumeKeyboard } from '../lib/admin.js';
 import { t, languageKeyboard } from '../lib/i18n.js';
 import {
   SUPPORT_BUTTONS,
@@ -90,16 +90,45 @@ export default async function (message) {
         await api.sendMessage({ chat_id: chatId, text: 'متن پیام همگانی نمی‌تونه بیشتر از ۴۰۹۶ کاراکتر باشه.' });
         return;
       }
-      await api.sendMessage({ chat_id: chatId, text: '📣 دارم پیام رو می‌فرستم…' });
-      const result = await broadcast(body);
-      await api.sendMessage({
+      // A job may already be running (an earlier /broadcast that ran
+      // out of its time budget) — show its progress instead of
+      // starting a second one; the same text would otherwise go out
+      // twice to the early users.
+      let job = await getRunningBroadcast();
+      if (job) {
+        await api.sendMessage({
+          chat_id: chatId,
+          text: broadcastProgressText(job) + '\n\nیک پیام همگانی دیگه در حال ارساله — اول اون تموم بشه.',
+          reply_markup: broadcastResumeKeyboard(job),
+        });
+        return;
+      }
+      job = await createBroadcast(body);
+      // The progress message goes out first, then batches run inside
+      // a 20 s budget; the message is edited at the end with either
+      // the summary or the progress + «ادامه ارسال» button.
+      const progress = await api.sendMessage({
         chat_id: chatId,
-        text:
-          '📣 پیام همگانی تموم شد.\n\n' +
-          `کل کاربرا: ${fa(result.total)}\n` +
-          `رسید: ${fa(result.sent)}\n` +
-          `نرسید (بلاک/حذف): ${fa(result.failed)}`,
+        text: broadcastProgressText(job),
       });
+      const result = await runBroadcast(job);
+      const fresh = (await getBroadcast(job.id)) || result.job;
+      if (result.done) {
+        await finishBroadcast(fresh);
+        const done = (await getBroadcast(job.id)) || fresh;
+        await api.editMessageText({
+          chat_id: chatId,
+          message_id: progress.message_id,
+          text: broadcastSummaryText(done),
+        });
+      } else {
+        await api.editMessageText({
+          chat_id: chatId,
+          message_id: progress.message_id,
+          text: broadcastProgressText(fresh),
+          reply_markup: broadcastResumeKeyboard(fresh),
+        });
+      }
       return;
     }
     // Owner answering a support message: reply to the owner's copy of

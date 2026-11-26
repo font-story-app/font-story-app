@@ -67,3 +67,27 @@ export const supportMap = table('support_map', {
   userId: integer('user_id').notNull(),
   createdAt: integer('created_at').default(sql`(unixepoch())`),
 });
+
+// Broadcasts (added 2026-11-26 — the batched rework): a /broadcast no
+// longer sends synchronously in the webhook handler (with 948 users
+// that takes minutes and the platform kills the handler mid-loop,
+// leaving the «sending…» message stuck forever and only the first
+// users reached — exactly what happened 2026-11-26). Instead the
+// command creates a JOB and the work runs in short batches
+// (25 users, 8 parallel lanes, 20 s budget per invocation), with
+// the cursor checkpointed after every batch; the owner resumes
+// with the «ادامه» button if an invocation runs out of budget.
+// text = the message; total = users at creation; sent/failed =
+// confirmed counts; cursor = last processed tg_id (NULL = not
+// started); status = 'running' | 'done'.
+export const broadcasts = table('broadcasts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  text: text('text').notNull(),
+  total: integer('total').notNull(),
+  sent: integer('sent').notNull().default(0),
+  failed: integer('failed').notNull().default(0),
+  cursor: integer('cursor'),
+  status: text('status').notNull().default('running'),
+  createdAt: integer('created_at').default(sql`(unixepoch())`),
+  finishedAt: integer('finished_at'),
+});
